@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: grpc-best
+  name: grpc-best-sa
+  labels:
+    account: grpc-best-sa

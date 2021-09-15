@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+
+  <Appenders>
+    <Console follow="true" name="Console" target="SYSTEM_OUT">
+      <PatternLayout
+        pattern="%style{%d{HH:mm:ss.SSS} [%t]}{red} %style{%c{1}}{blue} %highlight{%msg%n}"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>

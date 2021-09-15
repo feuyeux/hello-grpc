@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-best
+  name: grpc-server-python
+  labels:
+    app: grpc-server-deploy
+    version: v4
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server-deploy
+      version: v4
+  template:
+    metadata:
+      labels:
+        app: grpc-server-deploy
+        version: v4
+    spec:
+      serviceAccountName: grpc-best-sa
+      containers:
+        - name: grpc-server-deploy
+          image: feuyeux/grpc_server_python:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9996
+              name: grpc-port

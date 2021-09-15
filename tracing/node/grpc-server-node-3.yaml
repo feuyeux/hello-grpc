@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: grpc-tracing
+  name: grpc-server-svc3
+  labels:
+    app: grpc-server-svc3
+spec:
+  ports:
+    - port: 9996
+      name: grpc-port
+  selector:
+    app: grpc-server-deploy3
+---    
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-tracing
+  name: grpc-server-node-3
+  labels:
+    app: grpc-server-deploy3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server-deploy3
+  template:
+    metadata:
+      labels:
+        app: grpc-server-deploy3
+    spec:
+      serviceAccountName: grpc-tracing-sa
+      containers:
+        - name: grpc-server-deploy3
+          image: feuyeux/grpc_server_node:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9996
+              name: grpc-port

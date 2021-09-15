@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-best
+  name: grpc-client-node
+  labels:
+    app: grpc-client-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-client-node
+  template:
+    metadata:
+      labels:
+        app: grpc-client-node
+    spec:
+      serviceAccountName: grpc-best-sa
+      containers:
+        - name: grpc-client-node
+          image: feuyeux/grpc_client_node:1.0.0
+          command: ["/bin/sleep", "3650d"]
+          env:
+            - name: GRPC_SERVER
+              value: "grpc-server-svc.grpc-best.svc.cluster.local"
+          imagePullPolicy: Always

@@ -1,0 +1,31 @@
+[package]
+name = "hello-grpc-rust"
+version = "0.1.0"
+authors = ["feuyeux <feuyeux@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "proto-server"
+path = "src/landing/server.rs"
+
+[[bin]]
+name = "proto-client"
+path = "src/landing/client.rs"
+
+[dependencies]
+tonic = "0.4"
+prost = "0.7"
+tokio = { version = "1.0", features = ["rt-multi-thread", "time", "fs", "macros", "net"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+async-stream = "0.3"
+futures = { version = "0.3", default-features = false, features = ["alloc"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rand = "0.8.3"
+chrono = "0.4.19"
+uuid = { version = "0.8", features = ["serde", "v4"] }
+log = "0.4.13"
+env_logger = "0.8.2"
+
+[build-dependencies]
+tonic-build = "0.4"

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-tracing
+  name: grpc-client-node
+  labels:
+    app: grpc-client-node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-client-node
+  template:
+    metadata:
+      labels:
+        app: grpc-client-node
+    spec:
+      serviceAccountName: grpc-tracing-sa
+      containers:
+        - name: grpc-client-node
+          image: feuyeux/grpc_client_node:1.0.0
+          command: ["/bin/sleep", "3650d"]
+          env:
+            - name: GRPC_SERVER
+              value: "grpc-server-svc1.grpc-tracing.svc.cluster.local"
+          imagePullPolicy: Always
