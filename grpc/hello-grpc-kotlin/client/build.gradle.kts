@@ -1,6 +1,14 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     application
     kotlin("jvm")
+    id("com.github.johnrengelman.shadow") version "7.0.0"
+}
+
+application {
+    mainClass.value("org.feuyeux.grpc.ProtoClientKt")
 }
 
 dependencies {
@@ -11,8 +19,9 @@ dependencies {
 tasks.register<JavaExec>("ProtoClient") {
     dependsOn("classes")
     classpath = sourceSets["main"].runtimeClasspath
-    main = "org.feuyeux.grpc.ProtoClientKt"
+    mainClass.value("org.feuyeux.grpc.ProtoClientKt")
 }
+
 val protoClientStartScripts = tasks.register<CreateStartScripts>("protoClientStartScripts") {
     mainClass.value("org.feuyeux.grpc.ProtoClientKt")
     applicationName = "proto-client"
@@ -22,4 +31,15 @@ val protoClientStartScripts = tasks.register<CreateStartScripts>("protoClientSta
 
 tasks.named("startScripts") {
     dependsOn(protoClientStartScripts)
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "16"
+}
+
+tasks {
+    named<ShadowJar>("shadowJar") {
+        archiveBaseName.set("proto-client")
+        mergeServiceFiles()
+    }
 }

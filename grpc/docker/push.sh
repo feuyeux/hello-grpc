@@ -19,3 +19,8 @@ docker push feuyeux/grpc_client_python:1.0.0
 # rust
 docker push feuyeux/grpc_server_rust:1.0.0
 docker push feuyeux/grpc_client_rust:1.0.0
+# kotlin
+docker push feuyeux/grpc_server_kotlin:1.0.0
+docker push feuyeux/grpc_client_kotlin:1.0.0
+# csharp
+docker push feuyeux/grpc_csharp:1.0.0

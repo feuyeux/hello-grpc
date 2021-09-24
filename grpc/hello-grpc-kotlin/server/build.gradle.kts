@@ -1,6 +1,14 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     application
     kotlin("jvm")
+    id("com.github.johnrengelman.shadow") version "7.0.0"
+}
+
+application {
+    mainClass.value("org.feuyeux.grpc.ProtoServerKt")
 }
 
 dependencies {
@@ -11,7 +19,7 @@ dependencies {
 tasks.register<JavaExec>("ProtoServer") {
     dependsOn("classes")
     classpath = sourceSets["main"].runtimeClasspath
-    main = "org.feuyeux.grpc.ProtoServerKt"
+    mainClass.value("org.feuyeux.grpc.ProtoServerKt")
 }
 
 val protoServerStartScripts = tasks.register<CreateStartScripts>("protoServerStartScripts") {
@@ -23,4 +31,15 @@ val protoServerStartScripts = tasks.register<CreateStartScripts>("protoServerSta
 
 tasks.named("startScripts") {
     dependsOn(protoServerStartScripts)
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "16"
+}
+
+tasks {
+    named<ShadowJar>("shadowJar") {
+        archiveBaseName.set("proto-server")
+        mergeServiceFiles()
+    }
 }

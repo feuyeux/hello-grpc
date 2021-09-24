@@ -9,10 +9,20 @@ import kotlinx.coroutines.flow.flow
 import org.feuyeux.grpc.proto.*
 import java.util.*
 
+fun main() {
+    val port = 9996
+    val server = ProtoServer(port)
+    server.start()
+    server.blockUntilShutdown()
+}
 
 class ProtoServer(
         private val port: Int,
-        private val server: Server = ServerBuilder.forPort(port).addService(LandingService()).build()
+        private val server: Server = ServerBuilder
+                .forPort(port)
+                .addService(LandingService())
+                .intercept(HeaderServerInterceptor())
+                .build()
 ) {
     fun start() {
         server.start()
@@ -34,8 +44,7 @@ class ProtoServer(
         server.awaitTermination()
     }
 
-    class LandingService(
-    ) : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
+    class LandingService : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
         private val helloList = listOf("Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요")
 
         override suspend fun talk(request: TalkRequest): TalkResponse {
@@ -105,11 +114,4 @@ class ProtoServer(
                     .build()
         }
     }
-}
-
-fun main() {
-    val port = 9996
-    val server = ProtoServer(port)
-    server.start()
-    server.blockUntilShutdown()
 }

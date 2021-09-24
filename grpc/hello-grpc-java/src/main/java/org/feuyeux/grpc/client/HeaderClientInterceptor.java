@@ -7,6 +7,7 @@ import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
+import io.grpc.Context.Key;
 import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
@@ -24,11 +25,14 @@ public class HeaderClientInterceptor implements ClientInterceptor {
       @Override
       public void start(Listener<RespT> responseListener, Metadata headers) {
         for (int i = 0; i < tracingKeys.size(); i++) {
-          String metadata = contextKeys.get(i).get();
-          if (metadata != null) {
-            Metadata.Key<String> key = tracingKeys.get(i);
-            log.info("<-T {}:{}", key, metadata);
-            headers.put(key, metadata);
+          Key<String> k = contextKeys.get(i);
+          if (k != null) {
+            String metadata = k.get();
+            if (metadata != null) {
+              Metadata.Key<String> key = tracingKeys.get(i);
+              log.info("<-T {}:{}", key, metadata);
+              headers.put(key, metadata);
+            }
           }
         }
 

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>HelloClient</AssemblyName>
+    <RootNamespace>HelloClient</RootNamespace>
+    <PackageId>HelloClient</PackageId>
+    <Authors>feuyeux</Authors>
+    <Company />
+    <Product>HelloClient</Product>
+    <LangVersion>8</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+  </ItemGroup>
+
+</Project>

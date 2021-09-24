@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     protobuf(project(":protos"))
+    implementation("io.grpc:grpc-stub:1.40.1")
     api(kotlin("stdlib"))
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3")
     api("io.grpc:grpc-protobuf:${rootProject.ext["grpcVersion"]}")
