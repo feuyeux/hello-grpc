@@ -20,7 +20,7 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 | | Timestamp | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
 | | UUID | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :apple: | :apple: |
 | | Env | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :apple: | :apple: |
-| Header | | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :green_apple: | :apple: |
+| Header | | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :apple: | :apple: |
 | TLS | | :apple: | :apple: | :apple: | :apple: | :green_apple: | :green_apple: | :green_apple: | :green_apple: |
 | Log | | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :green_apple: | :green_apple: |
 | Proxy | | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :green_apple: | :green_apple: |
