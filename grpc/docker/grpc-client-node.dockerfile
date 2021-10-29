@@ -1,6 +1,6 @@
-FROM node:16-alpine3.11
+FROM node:16-alpine
 RUN apk add --update \
-      python \
+      python3 \
       make \
       g++ \
   && rm -rf /var/cache/apk/*

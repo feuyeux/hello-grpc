@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//dev info
+// DInfo dev info
 func DInfo(msg string) string {
 	id := uuid.New().String()
 	filename, line, funcname, funcname1, funcname2 := buildLogParams()
@@ -18,7 +18,7 @@ func DInfo(msg string) string {
 	return id
 }
 
-//dev tracing info
+// TInfo dev tracing info
 func TInfo(id, msg string) {
 	filename, line, funcname, funcname1, funcname2 := buildLogParams()
 	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcname, funcname1, funcname2, msg)

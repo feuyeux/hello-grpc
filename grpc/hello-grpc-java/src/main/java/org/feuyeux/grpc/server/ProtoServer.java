@@ -1,5 +1,7 @@
 package org.feuyeux.grpc.server;
 
+import static org.feuyeux.grpc.conn.Connection.GRPC_HELLO_SECURE;
+
 import io.grpc.Attributes;
 import io.grpc.Channel;
 import io.grpc.ClientInterceptors;
@@ -58,10 +60,11 @@ public class ProtoServer {
   private Server getServer(LandingServiceImpl landingService) throws SSLException {
     ServerServiceDefinition intercept = ServerInterceptors.intercept(landingService,
         new HeaderServerInterceptor());
-    String secure = System.getenv("GRPC_HELLO_SECURE");
+    String secure = System.getenv(GRPC_HELLO_SECURE);
+    int port = Connection.getGrcServerPort();
     if (secure == null || !secure.equals("Y")) {
-      log.info("Start GRPC Server");
-      return ServerBuilder.forPort(Connection.getPort())
+      log.info("Start GRPC Server[:{}]", port);
+      return ServerBuilder.forPort(port)
           .addService(intercept)
           .addTransportFilter(new ServerTransportFilter() {
             public void transportTerminated(Attributes transportAttrs) {
@@ -70,8 +73,8 @@ public class ProtoServer {
           })
           .build();
     } else {
-      log.info("Start GRPC TLS Server");
-      return NettyServerBuilder.forPort(Connection.getPort())
+      log.info("Start GRPC TLS Server[:{}]", port);
+      return NettyServerBuilder.forPort(port)
           .addService(intercept)
           .sslContext(getSslContextBuilder().build())
           .build();

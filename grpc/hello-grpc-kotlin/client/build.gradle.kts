@@ -8,7 +8,7 @@ plugins {
 }
 
 application {
-    mainClass.value("org.feuyeux.grpc.ProtoClientKt")
+    mainClass.set("org.feuyeux.grpc.ProtoClientKt")
 }
 
 dependencies {
@@ -19,11 +19,11 @@ dependencies {
 tasks.register<JavaExec>("ProtoClient") {
     dependsOn("classes")
     classpath = sourceSets["main"].runtimeClasspath
-    mainClass.value("org.feuyeux.grpc.ProtoClientKt")
+    mainClass.set("org.feuyeux.grpc.ProtoClientKt")
 }
-
+//https://github.com/GoogleCloudPlatform/kotlin-samples/blob/master/run/grpc-hello-world-gradle/build.gradle.kts
 val protoClientStartScripts = tasks.register<CreateStartScripts>("protoClientStartScripts") {
-    mainClass.value("org.feuyeux.grpc.ProtoClientKt")
+    mainClass.set("org.feuyeux.grpc.ProtoClientKt")
     applicationName = "proto-client"
     outputDir = tasks.named<CreateStartScripts>("startScripts").get().outputDir
     classpath = tasks.named<CreateStartScripts>("startScripts").get().classpath

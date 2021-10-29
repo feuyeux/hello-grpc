@@ -8,7 +8,7 @@ cd "$(
 echo "~~~ build grpc server golang ~~~"
 cd ../hello-grpc-go
 export GO111MODULE="on"
-env GOOS=linux GOARCH=amd64 go build -o proto_server server.go
+env GOOS=linux GOARCH=amd64 go build -o proto_server server/server.go
 mv proto_server ../docker/
 cd ../docker
 docker build -f grpc-server-go.dockerfile -t feuyeux/grpc_server_go:1.0.0 .

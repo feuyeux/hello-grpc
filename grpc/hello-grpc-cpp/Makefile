@@ -23,21 +23,12 @@ PROTOS_PATH = protos
 
 vpath %.proto $(PROTOS_PATH)
 
-all: system-check proto_client proto_server greeter_async_client greeter_async_client2 greeter_async_server
+all: system-check proto_client proto_server
 
-proto_client: landing.pb.o landing.grpc.pb.o helloworld.pb.o helloworld.grpc.pb.o proto_client.o
+proto_client: landing.pb.o landing.grpc.pb.o proto_client.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-proto_server: landing.pb.o landing.grpc.pb.o helloworld.pb.o helloworld.grpc.pb.o proto_server.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_async_client: helloworld.pb.o helloworld.grpc.pb.o greeter_async_client.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_async_client2: helloworld.pb.o helloworld.grpc.pb.o greeter_async_client2.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_async_server: helloworld.pb.o helloworld.grpc.pb.o greeter_async_server.o
+proto_server: landing.pb.o landing.grpc.pb.o proto_server.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 .PRECIOUS: %.grpc.pb.cc

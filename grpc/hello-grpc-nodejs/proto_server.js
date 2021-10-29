@@ -45,7 +45,7 @@ const rootCert = "/var/hello_grpc/server_certs/myssl_root.cer"
 function main() {
     let backend = process.env.GRPC_HELLO_BACKEND
     let backPort = process.env.GRPC_HELLO_BACKEND_PORT
-    let currentPort = process.env.GRPC_HELLO_PORT
+    let currentPort = process.env.GRPC_SERVER_PORT
     let secure = process.env.GRPC_HELLO_SECURE
 
     if (typeof backend !== 'undefined' && backend !== null) {

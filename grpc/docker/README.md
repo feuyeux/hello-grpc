@@ -19,12 +19,15 @@ sh clean_world.sh
 #### 1 java
 ```bash
 docker run --rm --name grpc_server_java -p 9996:9996 \
+-e GRPC_HELLO_SECURE=Y \
 feuyeux/grpc_server_java:1.0.0
 ```
 
 ```bash
-docker run --rm --name grpc_client_java -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_java:1.0.0 java -jar /grpc-client.jar
+docker run --rm --name grpc_client_java \
+-e GRPC_SERVER=$(ipconfig getifaddr en0) \
+-e GRPC_HELLO_SECURE=Y \
+feuyeux/grpc_client_java:1.0.0
 ```
 
 #### 2 go
@@ -35,7 +38,7 @@ feuyeux/grpc_server_go:1.0.0
 
 ```bash
 docker run --rm --name grpc_client_go -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_go:1.0.0 ./grpc-client
+feuyeux/grpc_client_go:1.0.0
 ```
 
 #### 3 node
@@ -57,7 +60,7 @@ feuyeux/grpc_server_python:1.0.0
 
 ```bash
 docker run --rm --name grpc_client_python -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_python:1.0.0 sh /grpc-client/start_client.sh
+feuyeux/grpc_client_python:1.0.0 sh client_start.sh
 ```
 
 #### 5 rust
@@ -68,7 +71,7 @@ feuyeux/grpc_server_rust:1.0.0
 
 ```bash
 docker run --rm --name grpc_client_rust -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_rust:1.0.0 ./grpc-client
+feuyeux/grpc_client_rust:1.0.0
 ```
 
 #### 6 kotlin
@@ -85,14 +88,22 @@ feuyeux/grpc_client_kotlin:1.0.0
 #### 7 csharp
 ```bash
 docker run --rm --name grpc_server_csharp -p 9996:9996 \
-feuyeux/grpc_csharp:1.0.0 dotnet HelloServer.dll
+-e GRPC_HELLO_SECURE=Y \
+feuyeux/grpc_server_csharp:1.0.0
 ```
 
 ```bash
 docker run --rm --name grpc_client_csharp -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_csharp:1.0.0 dotnet HelloClient.dll
+-e GRPC_HELLO_SECURE=Y \
+feuyeux/grpc_client_csharp:1.0.0
 ```
 
 #### 8 cpp
+```bash
+docker run --rm --name grpc_server_csharp -p 9996:9996 feuyeux/grpc_cpp:1.0.0
+```
 
-docker run --rm -it --entrypoint=bash docker.io/feuyeux/grpc_cpp:1.0.0
+```bash
+docker run --rm --name grpc_client_csharp -e GRPC_SERVER=$(ipconfig getifaddr en0) \
+feuyeux/grpc_cpp:1.0.0 ./proto_client
+```

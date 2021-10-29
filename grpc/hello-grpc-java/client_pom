@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <grpc.version>1.39.0</grpc.version>
+        <grpc.version>1.41.0</grpc.version>
         <protoc.version>3.17.3</protoc.version>
         <jdk.version>16</jdk.version>
         <lombok.version>1.18.20</lombok.version>
@@ -130,6 +130,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.4</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>

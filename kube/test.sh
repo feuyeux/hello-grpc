@@ -26,7 +26,7 @@ echo "Test NodeJs Client"
 k exec "$client_node_pod" -c grpc-client-node -n grpc-best -- node proto_client.js
 echo
 echo "Test Python Client"
-k exec "$client_python_pod" -c grpc-client-python -n grpc-best -- sh /grpc-client/start_client.sh
+k exec "$client_python_pod" -c grpc-client-python -n grpc-best -- sh /grpc-client/client_start.sh
 echo
 echo "Test Rust Client"
 k exec "$client_rust_pod" -c grpc-client-rust -n grpc-best -- ./grpc-client

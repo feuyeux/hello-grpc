@@ -67,7 +67,7 @@ public class ProtoTest {
     log.info("REQUEST:{}", talkRequest);
     TalkResponse talkResponse = protoClient.talk(talkRequest);
 
-    Assert.assertTrue(talkResponse.getStatus() == 200);
+    Assert.assertEquals(200, talkResponse.getStatus());
     log.info("RESPONSE:{}", talkResponse);
 
     protoClient.shutdown();

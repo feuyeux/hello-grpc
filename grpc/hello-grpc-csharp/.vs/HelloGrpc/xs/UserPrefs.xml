@@ -1,0 +1,33 @@
+﻿<Properties StartupConfiguration="{D47BE663-4DE3-4206-B7A8-EA3FA066DADC}|Default">
+  <MonoDevelop.Ide.ItemProperties.HelloClient PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench>
+    <Files>
+      <File FileName="HelloServer/LandingServiceImpl.cs" Line="1" Column="1" />
+      <File FileName="HelloServer/ProtoServer.cs" Line="19" Column="10" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="HelloGrpc" expanded="True">
+            <Node name="Common" expanded="True">
+              <Node name="ConnectedServicesFolder" expanded="True" />
+              <Node name="Dependencies" expanded="True" />
+            </Node>
+            <Node name="HelloServer" expanded="True" selected="True">
+              <Node name="Dependencies" expanded="True">
+                <Node name="FrameworkReferences" expanded="True" />
+                <Node name="ProjectDependencies" expanded="True" />
+              </Node>
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>

@@ -1,117 +1,85 @@
 package org.feuyeux.grpc
 
-import io.grpc.Server
-import io.grpc.ServerBuilder
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
+import io.grpc.*
+import io.grpc.netty.GrpcSslContexts
+import io.grpc.netty.NettyServerBuilder
+import io.netty.handler.ssl.SslContextBuilder
+import org.apache.logging.log4j.kotlin.logger
+import org.feuyeux.grpc.conn.Connection
 import org.feuyeux.grpc.proto.*
+import java.io.File
 import java.util.*
+import javax.net.ssl.SSLException
+
+//https://myssl.com/create_test_cert.html
+const val cert: String = "/var/hello_grpc/server_certs/cert.pem"
+const val certKey: String = "/var/hello_grpc/server_certs/private.pkcs8.key"
+const val certChain: String = "/var/hello_grpc/server_certs/full_chain.pem"
+const val rootCert: String = "/var/hello_grpc/server_certs/myssl_root.cer"
 
 fun main() {
-    val port = 9996
-    val server = ProtoServer(port)
+    val server = ProtoServer()
     server.start()
     server.blockUntilShutdown()
 }
 
-class ProtoServer(
-        private val port: Int,
-        private val server: Server = ServerBuilder
-                .forPort(port)
-                .addService(LandingService())
-                .intercept(HeaderServerInterceptor())
-                .build()
-) {
+class ProtoServer {
+    private val log = logger()
+    private var server: Server? = getServer()
     fun start() {
-        server.start()
-        println("Server started, listening on $port")
+        server?.start()
         Runtime.getRuntime().addShutdownHook(
                 Thread {
-                    println("*** shutting down gRPC server since JVM is shutting down")
+                    log.info("*** shutting down gRPC server since JVM is shutting down")
                     this@ProtoServer.stop()
-                    println("*** server shut down")
+                    log.info("*** server shut down")
                 }
         )
     }
 
     private fun stop() {
-        server.shutdown()
+        server?.shutdown()
     }
 
     fun blockUntilShutdown() {
-        server.awaitTermination()
+        server?.awaitTermination()
     }
 
-    class LandingService : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
-        private val helloList = listOf("Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요")
-
-        override suspend fun talk(request: TalkRequest): TalkResponse {
-            println("TALK REQUEST: data=${request.data},meta=${request.meta}")
-            return TalkResponse.newBuilder()
-                    .setStatus(200)
-                    .addResults(buildResult(request.data))
+    @Throws(SSLException::class)
+    private fun getServer(): Server? {
+        val landingService = if (System.getenv("GRPC_HELLO_BACKEND") != null) {
+            val channel = Connection.getChannel(HeaderClientInterceptor())
+            LandingService(ProtoClient(channel))
+        } else {
+            LandingService(null)
+        }
+        val intercept = ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
+        val secure = System.getenv("GRPC_HELLO_SECURE")
+        val serverPort = System.getenv("GRPC_SERVER_PORT")?.toInt() ?: Connection.port
+        return if (secure == null || secure != "Y") {
+            log.info("Start GRPC TLS Server[:$serverPort]")
+            ServerBuilder.forPort(Connection.port)
+                    .addService(intercept)
+                    .addTransportFilter(object : ServerTransportFilter() {
+                        override fun transportTerminated(transportAttrs: Attributes) {
+                            log.warn("GRPC Client {} terminated $transportAttrs.toString()")
+                        }
+                    })
+                    .build()
+        } else {
+            log.info("Start GRPC TLS Server[:$serverPort]")
+            NettyServerBuilder.forPort(Connection.port)
+                    .addService(intercept)
+                    .sslContext(getSslContextBuilder()?.build())
                     .build()
         }
+    }
 
-        override fun talkOneAnswerMore(request: TalkRequest): Flow<TalkResponse> {
-            println("TalkOneAnswerMore REQUEST: data=${request.data},meta=${request.meta}")
-            val datas = request.data.split(",").toTypedArray()
-            val talkResponses: MutableList<TalkResponse> = mutableListOf()
-            for (data in datas) {
-                talkResponses.add(TalkResponse.newBuilder()
-                        .setStatus(200)
-                        .addResults(buildResult(data))
-                        .build())
-            }
-            return talkResponses.asFlow()
-        }
-
-        override suspend fun talkMoreAnswerOne(requests: Flow<TalkRequest>): TalkResponse {
-            val talkResults: MutableList<TalkResult> = mutableListOf()
-            requests.collect { request ->
-                println("TalkMoreAnswerOne REQUEST: data=${request.data},meta=${request.meta}")
-                val talkResult = buildResult(request.data)
-                talkResults.add(talkResult)
-            }
-            return TalkResponse.newBuilder()
-                    .setStatus(200)
-                    .addAllResults(talkResults)
-                    .build()
-        }
-
-        override fun talkBidirectional(requests: Flow<TalkRequest>): Flow<TalkResponse> = flow {
-            requests.collect { request ->
-                println("TalkBidirectional REQUEST: data=${request.data},meta=${request.meta}")
-                emit(TalkResponse.newBuilder()
-                        .setStatus(200)
-                        .addResults(buildResult(request.data))
-                        .build())
-            }
-        }
-
-        private fun buildResult(id: String): TalkResult {
-            val index = try {
-                id.toInt()
-            } catch (ignored: NumberFormatException) {
-                0
-            }
-            val data = if (index > 5) {
-                "你好"
-            } else {
-                helloList[index]
-            }
-            val kv: MutableMap<String, String> = HashMap()
-            kv["id"] = UUID.randomUUID().toString()
-            kv["idx"] = id
-            kv["data"] = data
-            kv["meta"] = "KOTLIN"
-            return TalkResult.newBuilder()
-                    .setId(System.nanoTime())
-                    .setType(ResultType.OK)
-                    .putAllKv(kv)
-                    .build()
-        }
+    private fun getSslContextBuilder(): SslContextBuilder? {
+        val sslClientContextBuilder: SslContextBuilder = SslContextBuilder.forServer(File(certChain),
+                File(certKey))
+        sslClientContextBuilder.trustManager(File(rootCert))
+        sslClientContextBuilder.clientAuth(io.netty.handler.ssl.ClientAuth.REQUIRE)
+        return GrpcSslContexts.configure(sslClientContextBuilder)
     }
 }

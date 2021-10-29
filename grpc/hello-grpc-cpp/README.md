@@ -24,7 +24,7 @@ mkdir build
 pushd build
 cmake ..
 echo "make"
-make -j
+make -j8
 popd
 ```
 
@@ -35,17 +35,4 @@ popd
 
 ```bash
 ./build/proto_client
-```
-
-
-```bash
-./greeter_async_server
-```
-
-```bash
-./greeter_async_client
-```
-
-```bash
-./greeter_async_client2
 ```

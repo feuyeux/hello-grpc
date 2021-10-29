@@ -14,24 +14,30 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Connection {
 
+  public static final String GRPC_HELLO_SECURE = "GRPC_HELLO_SECURE";
+  public static final String GRPC_SERVER = "GRPC_SERVER";
+  public static final String GRPC_SERVER_PORT = "GRPC_SERVER_PORT";
+  public static final String GRPC_HELLO_BACKEND = "GRPC_HELLO_BACKEND";
+  public static final String GRPC_HELLO_BACKEND_PORT = "GRPC_HELLO_BACKEND_PORT";
+  private static final int port = 9996;
+
   //https://myssl.com/create_test_cert.html
   private static String cert = "/var/hello_grpc/client_certs/cert.pem";
   private static String certKey = "/var/hello_grpc/client_certs/private.pkcs8.key";
   private static String certChain = "/var/hello_grpc/client_certs/full_chain.pem";
   private static String rootCert = "/var/hello_grpc/client_certs/myssl_root.cer";
   private static String serverName = "hello.grpc.io";
-  private static int port = 9996;
 
-  private static String getGrcServer() {
-    String server = System.getenv("GRPC_SERVER");
+  private static String getGrcServerHost() {
+    String server = System.getenv(GRPC_SERVER);
     if (server == null) {
       return "localhost";
     }
     return server;
   }
 
-  public static int getPort() {
-    String currentPort = System.getenv("GRPC_HELLO_PORT");
+  public static int getGrcServerPort() {
+    String currentPort = System.getenv(GRPC_SERVER_PORT);
     if (currentPort == null) {
       return port;
     } else {
@@ -55,30 +61,30 @@ public class Connection {
   }
 
   private static String getBackend() {
-    return System.getenv("GRPC_HELLO_BACKEND");
+    return System.getenv(GRPC_HELLO_BACKEND);
   }
 
   public static ManagedChannel getChannel() throws SSLException {
-    String host;
+    String connectTo;
     int port;
-    String backPort = System.getenv("GRPC_HELLO_BACKEND_PORT");
+    String backPort = System.getenv(GRPC_HELLO_BACKEND_PORT);
     if (backPort != null) {
       port = Integer.parseInt(backPort);
     } else {
-      port = getPort();
+      port = getGrcServerPort();
     }
     if (hasBackend()) {
-      host = getBackend();
+      connectTo = getBackend();
     } else {
-      host = getGrcServer();
+      connectTo = getGrcServerHost();
     }
-    String secure = System.getenv("GRPC_HELLO_SECURE");
+    String secure = System.getenv(GRPC_HELLO_SECURE);
     if (secure == null || !secure.equals("Y")) {
-      log.info("Connect With InSecure");
-      return ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+      log.info("Connect with InSecure(:{})", port);
+      return ManagedChannelBuilder.forAddress(connectTo, port).usePlaintext().build();
     } else {
-      log.info("Connect With TLS");
-      return NettyChannelBuilder.forAddress(host, port)
+      log.info("Connect with TLS(:{})", port);
+      return NettyChannelBuilder.forAddress(connectTo, port)
           .overrideAuthority(serverName)  /* Only for using provided test certs. */
           .sslContext(buildSslContext())
           .negotiationType(NegotiationType.TLS)

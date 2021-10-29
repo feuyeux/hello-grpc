@@ -14,17 +14,18 @@ sh proto2go.sh
 
 ### 3 Build
 ```bash
-go get .
+go mod tidy
+go install .
 go list -mod=mod -json all
 go build
 ```
 
 ### 4 Run
 ```bash
-sh test_server.sh
+sh server_start.sh
 ```
 
 ```bash
-sh test_client.sh
+sh client_start.sh
 ```
 

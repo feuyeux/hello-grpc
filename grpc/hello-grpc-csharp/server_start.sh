@@ -5,4 +5,5 @@ SCRIPT_PATH="$(
 )/"
 cd "$SCRIPT_PATH" || exit
 cd HelloServer
+dotnet clean
 dotnet run

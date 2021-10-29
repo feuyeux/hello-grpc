@@ -53,7 +53,6 @@ function main() {
     request.setData("0")
     request.setMeta("NODEJS")
     talk(c, request)
-
     sleep.msleep(50)
     //
     logger.info("Server streaming RPC")
@@ -61,7 +60,6 @@ function main() {
     request.setData("0,1,2")
     request.setMeta("NODEJS")
     talkOneAnswerMore(c, request)
-
     sleep.msleep(50)
     //
     logger.info("Client streaming RPC")
@@ -76,11 +74,11 @@ function main() {
     r3.setMeta("NODEJS")
     let rs = [r1, r2, r3]
     talkMoreAnswerOne(c, rs)
-
-    sleep.msleep(50)
+    sleep.msleep(150)
     //
     logger.info("Bidirectional streaming RPC")
     talkBidirectional(c, rs)
+    sleep.msleep(150)
 }
 
 function grpcServer() {

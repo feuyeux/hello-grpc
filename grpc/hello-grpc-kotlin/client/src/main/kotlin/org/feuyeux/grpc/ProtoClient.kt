@@ -1,11 +1,12 @@
 package org.feuyeux.grpc
 
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import org.apache.logging.log4j.kotlin.logger
+import org.feuyeux.grpc.conn.Connection
 import org.feuyeux.grpc.proto.LandingServiceGrpcKt.LandingServiceCoroutineStub
 import org.feuyeux.grpc.proto.TalkRequest
 import org.feuyeux.grpc.proto.TalkResponse
@@ -17,74 +18,70 @@ private fun getGrcServer(): String {
 }
 
 suspend fun main() {
-    val port = 9996
-    val channel = ManagedChannelBuilder
-            .forAddress(getGrcServer(), port)
-            .usePlaintext()
-            .intercept(HeaderClientInterceptor())
-            .build()
-
+    val channel = Connection.getChannel(HeaderClientInterceptor())
     ProtoClient(channel).use {
-        println("Unary RPC")
         var talkRequest: TalkRequest = TalkRequest.newBuilder()
-                .setMeta("KOTLIN")
-                .setData("0")
-                .build()
+            .setMeta("KOTLIN")
+            .setData("0")
+            .build()
         val response1: TalkResponse = it.talk(talkRequest)
-        printResponse(response1)
+        it.printResponse(response1)
 
-        println("Server streaming RPC")
         talkRequest = TalkRequest.newBuilder()
-                .setMeta("KOTLIN")
-                .setData("0,1,2")
-                .build()
+            .setMeta("KOTLIN")
+            .setData("0,1,2")
+            .build()
         val responseFlow1 = it.talkOneAnswerMore(talkRequest)
         responseFlow1.collect { response2 ->
-            printResponse(response2)
+            it.printResponse(response2)
         }
 
-        println("Client streaming RPC")
         val requests = listOf(
-                TalkRequest.newBuilder()
-                        .setMeta("KOTLIN")
-                        .setData((0..5).random().toString())
-                        .build(),
-                TalkRequest.newBuilder()
-                        .setMeta("KOTLIN")
-                        .setData((0..5).random().toString())
-                        .build(),
-                TalkRequest.newBuilder()
-                        .setMeta("KOTLIN")
-                        .setData((0..5).random().toString())
-                        .build()
+            TalkRequest.newBuilder()
+                .setMeta("KOTLIN")
+                .setData((0..5).random().toString())
+                .build(),
+            TalkRequest.newBuilder()
+                .setMeta("KOTLIN")
+                .setData((0..5).random().toString())
+                .build(),
+            TalkRequest.newBuilder()
+                .setMeta("KOTLIN")
+                .setData((0..5).random().toString())
+                .build()
         )
         val response3: TalkResponse = it.talkMoreAnswerOne(requests)
-        printResponse(response3)
+        it.printResponse(response3)
 
-        println("Bidirectional streaming RPC")
         val responseFlow2 = it.talkBidirectional(requests)
         responseFlow2.collect { response4 ->
-            printResponse(response4)
+            it.printResponse(response4)
         }
+        // TimeUnit.SECONDS.sleep(5)
     }
 }
 
 class ProtoClient(private val channel: ManagedChannel) : Closeable {
+    private val logger = logger()
     private val stub = LandingServiceCoroutineStub(channel)
 
     override fun close() {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+        logger.info("Done")
     }
 
     suspend fun talk(talkRequest: TalkRequest): TalkResponse {
+        logger.info("Unary RPC")
         return stub.talk(talkRequest)
     }
 
     fun talkOneAnswerMore(talkRequest: TalkRequest): Flow<TalkResponse> {
+        logger.info("Server streaming RPC")
         return stub.talkOneAnswerMore(talkRequest)
     }
 
     suspend fun talkMoreAnswerOne(talkRequests: List<TalkRequest>): TalkResponse {
+        logger.info("Client streaming RPC")
         fun listToFlow(rs: List<TalkRequest>): Flow<TalkRequest> = flow {
             for (r in rs) {
                 emit(r)
@@ -95,6 +92,7 @@ class ProtoClient(private val channel: ManagedChannel) : Closeable {
     }
 
     suspend fun talkBidirectional(talkRequests: List<TalkRequest>): Flow<TalkResponse> {
+        logger.info("Bidirectional streaming RPC")
         fun listToFlow(rs: List<TalkRequest>): Flow<TalkRequest> = flow {
             for (r in rs) {
                 emit(r)
@@ -103,11 +101,12 @@ class ProtoClient(private val channel: ManagedChannel) : Closeable {
         }
         return stub.talkBidirectional(listToFlow(talkRequests))
     }
-}
 
-private fun printResponse(response: TalkResponse) {
-    response.resultsList.forEach { result ->
-        val kv = result.kvMap
-        println("${response.status} ${result.id} [${kv["meta"]} ${result.type} ${kv["id"]}, ${kv["idx"]}:${kv["data"]}]")
+    internal fun printResponse(response: TalkResponse) {
+        response.resultsList.forEach { result ->
+            val kv = result.kvMap
+            logger.info("${response.status} ${result.id} [${kv["meta"]} ${result.type} ${kv["id"]}, ${kv["idx"]}:${kv["data"]}]")
+        }
     }
 }
+

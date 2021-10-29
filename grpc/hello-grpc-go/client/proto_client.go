@@ -4,27 +4,28 @@ import (
 	"io"
 	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 
-	"github.com/feuyeux/hello-grpc-go/common/pb"
-	"github.com/feuyeux/hello-grpc-go/conn"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
+	"hello-grpc/common/pb"
+	"hello-grpc/conn"
 )
 
 func main() {
-	conn, err := conn.Dial()
+	con, err := conn.Dial()
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
-	c := pb.NewLandingServiceClient(conn)
+	defer con.Close()
+	c := pb.NewLandingServiceClient(con)
 	log.Infof("Unary RPC")
 	talk(c, &pb.TalkRequest{Data: "0", Meta: "GOLANG"})
 	log.Infof("Server streaming RPC")
 	talkOneAnswerMore(c, &pb.TalkRequest{Data: "0,1,2", Meta: "GOLANG"})
-	log.Infof("Client streaming RPC")
+
 	requests := []*pb.TalkRequest{
 		{Data: randomId(5), Meta: "GOLANG"},
 		{Data: randomId(5), Meta: "GOLANG"},
@@ -64,23 +65,29 @@ func talkOneAnswerMore(client pb.LandingServiceClient, request *pb.TalkRequest) 
 		printResponse(r)
 	}
 }
-func talkMoreAnswerOne(client pb.LandingServiceClient, requests []*pb.TalkRequest) {
+
+func talkMoreAnswerOne(client pb.LandingServiceClient, requests []*pb.TalkRequest) (*pb.TalkResponse, error) {
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
 	stream, err := client.TalkMoreAnswerOne(ctx)
 	if err != nil {
 		log.Fatalf("%v.TalkMoreAnswerOne(_) = _, %v", client, err)
 	}
-	for _, request := range requests {
-		log.Infof("Request=%+v", request)
-		if err := stream.Send(request); err != nil {
-			log.Fatalf("%v.Send(%v) = %v", stream, request, err)
-		}
+	//
+	var wg sync.WaitGroup
+	wg.Add(len(requests))
+	for i := 0; i < len(requests); i++ {
+		request := requests[i]
+		go func(i int) {
+			defer wg.Done()
+			log.Infof("Request[%d]=%+v", i, request)
+			if err := stream.Send(request); err != nil {
+				log.Fatalf("%v.Send(%v) = %v", stream, request, err)
+			}
+		}(i)
 	}
-	r, err := stream.CloseAndRecv()
-	if err != nil {
-		log.Fatalf("%v.TalkMoreAnswerOne() got error %v, want %v", stream, err, nil)
-	}
-	printResponse(r)
+	wg.Wait()
+	//
+	return stream.CloseAndRecv()
 }
 
 func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkRequest) {
@@ -89,13 +96,13 @@ func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkReques
 	if err != nil {
 		log.Fatalf("%v.TalkBidirectional(_) = _, %v", client, err)
 	}
-	waitc := make(chan struct{})
+	waits := make(chan struct{})
 	go func() {
 		for {
 			r, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
-				close(waitc)
+				close(waits)
 				return
 			}
 			if err != nil {
@@ -104,6 +111,7 @@ func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkReques
 			printResponse(r)
 		}
 	}()
+	//
 	for _, request := range requests {
 		log.Infof("Request=%+v", request)
 		if err := stream.Send(request); err != nil {
@@ -112,7 +120,7 @@ func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkReques
 		time.Sleep(2 * time.Millisecond)
 	}
 	stream.CloseSend()
-	<-waitc
+	<-waits
 }
 
 func randomId(max int) string {

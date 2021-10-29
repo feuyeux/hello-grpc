@@ -95,22 +95,7 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
         }
       };
     } else {
-      StreamObserver<TalkResponse> nextObserver = new StreamObserver<>() {
-        @Override
-        public void onNext(TalkResponse talkResponse) {
-          responseObserver.onNext(talkResponse);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-          log.error("", t);
-        }
-
-        @Override
-        public void onCompleted() {
-          responseObserver.onCompleted();
-        }
-      };
+      StreamObserver<TalkResponse> nextObserver = nextObserver(responseObserver);
       return new StreamObserver<>() {
         final StreamObserver<TalkRequest> requestObserver = asyncStub.talkMoreAnswerOne(
             nextObserver);
@@ -133,6 +118,26 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
         }
       };
     }
+  }
+
+  private StreamObserver<TalkResponse> nextObserver(
+      StreamObserver<TalkResponse> responseObserver) {
+    return new StreamObserver<>() {
+      @Override
+      public void onNext(TalkResponse talkResponse) {
+        responseObserver.onNext(talkResponse);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        log.error("", t);
+      }
+
+      @Override
+      public void onCompleted() {
+        responseObserver.onCompleted();
+      }
+    };
   }
 
   @Override
@@ -160,26 +165,9 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
         }
       };
     } else {
-      StreamObserver<TalkResponse> nextObserver = new StreamObserver<TalkResponse>() {
-        @Override
-        public void onNext(TalkResponse talkResponse) {
-          responseObserver.onNext(talkResponse);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-          log.error("", t);
-        }
-
-        @Override
-        public void onCompleted() {
-          responseObserver.onCompleted();
-        }
-      };
-
+      StreamObserver<TalkResponse> nextObserver = nextObserver(responseObserver);
       final StreamObserver<TalkRequest> requestObserver = asyncStub.talkBidirectional(nextObserver);
-
-      return new StreamObserver<TalkRequest>() {
+      return new StreamObserver<>() {
         @Override
         public void onNext(TalkRequest request) {
           log.info("TalkBidirectional REQUEST: data={},meta={}", request.getData(),

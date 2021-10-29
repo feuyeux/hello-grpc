@@ -11,10 +11,10 @@ grpc generated files:
 dotnet build
 
 cd HelloServer
-dotnet bin/Debug/netcoreapp5.0/HelloServer.dll
+dotnet HelloServer/bin/Debug/netcoreapp3.1/HelloServer.dll
 
 cd HelloClient
-dotnet bin/Debug/netcoreapp5.0/HelloClient.dll
+dotnet HelloClient/bin/Debug/netcoreapp3.1/HelloClient.dll
 ```
 
 

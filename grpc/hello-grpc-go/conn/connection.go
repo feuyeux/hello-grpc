@@ -3,16 +3,13 @@ package conn
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"os"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-)
-
-const (
-	port = ":9996"
 )
 
 var (
@@ -25,25 +22,41 @@ var (
 )
 
 func Dial() (*grpc.ClientConn, error) {
+	var address string
+	var port string
+	if HasBackend() {
+		backend := getBackend()
+		backPort := os.Getenv("GRPC_HELLO_BACKEND_PORT")
+		if len(backPort) > 0 {
+			port = backPort
+		} else {
+			port = GrpcServerPort()
+		}
+		address = fmt.Sprintf("%s:%s", backend, port)
+	} else {
+		port = GrpcServerPort()
+		address = fmt.Sprintf("%s:%s", grpcServerHost(), port)
+	}
+
 	secure := os.Getenv("GRPC_HELLO_SECURE")
 	if secure == "Y" {
-		log.Info("Connect With TLS")
-		return transportCredentials()
+		log.Infof("Connect With TLS(%s)", port)
+		return transportCredentials(address)
 	}
-	log.Info("Connect With InSecure")
-	return insecure()
+	log.Infof("Connect With InSecure(%s)", port)
+	return insecure(address)
 }
 
-func insecure() (*grpc.ClientConn, error) {
-	return grpc.Dial(grpcServerAddress(), grpc.WithInsecure())
+func insecure(address string) (*grpc.ClientConn, error) {
+	return grpc.Dial(address, grpc.WithInsecure())
 }
 
-func transportCredentials() (*grpc.ClientConn, error) {
+func transportCredentials(address string) (*grpc.ClientConn, error) {
 	cert, err := tls.LoadX509KeyPair(certChain, certKey)
 	if err != nil {
 		panic(err)
 	}
-	return grpc.Dial(grpcServerAddress(), grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+	return grpc.Dial(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      GetCertPool(rootCert),
@@ -62,21 +75,6 @@ func GetCertPool(rootCert string) *x509.CertPool {
 	return certPool
 }
 
-func grpcServerAddress() string {
-	if HasBackend() {
-		backend := getBackend()
-		backPort := os.Getenv("GRPC_HELLO_BACKEND_PORT")
-		log.Infof("Start GRPC Server backend:%v", backend)
-		if len(backPort) > 0 {
-			return backend + ":" + backPort
-		} else {
-			return backend + port
-		}
-	} else {
-		return grpcServer() + port
-	}
-}
-
 func HasBackend() bool {
 	return len(getBackend()) > 0
 }
@@ -85,7 +83,7 @@ func getBackend() string {
 	return os.Getenv("GRPC_HELLO_BACKEND")
 }
 
-func grpcServer() string {
+func grpcServerHost() string {
 	server := os.Getenv("GRPC_SERVER")
 	if len(server) == 0 {
 		return "localhost"
@@ -93,13 +91,12 @@ func grpcServer() string {
 		return server
 	}
 }
-
-func Port() string {
-	currentPort := os.Getenv("GRPC_HELLO_PORT")
+func GrpcServerPort() string {
+	port := 9996
+	currentPort := os.Getenv("GRPC_SERVER_PORT")
 	if len(currentPort) == 0 {
-		return port
-
+		return fmt.Sprintf("%d", port)
 	} else {
-		return ":" + currentPort
+		return currentPort
 	}
 }

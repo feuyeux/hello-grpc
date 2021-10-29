@@ -4,5 +4,5 @@ cd "$(
   pwd -P
 )/" || exit
 cd ../hello-grpc-rust
-export GRPC_HELLO_PORT=8001
+export GRPC_SERVER_PORT=8001
 cargo run --bin proto-server

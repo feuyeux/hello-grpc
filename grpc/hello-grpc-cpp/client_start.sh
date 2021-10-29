@@ -4,4 +4,4 @@ cd "$(
   pwd -P
 )/" || exit
 
-./build/proto_client
+./build/proto_client --target=localhost:9996

@@ -1,5 +1,8 @@
 FROM python:2
-RUN pip install grpcio-tools --no-cache-dir
 COPY py grpc-client
-RUN sh /grpc-client/proto2py.sh && touch /grpc-client/landing_pb2/__init__.py 
-# ENTRYPOINT ["sh","/grpc-client/start_client.sh"]
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+WORKDIR /grpc-client
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt --no-cache-dir
+RUN sh proto2py.sh && touch landing_pb2/__init__.py 
+# ENTRYPOINT ["sh","client_start.sh"]

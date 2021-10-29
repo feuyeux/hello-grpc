@@ -3,6 +3,9 @@
 ### 1 Generate & Build
 ```bash
 export RUSTUP_DIST_SERVER="https://mirrors.tuna.tsinghua.edu.cn/rustup"
+rustup toolchain install nightly
+rustup default nightly
+rustup show
 ```
 
 ```bash
@@ -32,8 +35,7 @@ cargo run --bin proto-server
 cargo run --bin proto-client
 ```
 
-
-### Release(Croess Platform Support)
+### Release(Crossing Platform Support)
 ```bash
 # https://doc.rust-lang.org/nightly/rustc/platform-support.html
 # https://doc.rust-lang.org/edition-guide/rust-2018/platform-and-target-support/musl-support-for-fully-static-binaries.html
@@ -43,19 +45,20 @@ rustup show
 
 # 1 error: linking with `cc` failed: exit code: 1
 # clang: error: linker command failed with exit code 1 (use -v to see invocation)
-# brew install FiloSottile/musl-cross/musl-cross
-# ln -s /usr/local/bin/x86_64-linux-musl-gcc /usr/local/bin/musl-gcc
+# `brew install FiloSottile/musl-cross/musl-cross`
+# `ln -s /usr/local/bin/x86_64-linux-musl-gcc /usr/local/bin/musl-gcc`
 
 # 2 Error: Your CLT does not support macOS 11.2.
-# sudo rm -rf /Library/Developer/CommandLineTools
-# sudo xcode-select --install
+# `sudo rm -rf /Library/Developer/CommandLineTools`
+# `sudo xcode-select --install`
+
 # https://download.developer.apple.com/Developer_Tools/Command_Line_Tools_for_Xcode_12.5_beta/Command_Line_Tools_for_Xcode_12.5_beta.dmg
+# https://download.developer.apple.com/Developer_Tools/Command_Line_Tools_for_Xcode_13/Command_Line_Tools_for_Xcode_13.dmg
+# `/usr/bin/xcodebuild -version`
+# xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+# `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`
 
-# /usr/bin/xcodebuild -version
-# Xcode 12.4
-# Build version 12D4e
-
-# pkgutil --pkg-info=com.apple.pkg.CLTools_Executables
+# `pkgutil --pkg-info=com.apple.pkg.CLTools_Executables`
 # package-id: com.apple.pkg.CLTools_Executables
 # version: 12.5.0.0.1.1611946261
 # volume: /

@@ -1,7 +1,7 @@
 - [ ] 4 GRPC MODELS
     - [] Env
     - [X] Array
-    - [X] Random
+    - [X] random
     - [X] Timestamp
     - [] UUID
     - [X] Sleep

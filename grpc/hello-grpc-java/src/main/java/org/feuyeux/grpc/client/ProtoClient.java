@@ -53,7 +53,7 @@ public class ProtoClient {
           .build();
       log.info("Request data:{},meta:{}", talkRequest.getData(), talkRequest.getMeta());
       List<TalkResponse> talkResponses = protoClient.talkOneAnswerMore(talkRequest);
-      talkResponses.forEach(r -> printResponse(r));
+      talkResponses.forEach(ProtoClient::printResponse);
 
       log.info("Client streaming RPC");
       List<TalkRequest> requests = Arrays.asList(TalkRequest.newBuilder()
@@ -83,7 +83,6 @@ public class ProtoClient {
           log.info("{} {} [{} {} {},{}:{}]", response.getStatus(), result.getId(),
               kv.get("meta"), result.getType(), kv.get("id"), kv.get("idx"), kv.get("data"));
         }
-
     );
   }
 
@@ -150,7 +149,7 @@ public class ProtoClient {
 
   public void talkBidirectional(List<TalkRequest> requests) throws InterruptedException {
     final CountDownLatch finishLatch = new CountDownLatch(1);
-    StreamObserver<TalkResponse> responseObserver = new StreamObserver<TalkResponse>() {
+    StreamObserver<TalkResponse> responseObserver = new StreamObserver<>() {
       @Override
       public void onNext(TalkResponse talkResponse) {
         printResponse(talkResponse);

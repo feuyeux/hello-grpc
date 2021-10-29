@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.feuyeux.grpc</groupId>
   <artifactId>hello-grpc-java</artifactId>
@@ -9,9 +8,9 @@
   <properties>
     <jdk.version>17</jdk.version>
     <lombok.version>1.18.20</lombok.version>
-    <grpc.version>1.40.1</grpc.version>
-    <protoc.version>3.17.3</protoc.version>
-    <netty.version>2.0.41.Final</netty.version>
+    <grpc.version>1.41.0</grpc.version>
+    <protoc.version>3.18.0</protoc.version>
+    <netty.version>2.0.43.Final</netty.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <junit.version>4.13.2</junit.version>

@@ -21,7 +21,7 @@ public class HeaderClientInterceptor implements ClientInterceptor {
   public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
       CallOptions callOptions, Channel next) {
     return new ForwardingClientCall
-        .SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
+        .SimpleForwardingClientCall<>(next.newCall(method, callOptions)) {
       @Override
       public void start(Listener<RespT> responseListener, Metadata headers) {
         for (int i = 0; i < tracingKeys.size(); i++) {
@@ -36,7 +36,7 @@ public class HeaderClientInterceptor implements ClientInterceptor {
           }
         }
 
-        super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(
+        super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<>(
             responseListener) {
           @Override
           public void onHeaders(Metadata headers) {

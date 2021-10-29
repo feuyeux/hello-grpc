@@ -4,6 +4,7 @@ SCRIPT_PATH="$(
   pwd -P
 )/"
 cd "$SCRIPT_PATH" || exit
+export JAVA_HOME=${JAVA_17_HOME}
 cd client
 gradle clean installShadowDist
 build/install/client-shadow/bin/client

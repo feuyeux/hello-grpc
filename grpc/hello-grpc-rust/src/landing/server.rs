@@ -1,21 +1,29 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use std::collections::HashMap;
 use std::env;
+use std::error::Error;
 use std::pin::Pin;
 
 use chrono::prelude::*;
-use env_logger::Env;
 use futures::{Stream, StreamExt};
 use futures::stream;
 use log::{debug, error, info};
 use tokio::sync::mpsc;
-use tonic::{Request, Response, Status, Streaming, transport::Server};
-use tonic::metadata::{Ascii, KeyAndValueRef, MetadataKey, MetadataMap};
-use tonic::transport::Channel;
+use tonic::{
+    metadata::{Ascii, KeyAndValueRef, MetadataKey, MetadataMap},
+    Request,
+    Response, Status, Streaming, transport::{
+        Channel, Identity, Server, ServerTlsConfig,
+    },
+};
 use uuid::Uuid;
 
-use landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
-use landing::landing_service_client::LandingServiceClient;
-use landing::landing_service_server::{LandingService, LandingServiceServer};
+use hello_grpc_rust::common::*;
+use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
+use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
+use hello_grpc_rust::common::landing::landing_service_server::{LandingService, LandingServiceServer};
 
 static HELLOS: [&'static str; 6] = [
     "Hello",
@@ -36,46 +44,48 @@ static TRACING_KEYS: [&'static str; 7] = [
     "x-ot-span-context",
 ];
 
-pub mod landing {
-    tonic::include_proto!("org.feuyeux.grpc");
-}
+//https://myssl.com/create_test_cert.html
+const CERT: &str = "/var/hello_grpc/server_certs/cert.pem";
+const CERT_KEY: &str = "/var/hello_grpc/server_certs/private.key";
+const CERT_CHAIN: &str = "/var/hello_grpc/server_certs/full_chain.pem";
+const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let default = Env::default().default_filter_or("info");
-    env_logger::Builder::from_env(default).format_timestamp_millis().init();
+async fn main() -> Result<(), Box<dyn Error>> {
+    log4rs::init_file(CONFIG_PATH, Default::default()).unwrap();
 
-    let address = format!("0.0.0.0:{}", match env::var("GRPC_HELLO_PORT") {
-        Ok(val) => val,
-        Err(_e) => "9996".to_string()
-    }).parse().unwrap();
+    let address = format!("0.0.0.0:{}", get_server_port()).parse().unwrap();
 
     let backend = match env::var("GRPC_HELLO_BACKEND") {
         Ok(val) => val,
         Err(_e) => String::default()
     };
 
-    if !backend.is_empty() {
-        let next_address = format!("http://{}:{}", backend, match env::var("GRPC_HELLO_BACKEND_PORT") {
-            Ok(val) => val,
-            Err(_e) => "8001".to_string()
-        });
-        info!("Next server is:{}", next_address);
-        let client = LandingServiceClient::connect(next_address).await?;
-        info!("ProtoServer listening on {}", address);
-        Server::builder()
-            .add_service(LandingServiceServer::new(ProtoServer { backend, client: Some(client) }))
-            .serve(address)
-            .await?;
-        Ok(())
+    let is_tls = match env::var("GRPC_HELLO_SECURE") {
+        Ok(val) => val,
+        Err(_e) => String::default()
+    };
+
+    let mut server = if is_tls.eq("Y") {
+        let cert = tokio::fs::read(CERT_CHAIN).await?;
+        let key = tokio::fs::read(CERT_KEY).await?;
+        let identity = Identity::from_pem(cert, key);
+        info!("Start GRPC TLS Server[:{}]", get_server_port());
+        Server::builder().tls_config(ServerTlsConfig::new().identity(identity))?
     } else {
-        info!("ProtoServer listening on {}", address);
+        info!("Start GRPC Server[:{}]", get_server_port());
         Server::builder()
-            .add_service(LandingServiceServer::new(ProtoServer { backend, client: None }))
-            .serve(address)
-            .await?;
-        Ok(())
-    }
+    };
+
+    let service = if !backend.is_empty() {
+        let client = build_client().await;
+        LandingServiceServer::new(ProtoServer { backend, client: Some(client) })
+    } else {
+        LandingServiceServer::new(ProtoServer { backend, client: None })
+    };
+
+    server.add_service(service).serve(address).await?;
+    Ok(())
 }
 
 pub struct ProtoServer {
@@ -290,8 +300,8 @@ fn build_result(id: String) -> TalkResult {
 fn print_metadata(header: &MetadataMap) {
     for kv in header.iter() {
         match kv {
-            KeyAndValueRef::Ascii(ref k, ref v) => info!("H: {:?}: {:?}", k, v),
-            KeyAndValueRef::Binary(ref k, ref v) => info!("H: {:?}: {:?}", k, v),
+            KeyAndValueRef::Ascii(ref k, ref v) => info!("->H: {}: {:?}", k, v),
+            KeyAndValueRef::Binary(ref k, ref v) => info!("->H: {}: {:?}", k, v),
         }
     }
 }
@@ -312,4 +322,11 @@ fn propaganda_headers(request: &mut Request<TalkRequest>) -> MetadataMap {
         }
     }
     map
+}
+
+fn get_server_port() -> String {
+    return match env::var("GRPC_SERVER_PORT") {
+        Ok(val) => val,
+        Err(_e) => "9996".to_string()
+    };
 }

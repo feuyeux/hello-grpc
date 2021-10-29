@@ -1,41 +1,40 @@
 using System;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
+using Common;
 using Grpc.Core;
+using log4net;
+using log4net.Config;
 using Org.Feuyeux.Grpc;
 
 namespace HelloClient
 {
     public class ProtoClient
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(ProtoClient));
         private readonly LandingService.LandingServiceClient _client;
         private readonly Random _random = new Random();
 
-        private ProtoClient(LandingService.LandingServiceClient client)
+        public ProtoClient(LandingService.LandingServiceClient client)
         {
             this._client = client;
         }
 
-        private static string GetGrcServer()
-        {
-            var server = Environment.GetEnvironmentVariable("GRPC_SERVER");
-            return server ?? "localhost";
-        }
-
         public static void Main()
         {
-            var host = GetGrcServer();
-            const string port = "9996";
-            var endpoint = host + ":" + port;
-            Console.WriteLine("\nEndpoint={0}", endpoint);
-            var channel = new Channel(endpoint, ChannelCredentials.Insecure);
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+
+            var channel = Connection.GetChannel();
             var client = new ProtoClient(new LandingService.LandingServiceClient(channel));
-            Console.WriteLine("Unary RPC");
+            Log.Info("Unary RPC");
             client.Talk();
-            Console.WriteLine("Server streaming RPC");
+            Log.Info("Server streaming RPC");
             client.TalkOneAnswerMore().Wait();
-            Console.WriteLine("Client streaming RPC");
+            Log.Info("Client streaming RPC");
             client.TalkMoreAnswerOne().Wait();
-            Console.WriteLine("Bidirectional streaming RPC");
+            Log.Info("Bidirectional streaming RPC");
             client.TalkBidirectional().Wait();
             channel.ShutdownAsync().Wait();
         }
@@ -49,7 +48,7 @@ namespace HelloClient
             };
             try
             {
-                Console.WriteLine("Request: data={0},meta={1}", request.Data, request.Meta);
+                Log.Info($"Request: data={request.Data},meta={request.Meta}");
                 var talkResponse = _client.Talk(request, BuildHeaders());
                 PrintResponse(talkResponse);
             }
@@ -68,7 +67,7 @@ namespace HelloClient
                     Data = "0,1,2",
                     Meta = "C#"
                 };
-                Console.WriteLine("Request: data={0},meta={1}", request.Data, request.Meta);
+                Log.Info($"Request: data={request.Data},meta={request.Meta}");
                 using var call = _client.TalkOneAnswerMore(request, BuildHeaders());
                 var responseStream = call.ResponseStream;
                 while (await responseStream.MoveNext())
@@ -95,7 +94,7 @@ namespace HelloClient
                         Data = _random.Next(5).ToString(),
                         Meta = "C#"
                     };
-                    Console.WriteLine("Request: data={0},meta={1}", request.Data, request.Meta);
+                    Log.Info($"Request: data={request.Data},meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
                     await Task.Delay(_random.Next(100) + 100);
                 }
@@ -130,7 +129,7 @@ namespace HelloClient
                         Data = _random.Next(5).ToString(),
                         Meta = "C#"
                     };
-                    Console.WriteLine("Request: data={0},meta={1}", request.Data, request.Meta);
+                    Log.Info($"Request: data={request.Data},meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
                     await Task.Delay(_random.Next(100) + 100);
                 }
@@ -158,8 +157,7 @@ namespace HelloClient
             foreach (var result in talkResponse.Results)
             {
                 var kv = result.Kv;
-                Console.WriteLine("{0} {1} [{2} {3} {4},{5}:{6}]", talkResponse.Status, result.Id,
-                    kv["meta"], result.Type, kv["id"], kv["idx"], kv["data"]);
+                Log.Info($"{talkResponse.Status} {result.Id} [{kv["meta"]} {result.Type} {kv["id"]},{kv["idx"]}:{kv["data"]}]");
             }
         }
     }

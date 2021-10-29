@@ -4,9 +4,17 @@ cd "$(
   pwd -P
 )/" || exit
 rm -rf common && mkdir common
-js_proto_path=$(pwd)/common
-cd proto
-grpc_tools_node_protoc \
-  --js_out=import_style=commonjs,binary:"${js_proto_path}" \
-  --grpc_out=grpc_js:"${js_proto_path}" \
-  landing.proto
+JS_PROTO_PATH=$(pwd)/common
+
+echo "===="
+npm config get registry
+protoc --version
+echo "JS_PROTO_PATH=${JS_PROTO_PATH}"
+echo "===="
+
+JS_PROTO_PATH=$(pwd)/common
+protoc-gen-grpc \
+--js_out=import_style=commonjs,binary:${JS_PROTO_PATH} \
+--grpc_out=grpc_js:${JS_PROTO_PATH} \
+--proto_path ./proto \
+./proto/landing.proto

@@ -1,0 +1,5 @@
+venv
+.DS_Store
+.idea
+landing_pb2/landing*.py
+*.pyc

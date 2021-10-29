@@ -32,20 +32,20 @@ object Constants {
     val contextKeys: MutableList<Context.Key<String>>? = mutableListOf()
 
     init {
-        tracingKeys!!.add(x_request_id)
-        tracingKeys!!.add(x_b3_traceid)
-        tracingKeys!!.add(x_b3_spanid)
-        tracingKeys!!.add(x_b3_parentspanid)
-        tracingKeys!!.add(x_b3_sampled)
-        tracingKeys!!.add(x_b3_flags)
-        tracingKeys!!.add(x_ot_span_context)
+        tracingKeys.add(x_request_id)
+        tracingKeys.add(x_b3_traceid)
+        tracingKeys.add(x_b3_spanid)
+        tracingKeys.add(x_b3_parentspanid)
+        tracingKeys.add(x_b3_sampled)
+        tracingKeys.add(x_b3_flags)
+        tracingKeys.add(x_ot_span_context)
 
         contextKeys!!.add(context_x_request_id)
-        contextKeys!!.add(context_x_b3_traceid)
-        contextKeys!!.add(context_x_b3_spanid)
-        contextKeys!!.add(context_x_b3_parentspanid)
-        contextKeys!!.add(context_x_b3_sampled)
-        contextKeys!!.add(context_x_b3_flags)
-        contextKeys!!.add(context_x_ot_span_context)
+        contextKeys.add(context_x_b3_traceid)
+        contextKeys.add(context_x_b3_spanid)
+        contextKeys.add(context_x_b3_parentspanid)
+        contextKeys.add(context_x_b3_sampled)
+        contextKeys.add(context_x_b3_flags)
+        contextKeys.add(context_x_ot_span_context)
     }
 }

@@ -6,10 +6,4 @@ SCRIPT_PATH="$(
 )"
 cd "$SCRIPT_PATH" || exit
 export JAVA_HOME=${JAVA_17_HOME}
-rm -rf src/main/proto
-mkdir src/main/proto
-cd ..
-ln -s "$PWD"/proto/landing.proto hello-grpc-java/src/main/proto/landing.proto
-cd hello-grpc-java
-ls -l src/main/proto
 mvn clean install -DskipTests

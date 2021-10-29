@@ -6,23 +6,14 @@ cd "$(
   pwd -P
 )/" || exit
 
-echo "~~~ build grpc server rust ~~~"
-cd ../hello-grpc-rust
-
-CROSS_COMPILE=x86_64-linux-musl-gcc cargo build --release --bin proto-server --target=x86_64-unknown-linux-musl
-mv target/x86_64-unknown-linux-musl/release/proto-server ../docker/
-cd ../docker
-echo "build server image"
-docker build -f grpc-server-rust.dockerfile -t feuyeux/grpc_server_rust:1.0.0 .
-rm -rf proto-server
+echo "~~~ build grpc rust ~~~"
+cd ..
+cp -r hello-grpc-rust docker/
+cd docker
+docker build -f grpc-rust.dockerfile --target build -t feuyeux/grpc_rust:1.0.0 .
+docker build -f grpc-rust.dockerfile --target server -t feuyeux/grpc_server_rust:1.0.0 .
+docker build -f grpc-rust.dockerfile --target client -t feuyeux/grpc_client_rust:1.0.0 .
+rm -rf hello-grpc-rust
 echo
 
-echo "~~~ build grpc client rust ~~~"
-cd ../hello-grpc-rust
-CROSS_COMPILE=x86_64-linux-musl-gcc cargo build --release --bin proto-client --target=x86_64-unknown-linux-musl
-mv target/x86_64-unknown-linux-musl/release/proto-client ../docker/
-cd ../docker
-echo "build client image"
-docker build -f grpc-client-rust.dockerfile -t feuyeux/grpc_client_rust:1.0.0 .
-rm -rf proto-client
-echo
+# docker run --rm -it --entrypoint=sh docker.io/feuyeux/grpc_rust:1.0.0

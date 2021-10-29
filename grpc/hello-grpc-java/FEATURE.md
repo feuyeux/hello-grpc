@@ -1,6 +1,6 @@
 - [x] 4 GRPC MODELS
     - `GRPC_SERVER`(`localhost`)
-    - `GRPC_HELLO_PORT`(`9996`)
+    - `GRPC_SERVER_PORT`(`9996`)
 - [x] LOG
 - [x] SEND/RECEIVE HEADERS
 - [x] DOCKER IMAGE

@@ -1,7 +1,6 @@
-use std::env;
+use std::error::Error;
 use std::time::Duration;
 
-use env_logger::Env;
 use futures::stream;
 use log::{debug, error, info};
 use rand::Rng;
@@ -9,43 +8,36 @@ use tokio::time;
 use tonic::Request;
 use tonic::transport::Channel;
 
-use landing::{TalkRequest, TalkResponse};
-use landing::landing_service_client::LandingServiceClient;
+use hello_grpc_rust::common::*;
+use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
+use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 
 pub mod landing {
     tonic::include_proto!("org.feuyeux.grpc");
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).format_timestamp_millis().init();
+async fn main() -> Result<(), Box<dyn Error>> {
+    log4rs::init_file(CONFIG_PATH, Default::default()).unwrap();
 
-    let address = format!("http://{}:{}", grpc_server(), grpc_server_port());
-    info!("Access to:{}", address);
+    let mut client = build_client().await;
 
-    let mut client = LandingServiceClient::connect(address).await?;
-
-
-    let result = talk(&mut client).await;
-    match result {
+    match talk(&mut client).await {
         Err(e) => error!("{}", e),
         _ => debug!("OK"),
     }
 
-    let result = talk_one_answer_more(&mut client).await;
-    match result {
+    match talk_one_answer_more(&mut client).await {
         Err(e) => error!("{}", e),
         _ => debug!("OK"),
     }
 
-    let result = talk_more_answer_one(&mut client).await;
-    match result {
+    match talk_more_answer_one(&mut client).await {
         Err(e) => error!("{}", e),
         _ => debug!("OK"),
     }
 
-    let result = talk_bidirectional(&mut client).await;
-    match result {
+    match talk_bidirectional(&mut client).await {
         Err(e) => error!("{}", e),
         _ => debug!("OK"),
     }
@@ -137,20 +129,6 @@ async fn talk(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn 
     let response = client.talk(request).await?;
     print_response(response.get_ref());
     Ok(())
-}
-
-fn grpc_server() -> String {
-    match env::var("GRPC_SERVER") {
-        Ok(val) => val,
-        Err(_e) => "localhost".to_string(),
-    }
-}
-
-fn grpc_server_port() -> String {
-    match env::var("GRPC_SERVER_PORT") {
-        Ok(val) => val,
-        Err(_e) => "9996".to_string(),
-    }
 }
 
 fn random_id(max: i32) -> String {

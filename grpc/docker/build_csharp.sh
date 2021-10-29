@@ -8,6 +8,19 @@ echo "~~~ build grpc csharp ~~~"
 cd ..
 cp -r hello-grpc-csharp docker/
 cd docker
-docker build -f grpc-csharp.dockerfile -t feuyeux/grpc_csharp:1.0.0 .
+
+if [[ "${1}" == "c" ]]; then
+  echo "build client"
+  docker build -f grpc-csharp.dockerfile --target client -t feuyeux/grpc_client_csharp:1.0.0 .
+elif [[ "${1}" == "s" ]]; then
+  echo "build server"
+  docker build -f grpc-csharp.dockerfile --target server -t feuyeux/grpc_server_csharp:1.0.0 .
+else
+  echo "build csharp"
+  docker build -f grpc-csharp.dockerfile --target build -t feuyeux/grpc_csharp:1.0.0 .
+  docker build -f grpc-csharp.dockerfile --target server -t feuyeux/grpc_server_csharp:1.0.0 .
+  docker build -f grpc-csharp.dockerfile --target client -t feuyeux/grpc_client_csharp:1.0.0 .
+fi
+
 rm -rf hello-grpc-csharp
 echo

@@ -6,7 +6,7 @@ cd "$(
   pwd -P
 )/" || exit
 
-export JAVA_HOME=$JAVA_16_HOME
+export JAVA_HOME=$JAVA_17_HOME
 
 echo "build grpc server java"
 cd ../hello-grpc-java

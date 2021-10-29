@@ -51,12 +51,20 @@ def propaganda_headers(method_name, context):
     metadata = context.invocation_metadata()
     metadata_dict = {}
     for c in metadata:
-        logger.debug("%s HEADER %s:%s", method_name, c.key, c.value)
+        logger.info("%s ->H %s:%s", method_name, c.key, c.value)
         if c.key in tracing_keys:
-            logger.debug("%s TRACING HEADER %s:%s", method_name, c.key, c.value)
+            logger.info("%s ->T %s:%s", method_name, c.key, c.value)
             metadata_dict[c.key] = c.value
     # Converting dictionary into list of tuple
     return list(metadata_dict.items())
+
+
+def print_headers(method_name, context):
+    metadata = context.invocation_metadata()
+    for c in metadata:
+        logger.info("%s ->H %s:%s", method_name, c.key, c.value)
+        if c.key in tracing_keys:
+            logger.info("%s ->T %s:%s", method_name, c.key, c.value)
 
 
 class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
@@ -72,6 +80,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             except Exception as e:
                 logger.error("Unexpected Error: {}".format(e))
         else:
+            print_headers("TALK", context)
             response = landing_pb2.TalkResponse()
             response.status = 200
             result = build_result(request.data)
@@ -86,6 +95,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             for response in responses:
                 yield response
         else:
+            print_headers("TalkOneAnswerMore", context)
             datas = request.data.split(",")
             for data in datas:
                 response = landing_pb2.TalkResponse()
@@ -103,6 +113,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             response.status = 200
             for request in request_iterator:
                 logger.info("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.data, request.meta)
+                print_headers("TalkMoreAnswerOne", context)
                 response.results.append(build_result(request.data))
             return response
 
@@ -115,6 +126,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         else:
             for request in request_iterator:
                 logger.info("TalkBidirectional REQUEST: data=%s,meta=%s", request.data, request.meta)
+                print_headers("TalkMoreAnswerOne", context)
                 response = landing_pb2.TalkResponse()
                 response.status = 200
                 result = build_result(request.data)
@@ -125,7 +137,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
 def serve():
     backend = os.getenv("GRPC_HELLO_BACKEND")
     back_port = os.getenv("GRPC_HELLO_BACKEND_PORT")
-    current_port = os.getenv("GRPC_HELLO_PORT")
+    current_port = os.getenv("GRPC_SERVER_PORT")
     if backend:
         if back_port:
             address = backend + ":" + back_port

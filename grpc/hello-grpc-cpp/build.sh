@@ -5,7 +5,7 @@ cd "$(
 )/" || exit
 #
 echo "1. dependencies:"
-sh import_glog.sh
+#sh import_glog.sh
 echo "2. cmake:"
 rm -rf build common/*.cc common/*.h
 mkdir build

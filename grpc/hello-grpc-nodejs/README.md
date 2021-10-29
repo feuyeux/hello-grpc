@@ -2,11 +2,14 @@
 ### 1 Setup
 ```bash
 npm install -g grpc-tools
+# https://www.npmjs.com/package/protoc-gen-grpc
+npm config set unsafe-perm true
+npm install protoc-gen-grpc -g
 ```
 
 ### 2 Generate
 ```bash
-proto2js.sh
+sh proto2js.sh
 ```
 
 ### 3 Build
