@@ -49,7 +49,7 @@ feuyeux/grpc_server_node:1.0.0
 
 ```bash
 docker run --rm --name grpc_client_node -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_node:1.0.0 node proto_client.js
+feuyeux/grpc_client_node:1.0.0
 ```
 
 #### 4 python
@@ -60,7 +60,7 @@ feuyeux/grpc_server_python:1.0.0
 
 ```bash
 docker run --rm --name grpc_client_python -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_python:1.0.0 sh client_start.sh
+feuyeux/grpc_client_python:1.0.0
 ```
 
 #### 5 rust
@@ -100,10 +100,11 @@ feuyeux/grpc_client_csharp:1.0.0
 
 #### 8 cpp
 ```bash
-docker run --rm --name grpc_server_csharp -p 9996:9996 feuyeux/grpc_cpp:1.0.0
+docker run --rm --name grpc_server_cpp -p 9996:9996 \
+feuyeux/grpc_server_cpp:1.0.0
 ```
 
 ```bash
-docker run --rm --name grpc_client_csharp -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_cpp:1.0.0 ./proto_client
+docker run --rm --name grpc_client_cpp -e GRPC_SERVER=$(ipconfig getifaddr en0) \
+feuyeux/grpc_client_cpp:1.0.0
 ```

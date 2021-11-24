@@ -1,68 +1,22 @@
 let grpc = require('@grpc/grpc-js')
-let sleep = require('sleep')
 let messages = require('./common/landing_pb')
 let services = require('./common/landing_grpc_pb')
+let conn = require('./common/connection')
 const fs = require('fs');
+const logger = conn.logger
 
-const {createLogger, format, transports} = require('winston')
-const {combine, timestamp, printf} = format
-const formatter = printf(({level, message, timestamp}) => {
-    return `${timestamp} [${level}] ${message}`
-})
-
-const logger = createLogger({
-    level: 'info',
-    format: combine(
-        timestamp(),
-        formatter
-    ),
-    transports: [new transports.Console()],
-})
-
-//https://myssl.com/create_test_cert.html
-const cert = "/var/hello_grpc/client_certs/cert.pem"
-const certKey = "/var/hello_grpc/client_certs/private.key"
-const certChain = "/var/hello_grpc/client_certs/full_chain.pem"
-const rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
-const serverName = "hello.grpc.io"
-
-function main() {
-    let address = grpcServer() + ":9996"
-    let c
-    let secure = process.env.GRPC_HELLO_SECURE
-    if (typeof secure !== 'undefined' && secure !== null) {
-        logger.info("Connect With TLS")
-        const credentials = grpc.credentials.createSsl(
-            fs.readFileSync(rootCert),
-            fs.readFileSync(certKey),
-            fs.readFileSync(certChain)
-        );
-        const options = {
-            'grpc.ssl_target_name_override': serverName,
-            'grpc.default_authority': serverName
-        }
-        c = new services.LandingServiceClient(address, credentials, options)
-    } else {
-        logger.info("Connect With InSecure")
-        c = new services.LandingServiceClient(address, grpc.credentials.createInsecure())
-    }
-
-    //
-    logger.info("Unary RPC")
+async function main() {
+    let c = conn.getClient();
     let request = new messages.TalkRequest()
     request.setData("0")
     request.setMeta("NODEJS")
     talk(c, request)
-    sleep.msleep(50)
-    //
-    logger.info("Server streaming RPC")
+
     request = new messages.TalkRequest()
     request.setData("0,1,2")
     request.setMeta("NODEJS")
     talkOneAnswerMore(c, request)
-    sleep.msleep(50)
-    //
-    logger.info("Client streaming RPC")
+
     let r1 = new messages.TalkRequest()
     r1.setData(randomId(5))
     r1.setMeta("NODEJS")
@@ -73,39 +27,38 @@ function main() {
     r3.setData(randomId(5))
     r3.setMeta("NODEJS")
     let rs = [r1, r2, r3]
-    talkMoreAnswerOne(c, rs)
-    sleep.msleep(150)
-    //
-    logger.info("Bidirectional streaming RPC")
-    talkBidirectional(c, rs)
-    sleep.msleep(150)
-}
 
-function grpcServer() {
-    let server = process.env.GRPC_SERVER
-    if (typeof server !== 'undefined' && server !== null) {
-        return server
-    } else {
-        return "localhost"
-    }
+    talkMoreAnswerOne(c, rs)
+
+    talkBidirectional(c, rs)
 }
 
 function talk(client, request) {
+    logger.info("Unary RPC")
     logger.info("Talk->" + request)
     const metadata = new grpc.Metadata()
     metadata.add("k1", "v1")
     metadata.add("k2", "v2")
     client.talk(request, metadata, function (err, response) {
-        printResponse("Talk<-", response)
+        if (err) {
+            logger.error(err)
+        } else {
+            printResponse("Talk<-", response)
+        }
     })
 }
 
 function talkMoreAnswerOne(client, requests) {
+    logger.info("Client streaming RPC")
     const metadata = new grpc.Metadata()
     metadata.add("k1", "v1")
     metadata.add("k2", "v2")
     let call = client.talkMoreAnswerOne(metadata, function (err, response) {
-        printResponse("TalkMoreAnswerOne<-", response)
+        if (err) {
+            logger.error(err)
+        } else {
+            printResponse("TalkMoreAnswerOne<-", response)
+        }
     })
     call.on('error', function (e) {
         logger.error(e)
@@ -119,6 +72,7 @@ function talkMoreAnswerOne(client, requests) {
 }
 
 function talkOneAnswerMore(client, request) {
+    logger.info("Server streaming RPC")
     logger.info("TalkOneAnswerMore->" + request)
     const metadata = new grpc.Metadata()
     metadata.add("k1", "v1")
@@ -137,6 +91,7 @@ function talkOneAnswerMore(client, request) {
 }
 
 function talkBidirectional(client, requests) {
+    logger.info("Bidirectional streaming RPC")
     const metadata = new grpc.Metadata()
     metadata.add("k1", "v1")
     metadata.add("k2", "v2")
@@ -149,7 +104,6 @@ function talkBidirectional(client, requests) {
     })
     requests.forEach(request => {
         logger.info("TalkBidirectional->" + request)
-        sleep.msleep(5)
         // call.write(request, metadata)
         call.write(request)
     })
@@ -166,9 +120,9 @@ function printResponse(methodName, response) {
         if (resultsList !== undefined) {
             resultsList.forEach(result => {
                 let kv = result.getKvMap()
-                logger.info(methodName + " " + response.getStatus() + " " + result.getId() +
-                    " [" + kv.get("meta") + " " + result.getType() + " " + kv.get("id") + "," +
-                    kv.get("idx") + ":" + kv.get("data") + "]")
+                logger.info("%s[%d] %d [%s %s %s,%s:%s]", methodName,
+                    response.getStatus(), result.getId(), kv.get("meta"), result.getType(), kv.get("id"),
+                    kv.get("idx"), kv.get("data"))
             })
         }
     }

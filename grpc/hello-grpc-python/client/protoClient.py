@@ -5,8 +5,8 @@ import random
 import time
 
 from conn import connection
-from landing_pb2 import landing_pb2
-from landing_pb2 import landing_pb2_grpc
+from landing import landing_pb2
+from landing import landing_pb2_grpc
 
 logger = logging.getLogger('grpc-client')
 logger.setLevel(logging.INFO)
@@ -53,14 +53,6 @@ def talk_bidirectional(stub):
         print_response("TalkBidirectional", response)
 
 
-def grpc_server():
-    server = os.getenv("GRPC_SERVER")
-    if server:
-        return server
-    else:
-        return "localhost"
-
-
 def random_id(end):
     return str(random.randint(0, end))
 
@@ -81,8 +73,7 @@ def print_response(method_name, response):
 
 
 def run():
-    address = grpc_server() + ":9996"
-    channel = connection.build_channel(address)
+    channel = connection.build_channel()
     stub = landing_pb2_grpc.LandingServiceStub(channel)
     logger.info("Unary RPC")
     talk(stub)

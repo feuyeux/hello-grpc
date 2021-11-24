@@ -26,8 +26,8 @@ pub async fn build_client() -> landing::landing_service_client::LandingServiceCl
         Err(_e) => String::default()
     };
 
-    let address = format!("http://{}:{}", grpc_server(), grpc_backend_port());
     if is_tls.eq("Y") {
+        let address = format!("http://{}:{}", grpc_backend_host(), grpc_backend_port());
         let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
         let key = include_str!("/var/hello_grpc/client_certs/private.key");
         let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
@@ -48,8 +48,9 @@ pub async fn build_client() -> landing::landing_service_client::LandingServiceCl
             }
         }
     }
-    let address = format!("http://{}:{}", grpc_server(), grpc_backend_port());
+    let address = format!("http://{}:{}", grpc_backend_host(), grpc_backend_port());
     info!("Connect With InSecure(:{})", grpc_backend_port());
+    info!("Connect With InSecure(:{})", address);
     return match LandingServiceClient::connect(address).await {
         Ok(client) => client,
         Err(error) => {
@@ -61,7 +62,21 @@ pub async fn build_client() -> landing::landing_service_client::LandingServiceCl
 fn grpc_server() -> String {
     match env::var("GRPC_SERVER") {
         Ok(val) => val,
-        Err(_e) => "localhost".to_string(),
+        Err(_e) => "[::1]".to_string(),
+    }
+}
+
+pub fn has_backend() -> bool {
+    match env::var("GRPC_HELLO_BACKEND") {
+        Ok(val) => val.is_empty(),
+        Err(_e) => false
+    }
+}
+
+pub fn grpc_backend_host() -> String {
+    match env::var("GRPC_HELLO_BACKEND") {
+        Ok(val) => val,
+        Err(_e) => grpc_server()
     }
 }
 

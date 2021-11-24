@@ -109,23 +109,24 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 			return err
 		}
 		for {
-			in, err := stream.Recv()
+			request, err := stream.Recv()
 			if err == io.EOF {
 				printHeaders(ctx)
+				talkResponse, err := nextStream.CloseAndRecv()
+				if err != nil {
+					log.Fatalf("%v.TalkMoreAnswerOne() got error %v, want %v", stream, err, nil)
+				}
+				stream.SendAndClose(talkResponse)
+				return nil
 			}
 			if err != nil {
 				return err
 			}
-			log.Infof("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", in.Data, in.Meta)
-			if err := nextStream.Send(in); err != nil {
-				log.Fatalf("%v.Send(%v) = %v", stream, in, err)
+			log.Infof("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.Data, request.Meta)
+			if err := nextStream.Send(request); err != nil {
+				log.Fatalf("%v.Send(%v) = %v", stream, request, err)
 			}
 		}
-		talkResponse, err := nextStream.CloseAndRecv()
-		if err != nil {
-			log.Fatalf("%v.TalkMoreAnswerOne() got error %v, want %v", stream, err, nil)
-		}
-		stream.SendAndClose(talkResponse)
 	}
 	return nil
 }

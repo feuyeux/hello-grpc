@@ -2,6 +2,7 @@ const grpc = require('@grpc/grpc-js')
 let uuid = require('uuid')
 let messages = require('./common/landing_pb')
 let services = require('./common/landing_grpc_pb')
+let conn = require('./common/connection')
 const fs = require('fs')
 
 let hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
@@ -15,25 +16,11 @@ let tracingKeys = [
     "x-b3-flags",
     "x-ot-span-context"
 ]
-//
-const {createLogger, format, transports} = require('winston')
-const {combine, timestamp, printf} = format
-const formatter = printf(({level, message, timestamp}) => {
-    return `${timestamp} ${level}: ${message}`
-})
-const logger = createLogger({
-    level: 'info',
-    format: combine(
-        timestamp(),
-        formatter
-    ),
-    transports: [new transports.Console()],
-})
-//
-let next
 
+const logger = conn.logger
+let next
 const cert = "/var/hello_grpc/server_certs/cert.pem"
-const certKey = "/var/hello_grpc/server_certs/private.key"
+const certKey = "/var/hello_grpc/server_certs/private.pkcs8.key"
 const certChain = "/var/hello_grpc/server_certs/full_chain.pem"
 const rootCert = "/var/hello_grpc/server_certs/myssl_root.cer"
 
@@ -43,28 +30,16 @@ const rootCert = "/var/hello_grpc/server_certs/myssl_root.cer"
  * sample server port
  */
 function main() {
-    let backend = process.env.GRPC_HELLO_BACKEND
-    let backPort = process.env.GRPC_HELLO_BACKEND_PORT
-    let currentPort = process.env.GRPC_SERVER_PORT
-    let secure = process.env.GRPC_HELLO_SECURE
-
-    if (typeof backend !== 'undefined' && backend !== null) {
-        let address
-        if (typeof backPort !== 'undefined' && backPort !== null) {
-            address = backend + ":" + backPort
-        } else {
-            address = backend + ":9996"
-        }
-        console.log("Next is " + address)
-        next = new services.LandingServiceClient(address, grpc.credentials.createInsecure())
+    if (hasBackend()) {
+        next = conn.getClient()
     }
 
-    let address
-    if (typeof currentPort !== 'undefined' && currentPort !== null) {
-        address = '0.0.0.0:' + currentPort
-    } else {
-        address = '0.0.0.0:9996'
+    let port = process.env.GRPC_SERVER_PORT
+    if (typeof port == 'undefined' || port == null) {
+        port = "9996"
     }
+    let address = "0.0.0.0:" + port
+
     let server = new grpc.Server()
     server.addService(services.LandingServiceService, {
         talk: talk,
@@ -72,28 +47,35 @@ function main() {
         talkMoreAnswerOne: talkMoreAnswerOne,
         talkBidirectional: talkBidirectional
     })
+
+    let secure = process.env.GRPC_HELLO_SECURE
     if (typeof secure !== 'undefined' && secure !== null) {
+        let checkClientCertificate = false;
+        let rootCertContent = fs.readFileSync(rootCert);
+        let certChainContent = fs.readFileSync(certChain);
+        let privateKeyContent = fs.readFileSync(certKey);
         let credentials = grpc.ServerCredentials.createSsl(
-            fs.readFileSync(rootCert),
-            [{cert_chain: fs.readFileSync(certChain), private_key: fs.readFileSync(certKey)}],
-            true)
+            rootCertContent,
+            [{cert_chain: certChainContent, private_key: privateKeyContent}],
+            checkClientCertificate
+        )
         server.bindAsync(address, credentials, () => {
             server.start()
-            logger.info("Start GRPC TLS Server:" + address)
+            logger.info("Start GRPC TLS Server[%s]", port)
         })
     } else {
         server.bindAsync(address, grpc.ServerCredentials.createInsecure(), () => {
             server.start()
-            logger.info("Start GRPC Server:" + address)
+            logger.info("Start GRPC Server[%s]", port)
         })
     }
 }
 
 function talk(call, callback) {
     let request = call.request
-    logger.info("TALK REQUEST: data=" + request.getData() + ",meta=" + request.getMeta())
+    logger.info("TALK REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
     let metadata = propagandaHeaders("Talk", call)
-    if (typeof next !== 'undefined' && next !== null) {
+    if (hasNext()) {
         next.talk(request, metadata, function (err, response) {
             callback(null, response)
         })
@@ -109,9 +91,9 @@ function talk(call, callback) {
 
 function talkOneAnswerMore(call) {
     let request = call.request
-    logger.info("TalkOneAnswerMore REQUEST: data=" + request.getData() + ",meta=" + request.getMeta())
+    logger.info("TalkOneAnswerMore REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
     let metadata = propagandaHeaders("TalkOneAnswerMore", call)
-    if (typeof next !== 'undefined' && next !== null) {
+    if (hasNext()) {
         let nextCall = next.talkOneAnswerMore(request, metadata)
         nextCall.on('data', function (response) {
             call.write(response)
@@ -127,7 +109,7 @@ function talkOneAnswerMore(call) {
             const talkResult = buildResult(data)
             let talkResults = [talkResult]
             response.setResultsList(talkResults)
-            logger.info("TalkOneAnswerMore:" + response)
+            logger.info("TalkOneAnswerMore:%s", response)
             call.write(response)
         }
         call.end()
@@ -136,21 +118,28 @@ function talkOneAnswerMore(call) {
 
 function talkMoreAnswerOne(call, callback) {
     let metadata = propagandaHeaders("TalkMoreAnswerOne", call)
-    if (typeof next !== 'undefined' && next !== null) {
-        let nextCall = next.talkMoreAnswerOne(function (err, response) {
-            callback(null, response)
+    if (hasNext()) {
+        let nextCall = next.talkMoreAnswerOne(metadata, function (err, response) {
+            if (err) {
+                logger.error(err)
+            } else {
+                callback(null, response)
+            }
         })
         call.on('data', function (request) {
-            logger.info("TalkMoreAnswerOne REQUEST: data=" + request.getData() + ",meta=" + request.getMeta())
-            nextCall.write(request, metadata)
+            logger.info("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
+            nextCall.write(request)
         })
         call.on('end', function () {
             nextCall.end()
         })
+        call.on('error', function (e) {
+            logger.error(e)
+        })
     } else {
         let talkResults = []
         call.on('data', function (request) {
-            logger.info("TalkMoreAnswerOne REQUEST: data=" + request.getData() + ",meta=" + request.getMeta())
+            logger.info("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
             talkResults.push(buildResult(request.getData()))
         })
         call.on('end', function () {
@@ -159,13 +148,16 @@ function talkMoreAnswerOne(call, callback) {
             response.setResultsList(talkResults)
             callback(null, response)
         })
+        call.on('error', function (e) {
+            logger.error(e)
+        })
     }
 }
 
 function talkBidirectional(call) {
     let metadata = propagandaHeaders("TalkBidirectional", call)
-    if (typeof next !== 'undefined' && next !== null) {
-        let nextCall = next.talkBidirectional()
+    if (hasNext()) {
+        let nextCall = next.talkBidirectional(metadata)
         nextCall.on('data', function (response) {
             call.write(response)
         })
@@ -174,27 +166,36 @@ function talkBidirectional(call) {
         })
 
         call.on('data', function (request) {
-            nextCall.write(request, metadata)
+            nextCall.write(request)
         })
         call.on('end', function () {
             nextCall.end()
         })
     } else {
         call.on('data', function (request) {
-            logger.info("TalkBidirectional REQUEST: data=" + request.getData() + ",meta=" + request.getMeta())
+            logger.info("TalkBidirectional REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
             let response = new messages.TalkResponse()
             response.setStatus(200)
             let data = request.getData()
             const talkResult = buildResult(data)
             let talkResults = [talkResult]
             response.setResultsList(talkResults)
-            logger.info("TalkBidirectional:" + response)
+            logger.info("TalkBidirectional:%s", response)
             call.write(response)
         })
         call.on('end', function () {
             call.end()
         })
     }
+}
+
+function hasBackend() {
+    let backend = process.env.GRPC_HELLO_BACKEND
+    return typeof backend !== 'undefined' && backend !== null
+}
+
+function hasNext() {
+    return typeof next !== 'undefined' && next !== null;
 }
 
 // {"status":200,"results":[{"id":1600402320493411000,"kv":{"data":"Hello","id":"0"}}]}
@@ -215,7 +216,7 @@ function propagandaHeaders(methodName, call) {
     let headers = call.metadata.getMap()
     const metadata = new grpc.Metadata()
     for (let key in headers) {
-        logger.info(methodName + " HEADER: " + key + ":" + headers[key])
+        logger.info("%s HEADER: %s:%s", methodName, key, headers[key])
         if (key in tracingKeys) {
             metadata.add(key, headers[key])
         }

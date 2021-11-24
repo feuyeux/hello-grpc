@@ -4,7 +4,6 @@ cd "$(
     pwd -P
 )/" || exit
 set -e
-
 # client
 if [[ "${1}" == "c" ]]; then
     docker run --rm --name grpc_client \

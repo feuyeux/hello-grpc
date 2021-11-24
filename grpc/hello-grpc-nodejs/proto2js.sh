@@ -3,7 +3,6 @@ cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
-rm -rf common && mkdir common
 JS_PROTO_PATH=$(pwd)/common
 
 echo "===="

@@ -19,23 +19,32 @@ namespace hello {
         return value;
     }
 
-    string Utils::getGrcServerHost() {
+    string Utils::getServerHost() {
         const char *server_address = getenv("GRPC_SERVER");
         string endpoint(server_address ? server_address : "localhost");
         return endpoint;
     }
 
-    string Utils::getGrcServerPort() {
-        const char *port = getenv("GRPC_SERVER_PORT");
-        string endpoint(port ? port : "9996");
-        return endpoint;
+    string Utils::getServerPort() {
+        const char *serverPort = getenv("GRPC_SERVER_PORT");
+        string port(serverPort ? serverPort : "9996");
+        return port;
+    }
+
+    string Utils::getBackendPort() {
+        const char *port = getenv("GRPC_HELLO_BACKEND_PORT");
+        string backendPort(port ? port : "");
+        if (backendPort.empty()) {
+            return getServerPort();
+        }
+        return backendPort;
     }
 
     string Utils::getBackend() {
         const char *server_address = getenv("GRPC_HELLO_BACKEND");
         string endpoint(server_address ? server_address : "");
         if (endpoint.empty()) {
-            return getGrcServerHost();
+            return getServerHost();
         }
         return endpoint;
     }

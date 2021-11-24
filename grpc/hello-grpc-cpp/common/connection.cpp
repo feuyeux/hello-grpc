@@ -19,18 +19,19 @@ namespace hello {
     shared_ptr<Channel> Connection::getChannel() {
         //https://myssl.com/create_test_cert.html
         const char cert[] = "/var/hello_grpc/client_certs/cert.pem";
-        const char certKey[] = "/var/hello_grpc/client_certs/private.pkcs8.key";
+        const char certKey[] = "/var/hello_grpc/client_certs/private.key";
         const char certChain[] = "/var/hello_grpc/client_certs/full_chain.pem";
         const char rootCert[] = "/var/hello_grpc/client_certs/myssl_root.cer";
         const string serverName = "hello.grpc.io";
-        const string &port = Utils::getGrcServerPort();
-        const string &secure = Utils::getSecure();
+
+        const string &port = Utils::getBackendPort();
         const basic_string<char, char_traits<char>, allocator<char>> &target = Utils::getBackend() + ":" + port;
+        const string &secure = Utils::getSecure();
         if (!secure.empty() && secure == "Y") {
             grpc::SslCredentialsOptions ssl_opts;
             ssl_opts.pem_root_certs = Connection::getFileContent(certChain);
-            ssl_opts.pem_private_key = Connection::getFileContent(certKey).c_str();
-            ssl_opts.pem_cert_chain = Connection::getFileContent(certChain).c_str();
+            ssl_opts.pem_private_key = Connection::getFileContent(certKey);
+            ssl_opts.pem_cert_chain = Connection::getFileContent(certChain);
             grpc::ChannelArguments channel_args;
             channel_args.SetString("grpc.default_authority", serverName);
             LOG(INFO) << "Connect with TLS(" << port << ")";

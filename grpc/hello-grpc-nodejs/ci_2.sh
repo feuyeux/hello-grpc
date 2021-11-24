@@ -12,7 +12,7 @@ if [[ "${1}" == "c" ]]; then
         -e GRPC_SERVER_PORT=8882 \
         -e GRPC_HELLO_BACKEND=$(ipconfig getifaddr en0) \
         -e GRPC_HELLO_BACKEND_PORT=8883 \
-        feuyeux/grpc_server_rust:1.0.0
+        feuyeux/grpc_server_node:1.0.0
 else
     export GRPC_SERVER_PORT=8882
     export GRPC_HELLO_BACKEND=$(ipconfig getifaddr en0)

@@ -16,23 +16,23 @@ path = "src/landing/client.rs"
 
 [dependencies]
 #grpc
-tonic = { version = "0.4", features = ["tls"] }
+tonic = { version = "0.4.3", features = ["tls"] }
 #gRPC Codec
 prost = "0.7"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "fs", "macros", "net"] }
 tokio-stream = { version = "0.1", features = ["net"] }
-async-stream = "0.3"
-futures = { version = "0.3", default-features = false, features = ["alloc"] }
+async-stream = "0.3.2"
+futures = { version = "0.3.18", default-features = false, features = ["alloc"] }
 #json
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rand = "0.8.3"
 chrono = "0.4.19"
-uuid = { version = "0.8", features = ["serde", "v4"] }
+uuid = { version = "0.8.2", features = ["serde", "v4"] }
 #log
 log = "0.4.14"
 #log impl
 log4rs = "1.0.0"
 
 [build-dependencies]
-tonic-build = "0.4"
+tonic-build = "0.4.2"

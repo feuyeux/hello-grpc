@@ -103,26 +103,8 @@ public class ProtoClient {
 
   public void talkMoreAnswerOne(List<TalkRequest> requests) throws InterruptedException {
     final CountDownLatch finishLatch = new CountDownLatch(1);
-    StreamObserver<TalkResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TalkResponse talkResponse) {
-        printResponse(talkResponse);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        log.error("", t);
-        finishLatch.countDown();
-      }
-
-      @Override
-      public void onCompleted() {
-        finishLatch.countDown();
-      }
-    };
-
     final StreamObserver<TalkRequest> requestObserver = asyncStub.talkMoreAnswerOne(
-        responseObserver);
+        getResponseObserver(finishLatch));
     try {
       requests.forEach(request -> {
         if (finishLatch.getCount() > 0) {
@@ -149,25 +131,8 @@ public class ProtoClient {
 
   public void talkBidirectional(List<TalkRequest> requests) throws InterruptedException {
     final CountDownLatch finishLatch = new CountDownLatch(1);
-    StreamObserver<TalkResponse> responseObserver = new StreamObserver<>() {
-      @Override
-      public void onNext(TalkResponse talkResponse) {
-        printResponse(talkResponse);
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        log.error("", t);
-        finishLatch.countDown();
-      }
-
-      @Override
-      public void onCompleted() {
-        finishLatch.countDown();
-      }
-    };
     final StreamObserver<TalkRequest> requestObserver = asyncStub.talkBidirectional(
-        responseObserver);
+        getResponseObserver(finishLatch));
     try {
       requests.forEach(request -> {
         if (finishLatch.getCount() > 0) {
@@ -190,5 +155,25 @@ public class ProtoClient {
     if (!finishLatch.await(1, TimeUnit.MINUTES)) {
       log.warn("can not finish within 1 minutes");
     }
+  }
+
+  private StreamObserver<TalkResponse> getResponseObserver(CountDownLatch finishLatch) {
+    return new StreamObserver<>() {
+      @Override
+      public void onNext(TalkResponse talkResponse) {
+        printResponse(talkResponse);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        log.error("", t);
+        finishLatch.countDown();
+      }
+
+      @Override
+      public void onCompleted() {
+        finishLatch.countDown();
+      }
+    };
   }
 }

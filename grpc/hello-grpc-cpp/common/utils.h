@@ -9,11 +9,13 @@ namespace hello {
 
         static long now();
 
-        static string getGrcServerHost();
+        static string getServerHost();
 
-        static string getGrcServerPort();
+        static string getServerPort();
 
         static string getBackend();
+
+        static string getBackendPort();
 
         static string getSecure();
     };

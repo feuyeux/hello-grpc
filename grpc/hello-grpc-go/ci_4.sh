@@ -12,7 +12,7 @@ if [[ "${1}" == "c" ]]; then
         -e GRPC_SERVER_PORT=8881 \
         -e GRPC_HELLO_SECURE="Y" \
         feuyeux/grpc_client_go:1.0.0
-    sh docker/tools/clean_world.sh
+    sh ../docker/tools/clean_world.sh
 else
     export GRPC_SERVER=$(ipconfig getifaddr en0)
     export GRPC_SERVER_PORT=8881

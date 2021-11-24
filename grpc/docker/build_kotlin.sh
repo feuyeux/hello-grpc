@@ -12,7 +12,7 @@ echo "JAVA_HOME=${JAVA_HOME}"
 echo "~~~ build grpc server kotlin ~~~"
 cd ../hello-grpc-kotlin
 cd server
-gradle clean installShadowDist
+gradle clean installShadowDist >/dev/null 2>&1
 cp build/install/server-shadow/bin/server ../../docker/server_start.sh
 cp build/install/server-shadow/lib/proto-server-all.jar ../../docker/proto-server-all.jar
 
@@ -25,7 +25,7 @@ echo
 echo "~~~ build grpc client kotlin ~~~"
 cd ../hello-grpc-kotlin
 cd client
-gradle clean installShadowDist
+gradle clean installShadowDist >/dev/null 2>&1
 cp build/install/client-shadow/bin/client ../../docker/client_start.sh
 cp build/install/client-shadow/lib/proto-client-all.jar ../../docker/proto-client-all.jar
 

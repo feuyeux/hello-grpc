@@ -30,7 +30,23 @@ func main() {
 		{Data: randomId(5), Meta: "GOLANG"},
 		{Data: randomId(5), Meta: "GOLANG"},
 		{Data: randomId(5), Meta: "GOLANG"}}
-	talkMoreAnswerOne(c, requests)
+
+	respChan := make(chan *pb.TalkResponse)
+	log.Infof("Client streaming RPC")
+	go func() {
+		r, err := talkMoreAnswerOne(c, requests)
+		if err != nil {
+			log.Fatalf("TalkMoreAnswerOne() got error %v", err)
+			respChan <- nil
+		} else {
+			respChan <- r
+			close(respChan)
+		}
+	}()
+	for r := range respChan {
+		printResponse(r)
+	}
+
 	log.Infof("Bidirectional streaming RPC")
 	talkBidirectional(c, requests)
 }

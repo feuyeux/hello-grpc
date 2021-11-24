@@ -12,11 +12,13 @@ WORKDIR /source
 COPY hello-grpc-rust .
 COPY tls/server_certs /var/hello_grpc/server_certs
 COPY tls/client_certs /var/hello_grpc/client_certs
-RUN cargo build --release --bin proto-server
-RUN cargo build --release --bin proto-client
+# RUN mkdir $HOME/.cargo && mv cargo.config $HOME/.cargo/config
+RUN RUSTFLAGS="-C target-cpu=native" cargo build --release --bin proto-server
+RUN RUSTFLAGS="-C target-cpu=native" cargo build --release --bin proto-client
 
 FROM alpine AS server
 WORKDIR /app
+ENV RUST_BACKTRACE 1
 COPY --from=feuyeux/grpc_rust:1.0.0 /source/target/release/proto-server .
 COPY tls/server_certs /var/hello_grpc/server_certs
 COPY tls/client_certs /var/hello_grpc/client_certs
@@ -25,6 +27,7 @@ ENTRYPOINT ["./proto-server"]
 
 FROM alpine AS client
 WORKDIR /app
+ENV RUST_BACKTRACE 1
 COPY --from=feuyeux/grpc_rust:1.0.0 /source/target/release/proto-client .
 COPY tls/client_certs /var/hello_grpc/client_certs
 COPY hello-grpc-rust/config/log4rs.yml config/log4rs.yml

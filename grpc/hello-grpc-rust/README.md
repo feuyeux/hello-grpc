@@ -70,4 +70,4 @@ CROSS_COMPILE=x86_64-linux-musl-gcc cargo build --release --bin proto-server --t
 ```
 
 ### Reference
-- https://github.com/hyperium/tonic
+- <https://github.com/hyperium/tonic>

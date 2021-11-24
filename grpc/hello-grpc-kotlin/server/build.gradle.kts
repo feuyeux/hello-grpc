@@ -4,7 +4,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     application
     kotlin("jvm")
-    id("com.github.johnrengelman.shadow") version "7.0.0"
+    val shadowVersion = "7.0.0"
+    id("com.github.johnrengelman.shadow") version shadowVersion
 }
 
 application {
@@ -32,10 +33,6 @@ val protoServerStartScripts = tasks.register<CreateStartScripts>("protoServerSta
 
 tasks.named("startScripts") {
     dependsOn(protoServerStartScripts)
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "16"
 }
 
 tasks {

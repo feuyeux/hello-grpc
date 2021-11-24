@@ -7,31 +7,38 @@ set -e
 
 sh docker/tools/clean_world.sh
 
-# 1: java|java|java|java|tls
-# 2: kotlin|java|go|rust|tcp
-# 3: kotlin|java|go|rust|tls
-# 4: ${2}|${3}|${4}|${5}|${6}
+# 1: kotlin|java|go|rust|tcp
+# 2: kotlin|java|go|rust|tls
+# 3: nodejs|csharp|python|c++|tcp
+# 4: nodejs|csharp|python|c++|tls
+# 0: ${2}|${3}|${4}|${5}|${6}
 # default: java|java|java|java|tcp
 
 if [[ "${1}" == "1" ]]; then
-    is_tls="Y"
-    client_lang="java"
-    server1_lang="java"
-    server2_lang="java"
+    client_lang="kotlin"
+    server1_lang="rust"
+    server2_lang="go"
     server3_lang="java"
-elif [[ "${1}" == "2" ]]; then
     is_tls="N"
+elif [[ "${1}" == "2" ]]; then
     client_lang="kotlin"
     server1_lang="java"
     server2_lang="go"
     server3_lang="rust"
-elif [[ "${1}" == "3" ]]; then
     is_tls="Y"
-    client_lang="kotlin"
-    server1_lang="java"
-    server2_lang="go"
-    server3_lang="rust"
+elif [[ "${1}" == "3" ]]; then
+    client_lang="node"
+    server1_lang="python"
+    server2_lang="csharp"
+    server3_lang="cpp"
+    is_tls="N"
 elif [[ "${1}" == "4" ]]; then
+    client_lang="python"
+    server1_lang="node"
+    server2_lang="csharp"
+    server3_lang="cpp"
+    is_tls="Y"
+elif [[ "${1}" == "0" ]]; then
     is_tls=${6}
     client_lang=${2}
     server1_lang=${3}

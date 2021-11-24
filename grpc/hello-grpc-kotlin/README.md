@@ -1,7 +1,5 @@
 ## grpc kotlin demo
 
-https://grpc.io/docs/languages/kotlin/basics/
-
 ```bash
 export JAVA_HOME=${JAVA_17_HOME}
 gradle clean installDist --warning-mode all
@@ -13,3 +11,7 @@ gradle :client:ProtoClient
 rm -rf ~/.gradle
 vi ~/.m2/settings.xml
 ```
+
+### References
+- https://grpc.io/docs/languages/kotlin/basics/
+- https://github.com/grpc/grpc-kotlin

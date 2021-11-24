@@ -26,13 +26,11 @@ namespace Common
             if (tls is "Y")
             {
                 Log.Info($"Connect with TLS(:{port})");
-                //TODO
                 var options = new List<ChannelOption>
                 {
-                    new ChannelOption(ChannelOptions.SslTargetNameOverride, ServerName)
+                    new ChannelOption(ChannelOptions.DefaultAuthority, ServerName)
                 };
-                // return new Channel(connectTo,int.Parse(port), BuildSslCredentials(), options);
-                return new Channel(connectTo,int.Parse(port), new SslCredentials(), options);
+                return new Channel(connectTo,int.Parse(port), BuildSslCredentials(), options);
             }
             Log.Info($"Connect with InSecure(:{port})");
             return new Channel(endpoint, ChannelCredentials.Insecure);
@@ -40,10 +38,13 @@ namespace Common
 
         private static ChannelCredentials BuildSslCredentials()
         {
-            var rootCertFile = File.ReadAllText(RootCert);
+            // ssl_opts.pem_root_certs = Connection::getFileContent(certChain);
+            // ssl_opts.pem_private_key = Connection::getFileContent(certKey).c_str();
+            // ssl_opts.pem_cert_chain = Connection::getFileContent(certChain).c_str();
+            
             var certChainFile = File.ReadAllText(CertChain);
             var certKeyFile = File.ReadAllText(CertKey);
-            var sslCredentials = new SslCredentials(rootCertFile, new KeyCertificatePair(certChainFile,certKeyFile));
+            var sslCredentials = new SslCredentials(certChainFile, new KeyCertificatePair(certChainFile,certKeyFile));
             Log.Info($"{sslCredentials.GetType().Name}");
             return sslCredentials;
         }

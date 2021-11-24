@@ -54,13 +54,7 @@ const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";
 async fn main() -> Result<(), Box<dyn Error>> {
     log4rs::init_file(CONFIG_PATH, Default::default()).unwrap();
 
-    let address = format!("0.0.0.0:{}", get_server_port()).parse().unwrap();
-
-    let backend = match env::var("GRPC_HELLO_BACKEND") {
-        Ok(val) => val,
-        Err(_e) => String::default()
-    };
-
+    let address = format!("[::0]:{}", get_server_port()).parse().unwrap();
     let is_tls = match env::var("GRPC_HELLO_SECURE") {
         Ok(val) => val,
         Err(_e) => String::default()
@@ -77,11 +71,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Server::builder()
     };
 
-    let service = if !backend.is_empty() {
+    let service = if has_backend() {
         let client = build_client().await;
-        LandingServiceServer::new(ProtoServer { backend, client: Some(client) })
+        LandingServiceServer::new(ProtoServer { backend: grpc_backend_host(), client: Some(client) })
     } else {
-        LandingServiceServer::new(ProtoServer { backend, client: None })
+        LandingServiceServer::new(ProtoServer { backend: "".parse().unwrap(), client: None })
     };
 
     server.add_service(service).serve(address).await?;

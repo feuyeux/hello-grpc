@@ -10,7 +10,7 @@ if [[ "${1}" == "c" ]]; then
     docker run --rm --name server3 \
         -p 8883:8883 \
         -e GRPC_SERVER_PORT=8883 \
-        feuyeux/grpc_server_rust:1.0.0
+        feuyeux/grpc_server_node:1.0.0
 else
     export GRPC_SERVER_PORT=8883
     # export GRPC_HELLO_SECURE="Y"

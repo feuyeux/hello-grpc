@@ -3,7 +3,7 @@ cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
-
+set -e
 echo "~~~ build grpc server node ~~~"
 mkdir -p node
 cp ../hello-grpc-nodejs/proto_server.js node
@@ -17,5 +17,5 @@ echo
 echo "~~~ build grpc client node ~~~"
 cp ../hello-grpc-nodejs/*_client.js node
 docker build -f grpc-client-node.dockerfile -t feuyeux/grpc_client_node:1.0.0 .
-rm -rf node 
+rm -rf node
 echo

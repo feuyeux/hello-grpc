@@ -4,8 +4,8 @@ cd "$(
   pwd -P
 )/" || exit
 
-rm -rf landing_pb2 && mkdir landing_pb2
-py_proto_path=$(pwd)/landing_pb2
+rm -rf landing && mkdir landing
+py_proto_path=$(pwd)/landing
 
 ## https://developers.google.com/protocol-buffers/docs/reference/python-generated
 ## *_pb2.py which contains our generated request and response classes
@@ -15,4 +15,4 @@ python -m grpc.tools.protoc \
   --python_out=${py_proto_path} \
   --grpc_python_out=${py_proto_path} \
   $(pwd)/proto/landing.proto
-touch $(pwd)/landing_pb2/__init__.py
+#touch $(pwd)/landing/__init__.py

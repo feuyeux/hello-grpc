@@ -4,5 +4,6 @@ cd "$(
   pwd -P
 )/" || exit
 export PYTHONPATH=$(pwd)
+export PYTHONPATH=$PYTHONPATH:$(pwd)/landing
 echo "PYTHONPATH=${PYTHONPATH}"
 python server/protoServer.py

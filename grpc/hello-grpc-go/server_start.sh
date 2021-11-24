@@ -5,4 +5,4 @@ cd "$(
 )/" || exit
 export GO111MODULE="on"
 export GOPATH=$GOPATH:${PWD}
-go run server/server.go
+go run server/proto_server.go

@@ -1,9 +1,0 @@
-.DS_Store
-.idea
-target
-*.iml
-.classpath
-.factorypath
-.project
-.settings/
-hello-grpc*.log

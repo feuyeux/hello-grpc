@@ -28,27 +28,18 @@ using hello::Utils;
 
 class LandingClient {
 public:
-    LandingClient(std::shared_ptr<Channel> channel) : client(LandingService::NewStub(channel)) {}
+    explicit LandingClient(const std::shared_ptr<Channel>& channel) : client(LandingService::NewStub(channel)) {}
 
     void Talk() {
-        // Context for the client. It could be used to convey extra information to
-        // the server and/or tweak certain RPC behaviors.
         ClientContext context;
-
-        // Setting custom metadata to be sent to the server
-        context.AddMetadata("custom-header", "Custom Value");
-
-        // Setting custom binary metadata
-        char bytes[8] = {'\0', '\1', '\2', '\3', '\4', '\5', '\6', '\7'};
-        context.AddMetadata("custom-bin", std::string(bytes, 8));
-
+        buildHeaders(context);
         TalkResponse talkResponse;
         TalkRequest talkRequest;
         talkRequest.set_data("1");
         talkRequest.set_meta("C++");
         Status status = client->Talk(&context, talkRequest, &talkResponse);
         if (status.ok()) {
-            printResponse(talkResponse);
+            printResponse(context, talkResponse);
         } else {
             LOG(INFO) << "Error:" << status.error_code() << ": " << status.error_message();
         }
@@ -56,23 +47,23 @@ public:
 
     void TalkOneAnswerMore() {
         ClientContext context;
+        buildHeaders(context);
         TalkResponse talkResponse;
         TalkRequest talkRequest;
         talkRequest.set_data("1,2,3");
         talkRequest.set_meta("C++");
         const std::unique_ptr<::grpc::ClientReader<TalkResponse>>
-                &response(
-                client->TalkOneAnswerMore(&context, talkRequest));
+                &response(client->TalkOneAnswerMore(&context, talkRequest));
         while (response->Read(&talkResponse)) {
-            printResponse(talkResponse);
+            printResponse(context,talkResponse);
         }
     }
 
     void TalkMoreAnswerOne() {
         ClientContext context;
+        buildHeaders(context);
         TalkResponse talkResponse;
-        std::unique_ptr<ClientWriter<TalkRequest>> writer(
-                client->TalkMoreAnswerOne(&context, &talkResponse));
+        std::unique_ptr<ClientWriter<TalkRequest>> writer(client->TalkMoreAnswerOne(&context, &talkResponse));
         TalkRequest talkRequest;
         for (int i = 0; i < 3; ++i) {
             string data = grpc::to_string(hello::Utils::random(5));
@@ -88,7 +79,7 @@ public:
         writer->WritesDone();
         Status status = writer->Finish();
         if (status.ok()) {
-            printResponse(talkResponse);
+            printResponse(context,talkResponse);
         } else {
             LOG(INFO) << "Error:" << status.error_code() << ": " << status.error_message();
         }
@@ -96,6 +87,7 @@ public:
 
     void TalkBidirectional() {
         ClientContext context;
+        buildHeaders(context);
         TalkResponse talkResponse;
         std::shared_ptr<ClientReaderWriter<TalkRequest, TalkResponse>> stream(client->TalkBidirectional(&context));
         std::thread writer([stream]() {
@@ -113,7 +105,7 @@ public:
             stream->WritesDone();
         });
         while (stream->Read(&talkResponse)) {
-            printResponse(talkResponse);
+            printResponse(context,talkResponse);
         }
         writer.join();
         Status status = stream->Finish();
@@ -122,9 +114,13 @@ public:
         }
     }
 
-    void printResponse(TalkResponse response) {
+    static void printResponse(ClientContext &context, const TalkResponse& response) {
+        const multimap<grpc::string_ref, grpc::string_ref> &headers = context.GetServerInitialMetadata();
+        for (const auto & header : headers) {
+            LOG(INFO) << "<-H " << header.first << ":" << header.second;
+        }
         const RepeatedPtrField<TalkResult> &talkResults = response.results();
-        for (TalkResult result: talkResults) {
+        for (const TalkResult& result: talkResults) {
             const Map<string, string> &kv = result.kv();
             string id(kv.at("id"));
             string idx(kv.at("idx"));
@@ -139,16 +135,25 @@ public:
                       << " " << data
                       << "]";
         }
+        const multimap<grpc::string_ref, grpc::string_ref> &tails = context.GetServerTrailingMetadata();
+        for (const auto & tail : tails) {
+            LOG(INFO) << "<-L " << tail.first << ":" << tail.second;
+        }
+    }
+
+    static void buildHeaders(ClientContext &context) {
+        //examples/cpp/metadata
+        context.AddMetadata("k1", "v1");
+        context.AddMetadata("k2", "v2");
     }
 
 private:
     std::unique_ptr<LandingService::Stub> client;
 };
 
-int main(int argc, char **argv) {
+int main(__attribute__((unused)) int argc, char **argv) {
     Utils::initLog(argv);
-    shared_ptr<Channel> channel = Connection::getChannel();
-    LandingClient landingClient(channel);
+    LandingClient landingClient(Connection::getChannel());
     LOG(INFO) << "Unary RPC";
     landingClient.Talk();
     LOG(INFO) << "Server streaming RPC";
@@ -157,7 +162,6 @@ int main(int argc, char **argv) {
     landingClient.TalkMoreAnswerOne();
     LOG(INFO) << "Bidirectional streaming RPC";
     landingClient.TalkBidirectional();
-    LOG(WARNING) << "Hello gRPC C++ Client is stopping";
     google::ShutdownGoogleLogging();
     return 0;
 }

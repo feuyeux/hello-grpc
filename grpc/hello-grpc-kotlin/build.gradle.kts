@@ -1,12 +1,15 @@
 plugins {
     idea
     // https://github.com/google/protobuf-gradle-plugin
-    id("com.google.protobuf") version "0.8.17" apply false
+    val protobufPluginVersion = "0.8.18"
     // https://kotlinlang.org/docs/gradle.html
-    kotlin("jvm") version "1.5.31"
+    val kotlinVersion = "1.6.0"
+
+    id("com.google.protobuf") version protobufPluginVersion apply false
+    kotlin("jvm") version kotlinVersion
 }
 
-ext["grpcVersion"] = "1.42.0"
+ext["grpcVersion"] = "1.42.1"
 ext["grpcKotlinVersion"] = "1.1.0" // CURRENT_GRPC_KOTLIN_VERSION
 ext["protobufVersion"] = "3.17.3"
 ext["log4jVersion"] = "2.14.1"
