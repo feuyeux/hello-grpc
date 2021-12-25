@@ -9,7 +9,7 @@
     <jdk.version>17</jdk.version>
     <lombok.version>1.18.20</lombok.version>
     <grpc.version>1.41.0</grpc.version>
-    <protoc.version>3.18.0</protoc.version>
+    <protoc.version>3.19.1</protoc.version>
     <netty.version>2.0.43.Final</netty.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
