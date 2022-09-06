@@ -6,6 +6,6 @@ SCRIPT_PATH="$(
 )"
 export JAVA_HOME=${JAVA_17_HOME}
 cd "$SCRIPT_PATH" || exit
-mvn clean install -DskipTests -f client_pom
+mvn clean install -DskipTests -f client_pom.xml
 export GRPC_HELLO_SECURE=Y
 java -jar target/hello-grpc-java-client.jar

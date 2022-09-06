@@ -7,12 +7,12 @@ import io.grpc.Channel;
 import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.ServerTransportFilter;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.protobuf.services.ProtoReflectionService;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
@@ -62,22 +62,20 @@ public class ProtoServer {
         new HeaderServerInterceptor());
     String secure = System.getenv(GRPC_HELLO_SECURE);
     int port = Connection.getGrcServerPort();
+    NettyServerBuilder serverBuilder = NettyServerBuilder.forPort(port)
+        .addService(intercept)
+        .addService(ProtoReflectionService.newInstance())
+        .addTransportFilter(new ServerTransportFilter() {
+          public void transportTerminated(Attributes transportAttrs) {
+            log.warn("GRPC Client {} terminated", transportAttrs.toString());
+          }
+        });
     if (secure == null || !secure.equals("Y")) {
       log.info("Start GRPC Server[:{}]", port);
-      return ServerBuilder.forPort(port)
-          .addService(intercept)
-          .addTransportFilter(new ServerTransportFilter() {
-            public void transportTerminated(Attributes transportAttrs) {
-              log.warn("GRPC Client {} terminated", transportAttrs.toString());
-            }
-          })
-          .build();
+      return serverBuilder.build();
     } else {
       log.info("Start GRPC TLS Server[:{}]", port);
-      return NettyServerBuilder.forPort(port)
-          .addService(intercept)
-          .sslContext(getSslContextBuilder().build())
-          .build();
+      return serverBuilder.sslContext(getSslContextBuilder().build()).build();
     }
   }
 

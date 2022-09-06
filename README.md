@@ -3,6 +3,7 @@
 ## :coffee: What is...
 
 ### 1 Diagram
+
 ![](img/grpc_diagram.png)
 
 client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server
@@ -10,44 +11,50 @@ client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server
 client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 
 ### 2 Proto3
+
 - [proto](grpc/proto)
 
 ### 3 Features
+
 - :apple: done
 - :green_apple: unimplemented
 - 🥑 known issues
 
-| | [java](grpc/hello-grpc-java) | [go](grpc/hello-grpc-go) | [nodejs](grpc/hello-grpc-) | [python](grpc/hello-grpc-python) | [rust](grpc/hello-grpc-rust) | [c++](grpc/hello-grpc-cpp) | [kotlin](grpc/hello-grpc-kotlin) | [c#](grpc/hello-grpc-csharp) |
-| ------ | -------- | ---- | ------ | ------ | ---- | ---- | ------ | ------ |
-| build tools | maven | mod | npm | pip | cargo | cmake | gradle | nuget |
-| LOG | [log4j2](https://logging.apache.org/log4j) | [logrus](github.com/sirupsen/logrus) | [winston](https://www.npmjs.com/package/winston) | logging | [log4rs](https://docs.rs/log4rs) | [glog](https://github.com/google/glog) | [log4j2](https://logging.apache.org/log4j) | [log4net](https://logging.apache.org/log) |
-| 4 MODELS | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Array | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Sleep | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Random | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Timestamp | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| UUID | :apple: | :apple: | :apple: | :apple: | :apple: | :green_apple: | :apple: | :apple: |
-| Env | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Header | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| TLS | :apple: | :apple: | 🥑 | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Proxy | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| Docker | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: | :apple: |
-| IDE | IDEA | GoLand | WebStorm | PyCharm | CLion | CLion | IDEA | Rider |
+|             | [java](grpc/hello-grpc-java)               | [go](grpc/hello-grpc-go)             | [nodejs](grpc/hello-grpc-)                       | [python](grpc/hello-grpc-python) | [rust](grpc/hello-grpc-rust)     | [c++](grpc/hello-grpc-cpp)             | [kotlin](grpc/hello-grpc-kotlin)           | [c#](grpc/hello-grpc-csharp)              |
+| ----------- | ------------------------------------------ | ------------------------------------ | ------------------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------ | ----------------------------------------- |
+| build tools | maven                                      | mod                                  | npm                                              | pip                              | cargo                            | cmake                                  | gradle                                     | nuget                                     |
+| LOG         | [log4j2](https://logging.apache.org/log4j) | [logrus](github.com/sirupsen/logrus) | [winston](https://www.npmjs.com/package/winston) | logging                          | [log4rs](https://docs.rs/log4rs) | [glog](https://github.com/google/glog) | [log4j2](https://logging.apache.org/log4j) | [log4net](https://logging.apache.org/log) |
+| 4 MODELS    | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Array       | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Sleep       | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Random      | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Timestamp   | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| UUID        | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :green_apple:                          | :apple:                                    | :apple:                                   |
+| Env         | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Header      | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| TLS         | :apple:                                    | :apple:                              | 🥑                                               | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Proxy       | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| Docker      | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| IDE         | IDEA                                       | GoLand                               | WebStorm                                         | PyCharm                          | CLion                            | CLion                                  | IDEA                                       | Rider                                     |
 
 ### 4 Propagate
+
 - [propagate](grpc/propagate)
 
 ### 5 ServiceMesh
+
 - [kube](kube)
 - [mesh](mesh)
 - [tracing](tracing)
 
 ### 6 Http2gRPC
+
 - [transcoder](transcoder)
 
-
 ## :coffee: How to use
+
 ### 1 submodules
+
 Pull with [submodules](https://git-scm.com/book/zh/v2/Git-工具-子模块)
 
 ```bash
@@ -55,23 +62,23 @@ git clone --recurse-submodules https://gitee.com/feuyeux/hello-grpc.git
 ```
 
 Init submodules
+
 ```bash
 git submodule update --init --recursive
 ```
 
 ### 2 envs
+
 - `GRPC_SERVER`: grpc server host on client side.
 - `GRPC_SERVER_PORT`: grpc server port on client side.
 - `GRPC_HELLO_BACKEND`: next grpc server host on server side.
 - `GRPC_HELLO_BACKEND_PORT`:next grpc server port on server side.
 - `GRPC_HELLO_SECURE`: set it as `Y` when you want to use `TLS` on both sides.
 
-
 ### 3 containers
 
 Run with containers
 `client(kotlin)` -`[tls]:8881`-> `server1(java)` -`[tls]:8882`-> `server2(golang)` -`[tls]:8883`-> `server3(rust)`
-
 
 ```bash
 # server3(golang):8883
@@ -103,6 +110,9 @@ docker run --rm --name grpc_client_kotlin \
     feuyeux/grpc_client_kotlin:1.0.0
 ```
 
-
-### 3 logs
-
+### 4 logs
+Debug grpc
+```bash
+export GRPC_VERBOSITY=DEBUG
+export GRPC_TRACE=all
+```

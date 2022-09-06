@@ -7,7 +7,7 @@ RUN apk add --update \
 RUN npm config set registry https://registry.npm.taobao.org && npm install -g node-pre-gyp grpc-tools --unsafe-perm
 COPY tls/server_certs /var/hello_grpc/server_certs
 COPY tls/client_certs /var/hello_grpc/client_certs
-COPY node/package.json .
+COPY hello-grpc-nodejs/package.json .
 RUN npm install --unsafe-perm
-COPY node .
+COPY hello-grpc-nodejs .
 ENTRYPOINT ["node","proto_server.js"]

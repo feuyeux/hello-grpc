@@ -13,7 +13,7 @@ echo
 
 echo "~~~ build grpc server java ~~~"
 cd ../hello-grpc-java
-mvn clean install -DskipTests -f server_pom
+mvn clean install -DskipTests -f server_pom.xml
 cp target/hello-grpc-java-server.jar ../docker/
 
 cd ../docker
@@ -23,7 +23,7 @@ echo
 
 echo "~~~ build grpc client java ~~~"
 cd ../hello-grpc-java
-mvn clean install -DskipTests -f client_pom
+mvn clean install -DskipTests -f client_pom.xml
 cp target/hello-grpc-java-client.jar ../docker/
 
 cd ../docker

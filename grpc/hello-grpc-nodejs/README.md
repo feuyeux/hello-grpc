@@ -28,6 +28,14 @@ node proto_server.js
 node proto_client.js
 ```
 
+https://github.com/grpc/grpc-node/issues/1974
+
+```bash
+export GRPC_HELLO_SECURE=Y
+export GRPC_TRACE=subchannel
+export GRPC_VERBOSITY=DEBUG
+```
+
 ### Diagnose
 ```bash
 # find
@@ -35,6 +43,8 @@ lsof -i tcp:9996
 # kill
 kill $(lsof -ti:9996)
 ```
+
+
 ### Reference
 - https://github.com/grpc/grpc-node/tree/master/packages/grpc-js https://www.npmjs.com/package/@grpc/grpc-js
 - https://github.com/grpc/grpc-node/tree/master/packages/proto-loader https://www.npmjs.com/package/@grpc/proto-loader

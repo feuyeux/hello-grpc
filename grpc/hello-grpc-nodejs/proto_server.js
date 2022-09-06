@@ -3,6 +3,8 @@ let uuid = require('uuid')
 let messages = require('./common/landing_pb')
 let services = require('./common/landing_grpc_pb')
 let conn = require('./common/connection')
+//let ref = require('grpc-node-server-reflection')
+
 const fs = require('fs')
 
 let hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
@@ -20,7 +22,7 @@ let tracingKeys = [
 const logger = conn.logger
 let next
 const cert = "/var/hello_grpc/server_certs/cert.pem"
-const certKey = "/var/hello_grpc/server_certs/private.pkcs8.key"
+const certKey = "/var/hello_grpc/server_certs/private.key"
 const certChain = "/var/hello_grpc/server_certs/full_chain.pem"
 const rootCert = "/var/hello_grpc/server_certs/myssl_root.cer"
 
@@ -40,6 +42,7 @@ function main() {
     }
     let address = "0.0.0.0:" + port
 
+    //const server =ref.default(new grpc.Server())
     let server = new grpc.Server()
     server.addService(services.LandingServiceService, {
         talk: talk,
@@ -49,7 +52,7 @@ function main() {
     })
 
     let secure = process.env.GRPC_HELLO_SECURE
-    if (typeof secure !== 'undefined' && secure !== null) {
+    if (typeof secure !== 'undefined' && secure !== null && secure === "Y") {
         let checkClientCertificate = false;
         let rootCertContent = fs.readFileSync(rootCert);
         let certChainContent = fs.readFileSync(certChain);

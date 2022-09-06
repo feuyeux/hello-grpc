@@ -1,13 +1,13 @@
 //https://myssl.com/create_test_cert.html
 const grpc = require("@grpc/grpc-js");
 const fs = require("fs");
-const services = require("./landing_grpc_pb");
 const cert = "/var/hello_grpc/client_certs/cert.pem"
-const certKey = "/var/hello_grpc/client_certs/private.pkcs8.key"
+const certKey = "/var/hello_grpc/client_certs/private.key"
 const certChain = "/var/hello_grpc/client_certs/full_chain.pem"
 const rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
 const serverName = "hello.grpc.io"
 const {createLogger, format, transports} = require('winston')
+const {LandingServiceClient} = require("./landing_grpc_pb");
 const {combine, timestamp, printf} = format
 const formatter = printf(({level, message, timestamp}) => {
     return `${timestamp} [${level}] ${message}`
@@ -46,20 +46,22 @@ function getClient() {
     }
     let address = connectTo + ":" + port
     let secure = process.env.GRPC_HELLO_SECURE
-    if (typeof secure !== 'undefined' && secure !== null) {
+    if (typeof secure !== 'undefined' && secure !== null && secure === "Y") {
         logger.info("Connect With TLS(%s)", port)
         let rootCertContent = fs.readFileSync(certChain);
         let privateKeyContent = fs.readFileSync(certKey);
         let certChainContent = fs.readFileSync(certChain);
         const credentials = grpc.credentials.createSsl(rootCertContent, privateKeyContent, certChainContent);
         //https://grpc.github.io/grpc/core/group__grpc__arg__keys.html
-        const channelOptions = {
-            'grpc.default_authority': serverName
-        }
-        return new services.LandingServiceClient(address, credentials, channelOptions)
+        // ChannelOptions ClientOptions
+        const options = {
+            "grpc.default_authority": serverName,
+            "grpc.ssl_target_name_override": serverName
+        };
+        return new LandingServiceClient(address, credentials, options)
     } else {
         logger.info("Connect With InSecure(%s)", port)
-        return new services.LandingServiceClient(address, grpc.credentials.createInsecure())
+        return new LandingServiceClient(address, grpc.credentials.createInsecure())
     }
 }
 
