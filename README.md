@@ -1,6 +1,6 @@
 # Hello gRPC
 
-## :coffee: What is...
+## :coffee: What is ...
 
 ### 1 Diagram
 
@@ -32,7 +32,7 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 | UUID        | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :green_apple:                          | :apple:                                    | :apple:                                   |
 | Env         | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
 | Header      | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
-| TLS         | :apple:                                    | :apple:                              | 🥑                                               | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
+| TLS         | :apple:                                    | :apple:                              | 🥑                                                | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
 | Proxy       | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
 | Docker      | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
 | IDE         | IDEA                                       | GoLand                               | WebStorm                                         | PyCharm                          | CLion                            | CLion                                  | IDEA                                       | Rider                                     |
@@ -111,7 +111,9 @@ docker run --rm --name grpc_client_kotlin \
 ```
 
 ### 4 logs
+
 Debug grpc
+
 ```bash
 export GRPC_VERBOSITY=DEBUG
 export GRPC_TRACE=all

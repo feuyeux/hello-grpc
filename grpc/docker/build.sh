@@ -3,6 +3,7 @@ cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
+set -e
 
 sh build_java.sh
 sh build_transcoder_java.sh

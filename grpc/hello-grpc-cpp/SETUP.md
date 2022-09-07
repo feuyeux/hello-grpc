@@ -1,3 +1,5 @@
+# SETUP
+
 ```bash
 cmake --version
 brew install autoconf automake libtool pkg-config
