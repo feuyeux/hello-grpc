@@ -22,6 +22,18 @@ sh clean_world.sh
 
 ### 1 java
 
+#### INSECURE
+
+```bash
+docker run --rm --name grpc_server_java -p 9996:9996 feuyeux/grpc_server_java:1.0.0
+```
+
+```bash
+docker run --rm --name grpc_client_java -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_java:1.0.0
+```
+
+#### TLS
+
 ```bash
 docker run --rm --name grpc_server_java -p 9996:9996 \
 -e GRPC_HELLO_SECURE=Y \
