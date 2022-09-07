@@ -51,15 +51,17 @@ else
     server2_lang="java"
     server3_lang="java"
 fi
+echo "is_tls:$is_tls c:$client_lang s1:$server1_lang s2:$server2_lang s3:$server3_lang"
 
-# server3:8883
+echo "start server3:8883"
 docker run --rm --name server3 -d \
     -p 8883:8883 \
     -e GRPC_SERVER_PORT=8883 \
     -e GRPC_HELLO_SECURE=${is_tls} \
     feuyeux/grpc_server_${server3_lang}:1.0.0
+docker ps
 
-# server2:8882
+echo "start server2:8882"
 docker run --rm --name server2 -d \
     -p 8882:8882 \
     -e GRPC_SERVER_PORT=8882 \
@@ -67,8 +69,9 @@ docker run --rm --name server2 -d \
     -e GRPC_HELLO_BACKEND_PORT=8883 \
     -e GRPC_HELLO_SECURE=${is_tls} \
     feuyeux/grpc_server_${server2_lang}:1.0.0
+docker ps
 
-# server1:8881
+echo "start server1:8881"
 docker run --rm --name server1 -d \
     -p 8881:8881 \
     -e GRPC_SERVER_PORT=8881 \
@@ -76,16 +79,15 @@ docker run --rm --name server1 -d \
     -e GRPC_HELLO_BACKEND_PORT=8882 \
     -e GRPC_HELLO_SECURE=${is_tls} \
     feuyeux/grpc_server_${server1_lang}:1.0.0
+docker ps
 
 sleep 5s
-docker ps -a
-sleep 1s
 
-# client
+echo "start client"
 docker run --rm --name grpc_client \
     -e GRPC_SERVER=$(ipconfig getifaddr en0) \
     -e GRPC_SERVER_PORT=8882 \
     -e GRPC_HELLO_SECURE=${is_tls} \
     feuyeux/grpc_client_${client_lang}:1.0.0
 
-sh docker/tools/clean_world.sh
+# sh docker/tools/clean_world.sh
