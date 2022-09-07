@@ -4,7 +4,7 @@
   "description": "hello grpc",
   "dependencies": {
     "@grpc/grpc-js": "^1.4.4",
-    "@grpc/proto-loader": "^0.6.7",
+    "@grpc/proto-loader": "^0.7.0",
     "async": "^3.2.2",
     "google-protobuf": "^3.19.1",
     "grpc-tools": "^1.11.2",
