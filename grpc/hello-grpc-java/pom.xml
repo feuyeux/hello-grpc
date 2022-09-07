@@ -53,7 +53,7 @@
     <dependency>
       <artifactId>slf4j-api</artifactId>
       <groupId>org.slf4j</groupId>
-      <version>1.7.32</version>
+      <version>1.7.36</version>
     </dependency>
     <!-- slf4j to log4j2 -->
     <dependency>
