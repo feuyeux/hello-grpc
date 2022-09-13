@@ -1,6 +1,7 @@
 package org.feuyeux.grpc.server;
 
 import static org.feuyeux.grpc.conn.Connection.GRPC_HELLO_SECURE;
+import static org.feuyeux.grpc.conn.Connection.version;
 
 import io.grpc.Attributes;
 import io.grpc.Channel;
@@ -71,10 +72,10 @@ public class ProtoServer {
           }
         });
     if (secure == null || !secure.equals("Y")) {
-      log.info("Start GRPC Server[:{}]", port);
+      log.info("Start GRPC Server :{} [{}]", port, version);
       return serverBuilder.build();
     } else {
-      log.info("Start GRPC TLS Server[:{}]", port);
+      log.info("Start GRPC TLS Server :{} [{}]", port, version);
       return serverBuilder.sslContext(getSslContextBuilder().build()).build();
     }
   }

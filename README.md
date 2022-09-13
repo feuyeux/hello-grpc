@@ -67,6 +67,10 @@ Init submodules
 git submodule update --init --recursive
 ```
 
+```bash
+git submodule update --remote
+```
+
 ### 2 envs
 
 - `GRPC_SERVER`: grpc server host on client side.

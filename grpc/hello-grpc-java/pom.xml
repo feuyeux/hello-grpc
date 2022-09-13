@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.feuyeux.grpc</groupId>
   <artifactId>hello-grpc-java</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <properties>
     <jdk.version>17</jdk.version>
-    <lombok.version>1.18.20</lombok.version>
-    <grpc.version>1.48.0</grpc.version>
-    <protoc.version>3.18.0</protoc.version>
+    <lombok.version>1.18.24</lombok.version>
+    <grpc.version>1.49.0</grpc.version>
+    <protoc.version>3.21.1</protoc.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <junit.version>4.13.2</junit.version>
+    <log4j-slf4j-impl.version>2.18.0</log4j-slf4j-impl.version>
+    <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
+    <annotations-api.version>6.0.53</annotations-api.version>
+    <system-rules.version>1.19.0</system-rules.version>
+    <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
   </properties>
   <dependencies>
     <!-- grpc -->
@@ -30,11 +37,6 @@
       <groupId>io.grpc</groupId>
       <version>${grpc.version}</version>
     </dependency>
-    <dependency>
-      <artifactId>protobuf-java</artifactId>
-      <groupId>com.google.protobuf</groupId>
-      <version>${protoc.version}</version>
-    </dependency>
     <!--grpc reflection-->
     <dependency>
       <artifactId>grpc-services</artifactId>
@@ -45,21 +47,15 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>annotations-api</artifactId>
-      <version>6.0.53</version>
+      <version>${annotations-api.version}</version>
       <scope>provided</scope>
     </dependency>
 
-    <!-- slf4j -->
-    <dependency>
-      <artifactId>slf4j-api</artifactId>
-      <groupId>org.slf4j</groupId>
-      <version>1.7.32</version>
-    </dependency>
     <!-- slf4j to log4j2 -->
     <dependency>
       <artifactId>log4j-slf4j-impl</artifactId>
       <groupId>org.apache.logging.log4j</groupId>
-      <version>2.14.1</version>
+      <version>${log4j-slf4j-impl.version}</version>
     </dependency>
 
     <dependency>
@@ -80,7 +76,7 @@
       <artifactId>system-rules</artifactId>
       <groupId>com.github.stefanbirkner</groupId>
       <scope>test</scope>
-      <version>1.19.0</version>
+      <version>${system-rules.version}</version>
     </dependency>
   </dependencies>
   <build>
@@ -88,7 +84,7 @@
       <extension>
         <artifactId>os-maven-plugin</artifactId>
         <groupId>kr.motd.maven</groupId>
-        <version>1.7.0</version>
+        <version>${os-maven-plugin.version}</version>
       </extension>
     </extensions>
     <finalName>${project.name}</finalName>
@@ -100,7 +96,6 @@
         <configuration>
           <encoding>UTF-8</encoding>
           <release>${jdk.version}</release>
-          <compilerArgs>--enable-preview</compilerArgs>
         </configuration>
       </plugin>
       <plugin>

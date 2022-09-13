@@ -3,7 +3,6 @@
 https://grpc.io/docs/languages/cpp/quickstart/
 
 ### 1 Setup
-
 [SETUP](SETUP.md)
 
 ### 2 Build
@@ -30,7 +29,6 @@ popd
 ```
 
 ### 3 Run
-
 ```bash
 ./build/proto_server
 ```

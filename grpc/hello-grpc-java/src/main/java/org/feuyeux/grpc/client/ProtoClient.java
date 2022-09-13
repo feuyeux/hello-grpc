@@ -1,5 +1,11 @@
 package org.feuyeux.grpc.client;
 
+import static org.feuyeux.grpc.conn.Connection.backEnd;
+import static org.feuyeux.grpc.conn.Connection.backPort;
+import static org.feuyeux.grpc.conn.Connection.currentPort;
+import static org.feuyeux.grpc.conn.Connection.secure;
+import static org.feuyeux.grpc.conn.Connection.server;
+
 import io.grpc.Channel;
 import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
@@ -35,9 +41,17 @@ public class ProtoClient {
     asyncStub = LandingServiceGrpc.newStub(interceptChannel);
   }
 
-  public static void main(String[] args) throws InterruptedException, SSLException {
-    ProtoClient protoClient = new ProtoClient();
+  public static void main(String[] args) {
+    log.info("GRPC_SERVER:{}", server);
+    log.info("GRPC_SERVER_PORT:{}", currentPort);
+    log.info("GRPC_HELLO_BACKEND:{}", backEnd);
+    log.info("GRPC_HELLO_BACKEND_PORT:{}", backPort);
+    log.info("GRPC_HELLO_SECURE:{}", secure);
+    log.info("host:{}", System.getenv("host.docker.internal"));
+
+    ProtoClient protoClient = null;
     try {
+      protoClient = new ProtoClient();
       log.info("Unary RPC");
       TalkRequest talkRequest = TalkRequest.newBuilder()
           .setMeta("JAVA")
@@ -72,8 +86,16 @@ public class ProtoClient {
 
       log.info("Bidirectional streaming RPC");
       protoClient.talkBidirectional(requests);
+    } catch (Exception e) {
+      log.error("", e);
     } finally {
-      protoClient.shutdown();
+      if (protoClient != null) {
+        try {
+          protoClient.shutdown();
+        } catch (InterruptedException e) {
+          log.error("", e);
+        }
+      }
     }
   }
 

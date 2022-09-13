@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-alpine
+FROM openjdk:19-jdk-alpine
 COPY hello-grpc-java-server.jar grpc-server.jar
 COPY tls/server_certs /var/hello_grpc/server_certs
 COPY tls/client_certs /var/hello_grpc/client_certs

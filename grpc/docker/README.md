@@ -30,6 +30,8 @@ docker run --rm --name grpc_server_java -p 9996:9996 feuyeux/grpc_server_java:1.
 
 ```bash
 docker run --rm --name grpc_client_java -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_java:1.0.0
+
+docker run --rm --name grpc_client_java -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_java:1.0.0
 ```
 
 #### TLS
@@ -45,6 +47,11 @@ docker run --rm --name grpc_client_java \
 -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 -e GRPC_HELLO_SECURE=Y \
 feuyeux/grpc_client_java:1.0.0
+
+docker run --rm --name grpc_client_java \
+-e GRPC_SERVER=host.docker.internal \
+-e GRPC_HELLO_SECURE=Y \
+feuyeux/grpc_client_java:1.0.0
 ```
 
 ### 2 go
@@ -55,8 +62,9 @@ feuyeux/grpc_server_go:1.0.0
 ```
 
 ```bash
-docker run --rm --name grpc_client_go -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_go:1.0.0
+docker run --rm --name grpc_client_go -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_go:1.0.0
+
+docker run --rm --name grpc_client_go -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_go:1.0.0
 ```
 
 ### 3 node
