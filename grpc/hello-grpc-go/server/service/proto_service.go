@@ -21,6 +21,7 @@ var (
 // ProtoServer implement LandingServiceServer interface
 type ProtoServer struct {
 	BackendClient pb.LandingServiceClient
+	pb.UnimplementedLandingServiceServer
 }
 
 func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.TalkResponse, error) {

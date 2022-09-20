@@ -1,5 +1,0 @@
-venv
-.DS_Store
-.idea
-landing/landing*.py
-*.pyc

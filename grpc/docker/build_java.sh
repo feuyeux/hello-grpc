@@ -17,7 +17,7 @@ mvn clean install -DskipTests -f server_pom.xml
 cp target/hello-grpc-java-server.jar ../docker/
 
 cd ../docker
-docker build -f grpc-server-java.dockerfile -t feuyeux/grpc_server_java:1.0.0 .
+docker build -f grpc-server-java.dockerfile -t feuyeux/grpc_server_java:1.0.0 --pull .
 rm -rf hello-grpc-java-server.jar
 echo
 
@@ -27,6 +27,6 @@ mvn clean install -DskipTests -f client_pom.xml
 cp target/hello-grpc-java-client.jar ../docker/
 
 cd ../docker
-docker build -f grpc-client-java.dockerfile -t feuyeux/grpc_client_java:1.0.0 .
+docker build -f grpc-client-java.dockerfile -t feuyeux/grpc_client_java:1.0.0 --pull .
 rm -rf hello-grpc-java-client.jar
 echo

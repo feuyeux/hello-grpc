@@ -2,12 +2,11 @@ package main
 
 import (
 	"crypto/tls"
-	"net"
-	"os"
-
 	"hello-grpc/common/pb"
 	"hello-grpc/conn"
 	"hello-grpc/server/service"
+	"net"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -30,7 +29,7 @@ func main() {
 		return
 	}
 	var s *grpc.Server
-	var srv *service.ProtoServer
+	var srv service.ProtoServer
 	if os.Getenv("GRPC_HELLO_SECURE") == "Y" {
 		cert, err := tls.LoadX509KeyPair(certChain, certKey)
 		if err != nil {
@@ -54,11 +53,11 @@ func main() {
 		}
 		defer con.Close()
 		c := pb.NewLandingServiceClient(con)
-		srv = &service.ProtoServer{BackendClient: c}
+		srv = service.ProtoServer{BackendClient: c}
 	} else {
-		srv = &service.ProtoServer{}
+		srv = service.ProtoServer{}
 	}
-	pb.RegisterLandingServiceServer(s, srv)
+	pb.RegisterLandingServiceServer(s, &srv)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 

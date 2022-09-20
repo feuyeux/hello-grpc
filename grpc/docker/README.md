@@ -57,8 +57,7 @@ feuyeux/grpc_client_java:1.0.0
 ### 2 go
 
 ```bash
-docker run --rm --name grpc_server_go -p 9996:9996 \
-feuyeux/grpc_server_go:1.0.0
+docker run --rm --name grpc_server_go -p 9996:9996 feuyeux/grpc_server_go:1.0.0
 ```
 
 ```bash
@@ -132,11 +131,11 @@ feuyeux/grpc_client_csharp:1.0.0
 ### 8 cpp
 
 ```bash
-docker run --rm --name grpc_server_cpp -p 9996:9996 \
-feuyeux/grpc_server_cpp:1.0.0
+docker run --rm --name grpc_server_cpp -p 9996:9996 feuyeux/grpc_server_cpp:1.0.0
 ```
 
 ```bash
-docker run --rm --name grpc_client_cpp -e GRPC_SERVER=$(ipconfig getifaddr en0) \
-feuyeux/grpc_client_cpp:1.0.0
+docker run --rm --name grpc_client_cpp -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_cpp:1.0.0
+
+docker run --rm --name grpc_client_cpp -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_cpp:1.0.0
 ```

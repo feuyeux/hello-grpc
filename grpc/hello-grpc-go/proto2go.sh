@@ -3,12 +3,11 @@ cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
-export PATH="$PATH:$(go env GOPATH)/bin"
-rm -rf "${go_proto_path}/common"
-export OUTPUT_FILE=$(pwd)
-export DIR_OF_PROTO_FILE=$(pwd)/proto
-export PROTO_FILE=landing.proto
-#brew install protobuf
-#brew install protoc-gen-go
-#go install github.com/golang/protobuf/protoc-gen-go
-protoc --proto_path="$DIR_OF_PROTO_FILE" --go_out=plugins=grpc:"$OUTPUT_FILE" "$PROTO_FILE"
+
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+rm -rf common
+echo "generate the messages"
+protoc --go_out=. ./proto/landing.proto
+echo "generate the services"
+protoc --go-grpc_out=$(pwd) ./proto/landing.proto

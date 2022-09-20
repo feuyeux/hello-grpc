@@ -1,0 +1,12 @@
+module hello-grpc
+
+go 1.19
+
+require (
+	github.com/google/uuid latest
+	github.com/sirupsen/logrus latest
+	golang.org/x/net latest
+	google.golang.org/grpc latest
+	google.golang.org/protobuf latest
+)
+

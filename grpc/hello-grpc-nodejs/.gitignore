@@ -1,6 +1,0 @@
-node_modules
-.DS_Store
-.idea
-package-lock.json
-/common/landing_pb.js
-/common/landing_grpc_pb.js

@@ -3,10 +3,13 @@ cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
+set -e
+
+cd ../hello-grpc-go
+sh init.sh
+bash proto2go.sh
 
 echo "~~~ build grpc server golang ~~~"
-cd ../hello-grpc-go
-export GO111MODULE="on"
 env GOOS=linux GOARCH=amd64 go build -o proto_server server/proto_server.go
 mv proto_server ../docker/
 cd ../docker

@@ -1,34 +1,33 @@
-## grpc c++ demo
+# grpc c++ demo
 
-https://grpc.io/docs/languages/cpp/quickstart/
+<https://grpc.io/docs/languages/cpp/quickstart/>
 
-### 1 Setup
-[SETUP](SETUP.md)
+## 1 Setup
 
-### 2 Build
+```bash
+sh init.sh
+```
 
-#### cmake config
+## 2 Build
 
-set `$GRPC_INSTALL_PATH` for `CMAKE_PREFIX_PATH`
+### cmake config
+
+`CMakeLists.txt`
+
+> set `$GRPC_INSTALL_PATH` for `CMAKE_PREFIX_PATH`
 
 ```cmake
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/han/.local")
 ```
 
-#### cmake & make
+### cmake & make
 
 ```bash
-echo "cmake"
-rm -rf build common/*.cc common/*.h
-mkdir build
-pushd build
-cmake ..
-echo "make"
-make -j8
-popd
+sh build.sh
 ```
 
-### 3 Run
+## 3 Run
+
 ```bash
 ./build/proto_server
 ```

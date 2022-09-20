@@ -1,9 +1,10 @@
-# https://github.com/npclaudiu/grpc-cpp-docker.git
 #!/bin/bash
 cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
+# https://github.com/npclaudiu/grpc-cpp-docker.git
+
 set -e
 
 echo "~~~ build grpc c++ ~~~"
@@ -12,8 +13,11 @@ rm -rf docker/hello-grpc-cpp
 cp -r hello-grpc-cpp docker/
 rm -rf docker/hello-grpc-cpp/build
 cd docker
+echo "build builder:"
 docker build -f grpc-cpp.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
+echo "build server:"
 docker build -f grpc-cpp.dockerfile --target server -t feuyeux/grpc_server_cpp:1.0.0 .
+echo "build client:"
 docker build -f grpc-cpp.dockerfile --target client -t feuyeux/grpc_client_cpp:1.0.0 .
 
 rm -rf hello-grpc-cpp
