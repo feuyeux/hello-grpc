@@ -1,4 +1,4 @@
-FROM debian:11.3-slim AS build
+FROM debian:11-slim AS build
 
 RUN apt-get update && apt-get install -y \
     autoconf \
@@ -94,7 +94,7 @@ RUN echo "build hello-grpc-cpp" && cd /source && echo "cmake:" && mkdir build &&
     echo "make:" && make -j$(nproc)
 #docker run --rm -it feuyeux/grpc_cpp:1.0.0 bash
 
-FROM debian:11.3-slim AS server
+FROM debian:11-slim AS server
 ENV PATH "/var/grpc/install/bin:$PATH"
 COPY --from=build /var/grpc/install /var/grpc/install 
 WORKDIR /opt/hello-grpc/
@@ -106,7 +106,7 @@ COPY tls/client_certs /var/hello_grpc/client_certs
 RUN /sbin/ldconfig -v
 CMD ["./proto_server"]
 
-FROM debian:11.3-slim AS client
+FROM debian:11-slim AS client
 ENV PATH "/var/grpc/install/bin:$PATH"
 COPY --from=build /source/glog/build/libglog.so.1 /usr/local/lib/
 COPY --from=build /var/grpc/install /var/grpc/install 
