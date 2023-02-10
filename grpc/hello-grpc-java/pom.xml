@@ -9,7 +9,7 @@
   <properties>
     <jdk.version>17</jdk.version>
     <lombok.version>1.18.24</lombok.version>
-    <grpc.version>1.49.0</grpc.version>
+    <grpc.version>1.53.0</grpc.version>
     <protoc.version>3.21.1</protoc.version>
     <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
