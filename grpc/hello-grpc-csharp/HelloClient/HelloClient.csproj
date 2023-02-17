@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>HelloClient</AssemblyName>
     <RootNamespace>HelloClient</RootNamespace>
     <PackageId>HelloClient</PackageId>
-    <Authors>feuyeux</Authors>
+    <Authors>
+      feuyeux</Authors>
     <Company />
     <Product>HelloClient</Product>
-    <LangVersion>8</LangVersion>
+    <LangVersion>11</LangVersion>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

@@ -13,7 +13,7 @@ echo "===="
 
 JS_PROTO_PATH=$(pwd)/common
 protoc-gen-grpc \
---js_out=import_style=commonjs,binary:${JS_PROTO_PATH} \
---grpc_out=grpc_js:${JS_PROTO_PATH} \
+--js_out=import_style=commonjs,binary:"${JS_PROTO_PATH}" \
+--grpc_out=grpc_js:"${JS_PROTO_PATH}" \
 --proto_path ./proto \
 ./proto/landing.proto

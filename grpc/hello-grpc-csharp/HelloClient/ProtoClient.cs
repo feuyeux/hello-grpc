@@ -16,7 +16,7 @@ namespace HelloClient
         private readonly LandingService.LandingServiceClient _client;
         private readonly Random _random = new Random();
 
-        public ProtoClient(LandingService.LandingServiceClient client)
+        private ProtoClient(LandingService.LandingServiceClient client)
         {
             this._client = client;
         }
@@ -37,6 +37,7 @@ namespace HelloClient
             Log.Info("Bidirectional streaming RPC");
             client.TalkBidirectional().Wait();
             channel.ShutdownAsync().Wait();
+            Log.Info("DONE");
         }
 
         private void Talk()

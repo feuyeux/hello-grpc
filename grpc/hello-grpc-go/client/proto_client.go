@@ -140,7 +140,9 @@ func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkReques
 }
 
 func randomId(max int) string {
-	return strconv.Itoa(rand.Intn(max))
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	n := r.Intn(max)
+	return strconv.Itoa(n)
 }
 
 func printResponse(response *pb.TalkResponse) {

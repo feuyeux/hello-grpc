@@ -40,6 +40,7 @@ pipreqs --encoding utf-8 . --force
 # https://pypi.org/project/protobuf/
 # https://pypi.org/project/futures/
 #  enum34-1.1.10 futures-3.3.0 grpcio-1.41.1 grpcio-tools-1.41.1 protobuf-3.18.0 six-1.16.0
+#pip install grpcio-tools
 pip install -r requirements.txt
 
 (python -m pip install grpcio)
@@ -56,5 +57,7 @@ sh server_start.sh
 ```
 
 ```bash
+source venv/bin/activate
+ 
 sh client_start.sh
 ```

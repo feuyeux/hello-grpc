@@ -1,14 +1,14 @@
 # Hello gRPC
 
-## :coffee: What is ...
+## :coffee: What is ... >
 
 ### 1 Diagram
 
-![](img/grpc_diagram.png)
+![grpc_diagram](img/grpc_diagram.png)
 
-client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server
+`client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server`
 
-client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
+`client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server`
 
 ### 2 Proto3
 
@@ -21,7 +21,7 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 - 🥑 known issues
 
 |             | [java](grpc/hello-grpc-java)               | [go](grpc/hello-grpc-go)             | [nodejs](grpc/hello-grpc-nodejs)                 | [python](grpc/hello-grpc-python) | [rust](grpc/hello-grpc-rust)     | [c++](grpc/hello-grpc-cpp)             | [kotlin](grpc/hello-grpc-kotlin)           | [c#](grpc/hello-grpc-csharp)              |
-| ----------- | ------------------------------------------ | ------------------------------------ | ------------------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------ | ----------------------------------------- |
+| :---------- | :----------------------------------------- | :----------------------------------- | :----------------------------------------------- | :------------------------------- | :------------------------------- | :------------------------------------- | :----------------------------------------- | :---------------------------------------- |
 | build tools | maven                                      | mod                                  | npm                                              | pip                              | cargo                            | cmake                                  | gradle                                     | nuget                                     |
 | LOG         | [log4j2](https://logging.apache.org/log4j) | [logrus](github.com/sirupsen/logrus) | [winston](https://www.npmjs.com/package/winston) | logging                          | [log4rs](https://docs.rs/log4rs) | [glog](https://github.com/google/glog) | [log4j2](https://logging.apache.org/log4j) | [log4net](https://logging.apache.org/log) |
 | 4 MODELS    | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
@@ -42,6 +42,8 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 - [propagate](grpc/propagate)
 
 ### 5 ServiceMesh
+
+> [build and publish docker image](grpc/docker/README.md)
 
 - [kube](kube)
 - [mesh](mesh)

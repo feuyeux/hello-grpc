@@ -118,11 +118,17 @@ feuyeux/grpc_client_kotlin:1.0.0
 
 ```bash
 docker run --rm --name grpc_server_csharp -p 9996:9996 \
+feuyeux/grpc_server_csharp:1.0.0
+
+docker run --rm --name grpc_server_csharp -p 9996:9996 \
 -e GRPC_HELLO_SECURE=Y \
 feuyeux/grpc_server_csharp:1.0.0
 ```
 
 ```bash
+docker run --rm --name grpc_client_csharp -e GRPC_SERVER=host.docker.internal \
+feuyeux/grpc_client_csharp:1.0.0
+
 docker run --rm --name grpc_client_csharp -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 -e GRPC_HELLO_SECURE=Y \
 feuyeux/grpc_client_csharp:1.0.0

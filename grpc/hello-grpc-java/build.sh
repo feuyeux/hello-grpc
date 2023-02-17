@@ -6,4 +6,4 @@ SCRIPT_PATH="$(
 )"
 cd "$SCRIPT_PATH" || exit
 export JAVA_HOME=${JAVA_17_HOME}
-mvn clean install -DskipTests
+mvn clean install -DskipTests "$@"

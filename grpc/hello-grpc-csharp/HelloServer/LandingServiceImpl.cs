@@ -13,16 +13,15 @@ namespace HelloServer
     {
         private readonly ILog _log = LogManager.GetLogger(typeof(LandingServiceImpl));
         private LandingService.LandingServiceClient _protoClient;
-
+        
         public void SetProtoClient(LandingService.LandingServiceClient protoClient)
         {
             this._protoClient = protoClient;
         }
 
-        private readonly List<string> _helloList = new List<string>()
+        private readonly List<string> _helloList = new()
         {
-            "Hello", "Bonjour", "Hola", "こんにちは", "Ciao",
-            "안녕하세요"
+            "Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"
         };
 
         public override Task<TalkResponse> Talk(TalkRequest request, ServerCallContext context)
@@ -179,7 +178,7 @@ namespace HelloServer
             var headers = context.RequestHeaders;
             foreach (var header in headers)
             {
-                _log.Info($"->H ${header.Key}:${header.Value}");
+                _log.Info($"->H {header.Key}:{header.Value}");
             }
             return headers;
         }

@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "description": "hello grpc",
   "dependencies": {
-    "@grpc/grpc-js": "^1.4.4",
-    "@grpc/proto-loader": "^0.7.2",
-    "async": "^3.2.2",
-    "google-protobuf": "^3.19.1",
-    "grpc-tools": "^1.11.2",
+    "@grpc/grpc-js": "^1.8.4",
+    "@grpc/proto-loader": "^0.7.4",
+    "async": "^3.2.4",
+    "google-protobuf": "^3.21.0",
+    "grpc-node-server-reflection": "^1.0.2",
+    "grpc-tools": "^1.12.4",
     "lodash": "^4.17.21",
-    "minimist": "^1.2.5",
-    "uuid": "^8.3.2",
-    "winston": "^3.3.3",
-    "grpc-node-server-reflection": "^1.0.2"
+    "minimist": "^1.2.7",
+    "uuid": "^9.0.0",
+    "winston": "^3.8.2"
   },
   "repository": {
     "type": "git",

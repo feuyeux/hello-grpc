@@ -4,6 +4,7 @@
 npm config set registry http://registry.npm.taobao.org/
 npm install -g grpc-tools
 # https://www.npmjs.com/package/protoc-gen-grpc
+# https://www.npmjs.com/package/@grpc/grpc-js
 npm install request -g
 npm config set unsafe-perm true
 npm install protoc-gen-grpc -g

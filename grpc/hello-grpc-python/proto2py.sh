@@ -12,7 +12,7 @@ py_proto_path=$(pwd)/landing
 ## *_pb2_grpc.py which contains our generated client and server classes.
 python -m grpc.tools.protoc \
   -I $(pwd)/proto \
-  --python_out=${py_proto_path} \
-  --grpc_python_out=${py_proto_path} \
+  --python_out="${py_proto_path}" \
+  --grpc_python_out="${py_proto_path}" \
   $(pwd)/proto/landing.proto
 #touch $(pwd)/landing/__init__.py

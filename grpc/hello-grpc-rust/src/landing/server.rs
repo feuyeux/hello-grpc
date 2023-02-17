@@ -89,13 +89,8 @@ pub struct ProtoServer {
 
 #[tonic::async_trait]
 impl LandingService for ProtoServer {
-    type TalkOneAnswerMoreStream = Pin<Box<dyn Stream<Item=Result<TalkResponse, Status>> + Send + Sync + 'static>>;
-    type TalkBidirectionalStream = Pin<Box<dyn Stream<Item=Result<TalkResponse, Status>> + Send + Sync + 'static>>;
-
-    async fn talk(
-        &self,
-        mut request: Request<TalkRequest>)
-        -> Result<Response<TalkResponse>, Status> {
+    async fn talk(&self, mut request: Request<TalkRequest>)
+                  -> Result<Response<TalkResponse>, Status> {
         let talk_request: &TalkRequest = request.get_ref();
         let data: &String = &talk_request.data;
         let meta: &String = &talk_request.meta;
@@ -127,6 +122,7 @@ impl LandingService for ProtoServer {
             Ok(Response::new(response))
         }
     }
+    type TalkOneAnswerMoreStream = Pin<Box<dyn Stream<Item=Result<TalkResponse, Status>> + Send + Sync + 'static>>;
 
     async fn talk_one_answer_more(
         &self, request: Request<TalkRequest>)
@@ -214,6 +210,8 @@ impl LandingService for ProtoServer {
             Ok(Response::new(response))
         }
     }
+
+    type TalkBidirectionalStream = Pin<Box<dyn Stream<Item=Result<TalkResponse, Status>> + Send + 'static>>;
 
     async fn talk_bidirectional(
         &self, request: Request<Streaming<TalkRequest>>)

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>HelloServer</AssemblyName>
     <RootNamespace>HelloServer</RootNamespace>
@@ -9,18 +8,14 @@
     <Authors>feuyeux</Authors>
     <Company />
     <Product>HelloServer</Product>
-    <LangVersion>8</LangVersion>
+    <LangVersion>11</LangVersion>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\HelloClient\HelloClient.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="log4net.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
