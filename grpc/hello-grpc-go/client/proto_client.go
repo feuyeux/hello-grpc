@@ -16,51 +16,64 @@ import (
 
 func main() {
 	con, err := conn.Dial()
+	defer con.Close()
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
+	} else {
+		c := pb.NewLandingServiceClient(con)
+		start(c, 10*time.Second)
 	}
-	defer con.Close()
-	c := pb.NewLandingServiceClient(con)
-	log.Infof("Unary RPC")
-	talk(c, &pb.TalkRequest{Data: "0", Meta: "GOLANG"})
-	log.Infof("Server streaming RPC")
-	talkOneAnswerMore(c, &pb.TalkRequest{Data: "0,1,2", Meta: "GOLANG"})
+}
 
-	requests := []*pb.TalkRequest{
-		{Data: randomId(5), Meta: "GOLANG"},
-		{Data: randomId(5), Meta: "GOLANG"},
-		{Data: randomId(5), Meta: "GOLANG"}}
+func start(c pb.LandingServiceClient, tt time.Duration) {
+	for round := 1; ; round++ {
+		log.Infof("Unary RPC")
+		talk(c, &pb.TalkRequest{Data: "0", Meta: "GOLANG"})
+		log.Infof("Server streaming RPC")
+		talkOneAnswerMore(c, &pb.TalkRequest{Data: "0,1,2", Meta: "GOLANG"})
 
-	respChan := make(chan *pb.TalkResponse)
-	log.Infof("Client streaming RPC")
-	go func() {
-		r, err := talkMoreAnswerOne(c, requests)
-		if err != nil {
-			log.Fatalf("TalkMoreAnswerOne() got error %v", err)
-			respChan <- nil
-		} else {
-			respChan <- r
-			close(respChan)
+		requests := []*pb.TalkRequest{
+			{Data: randomId(5), Meta: "GOLANG"},
+			{Data: randomId(5), Meta: "GOLANG"},
+			{Data: randomId(5), Meta: "GOLANG"}}
+
+		respChan := make(chan *pb.TalkResponse)
+		log.Infof("Client streaming RPC")
+		go func() {
+			r, err := talkMoreAnswerOne(c, requests)
+			if err != nil {
+				log.Fatalf("TalkMoreAnswerOne() got error %v", err)
+				respChan <- nil
+			} else {
+				respChan <- r
+				close(respChan)
+			}
+		}()
+		for r := range respChan {
+			printResponse(r)
 		}
-	}()
-	for r := range respChan {
-		printResponse(r)
-	}
 
-	log.Infof("Bidirectional streaming RPC")
-	talkBidirectional(c, requests)
+		log.Infof("Bidirectional streaming RPC")
+		talkBidirectional(c, requests)
+
+		//
+		log.Infof("%d", round)
+		time.Sleep(tt)
+	}
 }
 
 func talk(client pb.LandingServiceClient, request *pb.TalkRequest) {
 	log.Infof("Request=%+v", request)
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancelFunc()
+	ctx = metadata.AppendToOutgoingContext(ctx, "k1", "v1", "k2", "v2")
+
 	r, err := client.Talk(ctx, request)
 	if err != nil {
 		log.Fatalf("fail to talk: %v", err)
+	} else {
+		printResponse(r)
 	}
-	printResponse(r)
-	//b, err := json.Marshal(r)
-	//log.Infof("Response=%+v", string(b))
 }
 
 func talkOneAnswerMore(client pb.LandingServiceClient, request *pb.TalkRequest) {
