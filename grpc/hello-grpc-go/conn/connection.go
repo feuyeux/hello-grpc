@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+	"hello-grpc/common/pb"
 	"io/ioutil"
 	"os"
 	"time"
@@ -37,7 +38,7 @@ var (
 		}]}`
 )
 
-func Dial() (*grpc.ClientConn, error) {
+func Connect() *pb.LandingServiceClient {
 	var address string
 	var port string
 	if HasBackend() {
@@ -53,14 +54,17 @@ func Dial() (*grpc.ClientConn, error) {
 		port = GrpcServerPort()
 		address = fmt.Sprintf("%s:%s", grpcServerHost(), port)
 	}
-
+	var conn *grpc.ClientConn
 	secure := os.Getenv("GRPC_HELLO_SECURE")
 	if secure == "Y" {
 		log.Infof("Connect With TLS(%s)", port)
-		return transportCredentials(address)
+		conn, _ = transportCredentials(address)
+	} else {
+		log.Infof("Connect With InSecure(%s)", port)
+		conn, _ = transportInsecure(address)
 	}
-	log.Infof("Connect With InSecure(%s)", port)
-	return transportInsecure(address)
+	client := pb.NewLandingServiceClient(conn)
+	return &client
 }
 
 func transportInsecure(address string) (*grpc.ClientConn, error) {

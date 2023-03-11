@@ -62,13 +62,7 @@ func main() {
 	}
 
 	if conn.HasBackend() {
-		con, err := conn.Dial()
-		if err != nil {
-			log.Fatalf("Did not connect: %v", err)
-		}
-		defer con.Close()
-		c := pb.NewLandingServiceClient(con)
-		srv = service.ProtoServer{BackendClient: c}
+		srv = service.ProtoServer{BackendClient: *conn.Connect()}
 	} else {
 		srv = service.ProtoServer{}
 	}
