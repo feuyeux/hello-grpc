@@ -55,25 +55,7 @@
 
 ## :coffee: How to use
 
-### 1 submodules
-
-Pull with [submodules](https://git-scm.com/book/zh/v2/Git-工具-子模块)
-
-```bash
-git clone --recurse-submodules https://gitee.com/feuyeux/hello-grpc.git
-```
-
-Init submodules
-
-```bash
-git submodule update --init --recursive
-```
-
-```bash
-git submodule update --remote
-```
-
-### 2 envs
+### envs
 
 - `GRPC_SERVER`: grpc server host on client side.
 - `GRPC_SERVER_PORT`: grpc server port on client side.
@@ -81,7 +63,7 @@ git submodule update --remote
 - `GRPC_HELLO_BACKEND_PORT`:next grpc server port on server side.
 - `GRPC_HELLO_SECURE`: set it as `Y` when you want to use `TLS` on both sides.
 
-### 3 containers
+### containers
 
 Run with containers
 `client(kotlin)` -`[tls]:8881`-> `server1(java)` -`[tls]:8882`-> `server2(golang)` -`[tls]:8883`-> `server3(rust)`
@@ -116,7 +98,7 @@ docker run --rm --name grpc_client_kotlin \
     feuyeux/grpc_client_kotlin:1.0.0
 ```
 
-### 4 logs
+### logs
 
 Debug grpc
 
