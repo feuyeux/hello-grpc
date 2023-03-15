@@ -1,5 +1,7 @@
 # Hello gRPC
 
+Simple server and client examples showcasing gRPC features(including propagate, running in containers and kubernetes) with Java/Kotlin/Go/NodeJs/Python/Rust/C++/C#.
+
 ## :coffee: What is ... >
 
 ### 1 Diagram
