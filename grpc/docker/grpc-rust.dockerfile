@@ -16,7 +16,7 @@ COPY tls/client_certs /var/hello_grpc/client_certs
 RUN RUSTFLAGS="-C target-cpu=native" cargo build --release --bin proto-server
 RUN RUSTFLAGS="-C target-cpu=native" cargo build --release --bin proto-client
 
-FROM alpine:3.15.4 AS server
+FROM alpine:3.15 AS server
 WORKDIR /app
 ENV RUST_BACKTRACE 1
 COPY --from=feuyeux/grpc_rust:1.0.0 /source/target/release/proto-server .
@@ -25,7 +25,7 @@ COPY tls/client_certs /var/hello_grpc/client_certs
 COPY hello-grpc-rust/config/log4rs.yml config/log4rs.yml
 ENTRYPOINT ["./proto-server"]
 
-FROM alpine:3.15.4 AS client
+FROM alpine:3.15 AS client
 WORKDIR /app
 ENV RUST_BACKTRACE 1
 COPY --from=feuyeux/grpc_rust:1.0.0 /source/target/release/proto-client .
