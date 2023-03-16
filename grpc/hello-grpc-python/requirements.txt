@@ -1,3 +1,4 @@
 grpcio-tools==1.51.1
 protobuf==4.21.12
 futures==3.1.1
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
