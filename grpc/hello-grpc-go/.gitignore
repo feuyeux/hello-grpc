@@ -1,0 +1,5 @@
+.DS_Store
+.idea
+/go.sum
+/common/pb/landing.pb.go
+/common/pb/landing_grpc.pb.go

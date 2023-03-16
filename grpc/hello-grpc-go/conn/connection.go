@@ -4,8 +4,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
+	"hello-grpc/common/pb"
 	"io/ioutil"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -19,9 +23,22 @@ var (
 	certChain  = "/var/hello_grpc/client_certs/full_chain.pem"
 	rootCert   = "/var/hello_grpc/client_certs/myssl_root.cer"
 	serverName = "hello.grpc.io"
+	// see https://github.com/grpc/grpc/blob/master/doc/service_config.md to know more about service config
+	retryPolicy = `{
+		"methodConfig": [{
+		  "name": [{"service": "GRPC_SERVER"}],
+		  "waitForReady": true,
+		  "retryPolicy": {
+			  "MaxAttempts": 200,
+			  "InitialBackoff": ".1s",
+			  "MaxBackoff": ".05s",
+			  "BackoffMultiplier": 1.2,
+			  "RetryableStatusCodes": [ "UNAVAILABLE" ]
+		  }
+		}]}`
 )
 
-func Dial() (*grpc.ClientConn, error) {
+func Connect() *pb.LandingServiceClient {
 	var address string
 	var port string
 	if HasBackend() {
@@ -37,18 +54,35 @@ func Dial() (*grpc.ClientConn, error) {
 		port = GrpcServerPort()
 		address = fmt.Sprintf("%s:%s", grpcServerHost(), port)
 	}
-
+	var conn *grpc.ClientConn
 	secure := os.Getenv("GRPC_HELLO_SECURE")
 	if secure == "Y" {
 		log.Infof("Connect With TLS(%s)", port)
-		return transportCredentials(address)
+		conn, _ = transportCredentials(address)
+	} else {
+		log.Infof("Connect With InSecure(%s)", port)
+		conn, _ = transportInsecure(address)
 	}
-	log.Infof("Connect With InSecure(%s)", port)
-	return insecure(address)
+	client := pb.NewLandingServiceClient(conn)
+	return &client
 }
 
-func insecure(address string) (*grpc.ClientConn, error) {
-	return grpc.Dial(address, grpc.WithInsecure())
+func transportInsecure(address string) (*grpc.ClientConn, error) {
+	// retry https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+	retryConfig := grpc.WithDefaultServiceConfig(retryPolicy)
+
+	// keepalive
+	kp := keepalive.ClientParameters{
+		Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+		PermitWithoutStream: true,             // send pings even without active streams
+	}
+
+	return grpc.Dial(address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithKeepaliveParams(kp),
+		retryConfig,
+	)
 }
 
 func transportCredentials(address string) (*grpc.ClientConn, error) {

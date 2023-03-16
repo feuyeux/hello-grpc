@@ -1,14 +1,16 @@
 # Hello gRPC
 
-## :coffee: What is ...
+Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with Java/Kotlin/Go/NodeJs/Python/Rust/C++/C#.
+
+## :coffee: What is ... >
 
 ### 1 Diagram
 
-![](img/grpc_diagram.png)
+![grpc_diagram](img/grpc_diagram.png)
 
-client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server
+`client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server`
 
-client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
+`client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server`
 
 ### 2 Proto3
 
@@ -21,7 +23,7 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 - 🥑 known issues
 
 |             | [java](grpc/hello-grpc-java)               | [go](grpc/hello-grpc-go)             | [nodejs](grpc/hello-grpc-nodejs)                 | [python](grpc/hello-grpc-python) | [rust](grpc/hello-grpc-rust)     | [c++](grpc/hello-grpc-cpp)             | [kotlin](grpc/hello-grpc-kotlin)           | [c#](grpc/hello-grpc-csharp)              |
-| ----------- | ------------------------------------------ | ------------------------------------ | ------------------------------------------------ | -------------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------ | ----------------------------------------- |
+| :---------- | :----------------------------------------- | :----------------------------------- | :----------------------------------------------- | :------------------------------- | :------------------------------- | :------------------------------------- | :----------------------------------------- | :---------------------------------------- |
 | build tools | maven                                      | mod                                  | npm                                              | pip                              | cargo                            | cmake                                  | gradle                                     | nuget                                     |
 | LOG         | [log4j2](https://logging.apache.org/log4j) | [logrus](github.com/sirupsen/logrus) | [winston](https://www.npmjs.com/package/winston) | logging                          | [log4rs](https://docs.rs/log4rs) | [glog](https://github.com/google/glog) | [log4j2](https://logging.apache.org/log4j) | [log4net](https://logging.apache.org/log) |
 | 4 MODELS    | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                    | :apple:                                   |
@@ -43,6 +45,8 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 
 ### 5 ServiceMesh
 
+> [build and publish docker image](grpc/docker/README.md)
+
 - [kube](kube)
 - [mesh](mesh)
 - [tracing](tracing)
@@ -53,25 +57,7 @@ client [Headers]<-[Length-Prefixed Message][]<-[Trailers] server
 
 ## :coffee: How to use
 
-### 1 submodules
-
-Pull with [submodules](https://git-scm.com/book/zh/v2/Git-工具-子模块)
-
-```bash
-git clone --recurse-submodules https://gitee.com/feuyeux/hello-grpc.git
-```
-
-Init submodules
-
-```bash
-git submodule update --init --recursive
-```
-
-```bash
-git submodule update --remote
-```
-
-### 2 envs
+### envs
 
 - `GRPC_SERVER`: grpc server host on client side.
 - `GRPC_SERVER_PORT`: grpc server port on client side.
@@ -79,7 +65,7 @@ git submodule update --remote
 - `GRPC_HELLO_BACKEND_PORT`:next grpc server port on server side.
 - `GRPC_HELLO_SECURE`: set it as `Y` when you want to use `TLS` on both sides.
 
-### 3 containers
+### containers
 
 Run with containers
 `client(kotlin)` -`[tls]:8881`-> `server1(java)` -`[tls]:8882`-> `server2(golang)` -`[tls]:8883`-> `server3(rust)`
@@ -114,7 +100,7 @@ docker run --rm --name grpc_client_kotlin \
     feuyeux/grpc_client_kotlin:1.0.0
 ```
 
-### 4 logs
+### logs
 
 Debug grpc
 
@@ -122,3 +108,7 @@ Debug grpc
 export GRPC_VERBOSITY=DEBUG
 export GRPC_TRACE=all
 ```
+
+### recommend
+
+<https://github.com/grpc-ecosystem/awesome-grpc>

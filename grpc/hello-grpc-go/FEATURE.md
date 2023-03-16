@@ -15,3 +15,4 @@
   - `ServerName`=`hello.grpc.io`
 - [x] TLS DOCKER
 - [x] TLS CROSS ACCESS TEST
+- [ ] RECONNECT GRACEFULLY - Keep Alive, Exponential Backoff, Auto Reconnect

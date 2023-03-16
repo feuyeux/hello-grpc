@@ -1,28 +1,34 @@
-## grpc c# demo
+# grpc c# demo
 
-### PREREQUISITES
+## PREREQUISITES
 
-- [.NET Core](https://dotnet.github.io/) on  Linux, Windows and Mac OS X
+### .NET SDK
 
-grpc generated files:
-- Common/obj/Debug/netstandard1.5/Landing.cs
+- Download <https://dotnet.microsoft.com/en-us/download/visual-studio-sdks>
+- What is <https://learn.microsoft.com/en-us/dotnet/core/sdk>
+
+## BUILD
 
 ```bash
+rm -rf */bin */obj
 dotnet build
-
-cd HelloServer
-dotnet HelloServer/bin/Debug/netcoreapp3.1/HelloServer.dll
-
-cd HelloClient
-dotnet HelloClient/bin/Debug/netcoreapp3.1/HelloClient.dll
 ```
 
+grpc generated files:
 
-> dotnet:
-> - .NET 5: 5.0.9 at [$HOME/.dotnet/shared/Microsoft.NETCore.App]
-> - .NET 3.1: Microsoft.NETCore.App 3.1.19 [/usr/local/share/dotnet/shared/Microsoft.NETCore.App]
-> - https://www.jetbrains.com/help/rider/Settings_Environment.html
+- Common/obj/Debug/net7.0/Landing.cs
+
+## RUN
+
+```bash
+dotnet HelloServer/bin/Debug/net7.0/HelloServer.dll
+```
+
+```bash
+dotnet HelloClient/bin/Debug/net7.0/HelloClient.dll
+```
+
+> ## docker
 >
-> docker: 
 > - <https://github.com/dotnet/dotnet-docker/blob/main/samples/dotnetapp/README.md>
 > - <https://hub.docker.com/_/microsoft-dotnet-sdk>
