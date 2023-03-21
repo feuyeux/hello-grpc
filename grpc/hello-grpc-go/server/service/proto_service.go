@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"hello-grpc/common"
 	"io"
 	"strconv"
 	"strings"
@@ -12,10 +13,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"hello-grpc/common/pb"
 	"hello-grpc/server/tracing"
-)
-
-var (
-	helloList = []string{"Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"}
 )
 
 // ProtoServer implement LandingServiceServer interface
@@ -204,7 +201,8 @@ func (s *ProtoServer) buildResult(id string) *pb.TalkResult {
 	kv := make(map[string]string)
 	kv["id"] = uuid.New().String()
 	kv["idx"] = id
-	kv["data"] = helloList[index]
+	hello := common.GetHelloList()[index]
+	kv["data"] = hello + "," + common.GetAnswerMap()[hello]
 	kv["meta"] = "GOLANG"
 	result := new(pb.TalkResult)
 	result.Id = time.Now().UnixNano()

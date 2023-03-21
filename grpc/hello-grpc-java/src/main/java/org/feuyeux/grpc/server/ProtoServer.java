@@ -1,7 +1,7 @@
 package org.feuyeux.grpc.server;
 
-import static org.feuyeux.grpc.conn.Connection.GRPC_HELLO_SECURE;
-import static org.feuyeux.grpc.conn.Connection.version;
+import static org.feuyeux.grpc.common.Connection.GRPC_HELLO_SECURE;
+import static org.feuyeux.grpc.common.Connection.version;
 
 import io.grpc.Attributes;
 import io.grpc.Channel;
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.client.HeaderClientInterceptor;
-import org.feuyeux.grpc.conn.Connection;
+import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
 
 @Slf4j

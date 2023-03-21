@@ -2,9 +2,11 @@
 import logging
 import os
 import random
+
 import time
 
-from conn import connection
+from conn import connection, utils
+
 from landing import landing_pb2
 from landing import landing_pb2_grpc
 
@@ -53,13 +55,10 @@ def talk_bidirectional(stub):
         print_response("TalkBidirectional", response)
 
 
-def random_id(end):
-    return str(random.randint(0, end))
-
-
 def generate_request(method_name):
-    for _ in range(0, 3):
-        request = landing_pb2.TalkRequest(data=random_id(5), meta="PYTHON")
+    requests = utils.build_link_requests()
+    while len(requests) > 0:
+        request = requests.pop()
         logger.info("%s data:%s,meta:%s", method_name, request.data, request.meta)
         yield request
         time.sleep(random.uniform(0.5, 1.5))

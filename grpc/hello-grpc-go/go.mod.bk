@@ -1,12 +1,17 @@
 module hello-grpc
 
-go 1.19
+go 1.20
 
 require (
+    // https://github.com/google/uuid/tags
 	github.com/google/uuid latest
+	// https://github.com/sirupsen/logrus/tags
 	github.com/sirupsen/logrus latest
+	// https://pkg.go.dev/golang.org/x/net
 	golang.org/x/net latest
+	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc latest
+	// https://github.com/protocolbuffers/protobuf-go/tags
 	google.golang.org/protobuf latest
 )
 

@@ -1,5 +1,7 @@
 package org.feuyeux.grpc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -12,10 +14,9 @@ import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
 import org.feuyeux.grpc.server.LandingServiceImpl;
 import org.feuyeux.grpc.server.ProtoServer;
-import org.junit.Assert;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.Test;
 
 /**
  * Created by erichan feuyeux on 16/8/22
@@ -67,7 +68,7 @@ public class ProtoTest {
     log.info("REQUEST:{}", talkRequest);
     TalkResponse talkResponse = protoClient.talk(talkRequest);
 
-    Assert.assertEquals(200, talkResponse.getStatus());
+    assertEquals(200, talkResponse.getStatus());
     log.info("RESPONSE:{}", talkResponse);
 
     protoClient.shutdown();

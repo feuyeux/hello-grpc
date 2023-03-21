@@ -1,8 +1,10 @@
 package org.feuyeux.grpc.server;
 
+import static org.feuyeux.grpc.common.HelloUtils.getAnswerMap;
+import static org.feuyeux.grpc.common.HelloUtils.getHelloList;
+
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -17,9 +19,6 @@ import org.feuyeux.grpc.proto.TalkResult;
 
 @Slf4j
 public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBase {
-
-  private final List<String> HELLO_LIST = Arrays.asList("Hello", "Bonjour", "Hola", "こんにちは", "Ciao",
-      "안녕하세요");
 
   private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
   private LandingServiceGrpc.LandingServiceStub asyncStub;
@@ -77,8 +76,8 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
 
         @Override
         public void onNext(TalkRequest request) {
-          log.info("TalkMoreAnswerOne REQUEST: data={},meta={}", request.getData(),
-              request.getMeta());
+          log.info("TalkMoreAnswerOne REQUEST: data={},meta={}",
+              request.getData(), request.getMeta());
           talkResults.add(buildResult(request.getData()));
         }
 
@@ -195,16 +194,16 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
     } catch (NumberFormatException ignored) {
       index = 0;
     }
-    String data;
+    String hello;
     if (index > 5) {
-      data = "你好";
+      hello = "你好";
     } else {
-      data = HELLO_LIST.get(index);
+      hello = getHelloList().get(index);
     }
     Map<String, String> kv = new HashMap<>();
     kv.put("id", UUID.randomUUID().toString());
     kv.put("idx", id);
-    kv.put("data", data);
+    kv.put("data", hello + "," + getAnswerMap().get(hello));
     kv.put("meta", "JAVA");
     return TalkResult.newBuilder()
         .setId(System.nanoTime())

@@ -1,4 +1,4 @@
-package org.feuyeux.grpc.conn;
+package org.feuyeux.grpc.common;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

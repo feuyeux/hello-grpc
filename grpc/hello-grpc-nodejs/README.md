@@ -1,6 +1,7 @@
 ## grpc nodejs demo
 ### 1 Setup
 ```bash
+brew install yarn
 npm config set registry http://registry.npm.taobao.org/
 npm install -g grpc-tools
 # https://www.npmjs.com/package/protoc-gen-grpc
@@ -27,6 +28,11 @@ node proto_server.js
 
 ```bash
 node proto_client.js
+```
+
+UT
+```sh
+npm test
 ```
 
 https://github.com/grpc/grpc-node/issues/1974

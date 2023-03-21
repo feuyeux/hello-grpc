@@ -12,7 +12,12 @@
     "lodash": "^4.17.21",
     "minimist": "^1.2.7",
     "uuid": "^9.0.0",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "fast-linked-list": "^3.2.0",
+    "mocha": "^10.2.0"
+  },
+  "scripts": {
+    "test": "mocha"
   },
   "repository": {
     "type": "git",

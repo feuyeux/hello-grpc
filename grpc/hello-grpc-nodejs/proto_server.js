@@ -1,13 +1,12 @@
 const grpc = require('@grpc/grpc-js')
 let uuid = require('uuid')
-let messages = require('./common/landing_pb')
+let {TalkResult,TalkResponse,ResultType} = require('./common/landing_pb')
 let services = require('./common/landing_grpc_pb')
 let conn = require('./common/connection')
+let utils = require('./common/utils')
 //let ref = require('grpc-node-server-reflection')
 
 const fs = require('fs')
-
-let hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
 
 let tracingKeys = [
     "x-request-id",
@@ -53,10 +52,10 @@ function main() {
 
     let secure = process.env.GRPC_HELLO_SECURE
     if (typeof secure !== 'undefined' && secure !== null && secure === "Y") {
-        let checkClientCertificate = false;
-        let rootCertContent = fs.readFileSync(rootCert);
-        let certChainContent = fs.readFileSync(certChain);
-        let privateKeyContent = fs.readFileSync(certKey);
+        let checkClientCertificate = false
+        let rootCertContent = fs.readFileSync(rootCert)
+        let certChainContent = fs.readFileSync(certChain)
+        let privateKeyContent = fs.readFileSync(certKey)
         let credentials = grpc.ServerCredentials.createSsl(
             rootCertContent,
             [{cert_chain: certChainContent, private_key: privateKeyContent}],
@@ -83,7 +82,7 @@ function talk(call, callback) {
             callback(null, response)
         })
     } else {
-        let response = new messages.TalkResponse()
+        let response = new TalkResponse()
         response.setStatus(200)
         const talkResult = buildResult(request.getData())
         let talkResults = [talkResult]
@@ -107,7 +106,7 @@ function talkOneAnswerMore(call) {
     } else {
         let datas = request.getData().split(",")
         for (const data in datas) {
-            let response = new messages.TalkResponse()
+            let response = new TalkResponse()
             response.setStatus(200)
             const talkResult = buildResult(data)
             let talkResults = [talkResult]
@@ -146,7 +145,7 @@ function talkMoreAnswerOne(call, callback) {
             talkResults.push(buildResult(request.getData()))
         })
         call.on('end', function () {
-            let response = new messages.TalkResponse()
+            let response = new TalkResponse()
             response.setStatus(200)
             response.setResultsList(talkResults)
             callback(null, response)
@@ -177,7 +176,7 @@ function talkBidirectional(call) {
     } else {
         call.on('data', function (request) {
             logger.info("TalkBidirectional REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
-            let response = new messages.TalkResponse()
+            let response = new TalkResponse()
             response.setStatus(200)
             let data = request.getData()
             const talkResult = buildResult(data)
@@ -198,19 +197,21 @@ function hasBackend() {
 }
 
 function hasNext() {
-    return typeof next !== 'undefined' && next !== null;
+    return typeof next !== 'undefined' && next !== null
 }
 
 // {"status":200,"results":[{"id":1600402320493411000,"kv":{"data":"Hello","id":"0"}}]}
 function buildResult(id) {
-    let result = new messages.TalkResult()
+    let result = new TalkResult()
     let index = parseInt(id)
+    let hello = utils.hellos[index]
+
     result.setId(Math.round(Date.now() / 1000))
-    result.setType(messages.ResultType.OK)
+    result.setType(ResultType.OK)
     let kv = result.getKvMap()
     kv.set("id", uuid.v1())
     kv.set("idx", id)
-    kv.set("data", hellos[index])
+    kv.set("data", hello + "," + utils.ans().get(hello))
     kv.set("meta", "NODEJS")
     return result
 }

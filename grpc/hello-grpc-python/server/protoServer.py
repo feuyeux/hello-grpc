@@ -8,7 +8,8 @@ import uuid
 import grpc
 from concurrent import futures
 
-from conn import connection
+from conn import connection, utils
+
 from landing import landing_pb2
 from landing import landing_pb2_grpc
 
@@ -20,7 +21,6 @@ formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
 
-hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
 tracing_keys = [
     "x-request-id",
     "x-b3-traceid",
@@ -43,7 +43,8 @@ def build_result(data):
     result.kv["id"] = str(uuid.uuid1())
     result.kv["idx"] = data
     index = int(data)
-    result.kv["data"] = hellos[index]
+    hello = utils.hellos[index]
+    result.kv["data"] = hello + "," + utils.ans.get(hello)
     result.kv["meta"] = "PYTHON"
     return result
 
@@ -175,9 +176,9 @@ def serve():
 
     try:
         server.wait_for_termination()
+        channel.close()
     except KeyboardInterrupt:
         server.stop(0)
-    channel.close()
 
 
 if __name__ == '__main__':

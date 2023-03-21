@@ -1,10 +1,11 @@
 package org.feuyeux.grpc.client;
 
-import static org.feuyeux.grpc.conn.Connection.backEnd;
-import static org.feuyeux.grpc.conn.Connection.backPort;
-import static org.feuyeux.grpc.conn.Connection.currentPort;
-import static org.feuyeux.grpc.conn.Connection.secure;
-import static org.feuyeux.grpc.conn.Connection.server;
+import static org.feuyeux.grpc.common.Connection.backEnd;
+import static org.feuyeux.grpc.common.Connection.backPort;
+import static org.feuyeux.grpc.common.Connection.currentPort;
+import static org.feuyeux.grpc.common.Connection.secure;
+import static org.feuyeux.grpc.common.Connection.server;
+import static org.feuyeux.grpc.common.HelloUtils.buildLinkRequests;
 
 import io.grpc.Channel;
 import io.grpc.ClientInterceptor;
@@ -12,16 +13,15 @@ import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import lombok.extern.slf4j.Slf4j;
-import org.feuyeux.grpc.HelloUtils;
-import org.feuyeux.grpc.conn.Connection;
+import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
@@ -60,6 +60,7 @@ public class ProtoClient {
       log.info("Request data:{},meta:{}", talkRequest.getData(), talkRequest.getMeta());
       TalkResponse response = protoClient.talk(talkRequest);
       printResponse(response);
+
       log.info("Server streaming RPC");
       talkRequest = TalkRequest.newBuilder()
           .setMeta("JAVA")
@@ -70,22 +71,10 @@ public class ProtoClient {
       talkResponses.forEach(ProtoClient::printResponse);
 
       log.info("Client streaming RPC");
-      List<TalkRequest> requests = Arrays.asList(TalkRequest.newBuilder()
-              .setMeta("JAVA")
-              .setData(HelloUtils.getRandomId())
-              .build(),
-          TalkRequest.newBuilder()
-              .setMeta("JAVA")
-              .setData(HelloUtils.getRandomId())
-              .build(),
-          TalkRequest.newBuilder()
-              .setMeta("JAVA")
-              .setData(HelloUtils.getRandomId())
-              .build());
-      protoClient.talkMoreAnswerOne(requests);
+      protoClient.talkMoreAnswerOne(buildLinkRequests());
 
       log.info("Bidirectional streaming RPC");
-      protoClient.talkBidirectional(requests);
+      protoClient.talkBidirectional(buildLinkRequests());
     } catch (Exception e) {
       log.error("", e);
     } finally {
@@ -98,6 +87,8 @@ public class ProtoClient {
       }
     }
   }
+
+
 
   private static void printResponse(TalkResponse response) {
     response.getResultsList().forEach(result -> {
@@ -123,7 +114,7 @@ public class ProtoClient {
     return talkResponseList;
   }
 
-  public void talkMoreAnswerOne(List<TalkRequest> requests) throws InterruptedException {
+  public void talkMoreAnswerOne(LinkedList<TalkRequest> requests) throws InterruptedException {
     final CountDownLatch finishLatch = new CountDownLatch(1);
     final StreamObserver<TalkRequest> requestObserver = asyncStub.talkMoreAnswerOne(
         getResponseObserver(finishLatch));

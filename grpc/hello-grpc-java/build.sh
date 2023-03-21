@@ -5,5 +5,6 @@ SCRIPT_PATH="$(
   pwd -P
 )"
 cd "$SCRIPT_PATH" || exit
-export JAVA_HOME=${JAVA_17_HOME}
+export JAVA_19_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+export JAVA_HOME=${JAVA_19_HOME-}
 mvn clean install -DskipTests "$@"

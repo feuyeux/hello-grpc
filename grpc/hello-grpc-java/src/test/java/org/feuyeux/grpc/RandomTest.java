@@ -1,6 +1,7 @@
 package org.feuyeux.grpc;
 
 import lombok.extern.slf4j.Slf4j;
+import org.feuyeux.grpc.common.HelloUtils;
 import org.junit.Test;
 
 @Slf4j

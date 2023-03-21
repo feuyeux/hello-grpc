@@ -1,10 +1,10 @@
 package main
 
 import (
+	"container/list"
+	"hello-grpc/common"
 	"hello-grpc/conn"
 	"io"
-	"math/rand"
-	"strconv"
 	"sync"
 	"time"
 
@@ -40,11 +40,8 @@ func startTalking(c pb.LandingServiceClient, tt time.Duration) error {
 		}
 		//
 		log.Infof("Client streaming RPC")
-		requests := []*pb.TalkRequest{
-			{Data: randomId(5), Meta: "GOLANG"},
-			{Data: randomId(5), Meta: "GOLANG"},
-			{Data: randomId(5), Meta: "GOLANG"}}
-		r, err := talkMoreAnswerOne(c, requests)
+
+		r, err := talkMoreAnswerOne(c, common.BuildLinkRequests())
 		if err != nil {
 			return err
 		}
@@ -52,7 +49,7 @@ func startTalking(c pb.LandingServiceClient, tt time.Duration) error {
 
 		//
 		log.Infof("Bidirectional streaming RPC")
-		err = talkBidirectional(c, requests)
+		err = talkBidirectional(c, common.BuildLinkRequests())
 		if err != nil {
 			return err
 		}
@@ -103,7 +100,7 @@ func talkOneAnswerMore(client pb.LandingServiceClient, request *pb.TalkRequest) 
 	return nil
 }
 
-func talkMoreAnswerOne(client pb.LandingServiceClient, requests []*pb.TalkRequest) (*pb.TalkResponse, error) {
+func talkMoreAnswerOne(client pb.LandingServiceClient, requests *list.List) (*pb.TalkResponse, error) {
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
 	stream, err := client.TalkMoreAnswerOne(ctx)
 	if err != nil {
@@ -112,9 +109,11 @@ func talkMoreAnswerOne(client pb.LandingServiceClient, requests []*pb.TalkReques
 	}
 	//
 	var wg sync.WaitGroup
-	wg.Add(len(requests))
-	for i := 0; i < len(requests); i++ {
-		request := requests[i]
+	len := requests.Len()
+	wg.Add(len)
+	i := 0
+	for e := requests.Front(); e != nil; e = e.Next() {
+		request := e.Value.(*pb.TalkRequest)
 		go func(i int) {
 			defer wg.Done()
 			log.Infof("Request[%d]=%+v", i, request)
@@ -122,13 +121,14 @@ func talkMoreAnswerOne(client pb.LandingServiceClient, requests []*pb.TalkReques
 				log.Errorf("%v.Send(%v) = %v", stream, request, err)
 			}
 		}(i)
+		i++
 	}
 	wg.Wait()
 	//
 	return stream.CloseAndRecv()
 }
 
-func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkRequest) error {
+func talkBidirectional(client pb.LandingServiceClient, requests *list.List) error {
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
 	stream, err := client.TalkBidirectional(ctx)
 	if err != nil {
@@ -151,7 +151,8 @@ func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkReques
 		}
 	}()
 	//
-	for _, request := range requests {
+	for e := requests.Front(); e != nil; e = e.Next() {
+		request := e.Value.(*pb.TalkRequest)
 		log.Infof("Request=%+v", request)
 		if err := stream.Send(request); err != nil {
 			log.Errorf("Failed to send : %v", err)
@@ -161,12 +162,6 @@ func talkBidirectional(client pb.LandingServiceClient, requests []*pb.TalkReques
 	stream.CloseSend()
 	<-waits
 	return nil
-}
-
-func randomId(max int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	n := r.Intn(max)
-	return strconv.Itoa(n)
 }
 
 func printResponse(response *pb.TalkResponse) {

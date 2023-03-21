@@ -61,3 +61,8 @@ source venv/bin/activate
  
 sh client_start.sh
 ```
+
+#### UT
+```sh
+python -m unittest tests/test_utils.py
+```
