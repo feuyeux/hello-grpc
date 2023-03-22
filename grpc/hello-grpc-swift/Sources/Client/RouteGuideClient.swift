@@ -4,10 +4,13 @@ import Foundation
 import GRPC
 import NIOCore
 import NIOPosix
+import Logging
 import HelloCommon
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal struct HelloExample {
+    let logger = Logger(label: "HelloClient")
+
     private let client: Org_Feuyeux_Grpc_LandingServiceAsyncClient
 
     init(client: Org_Feuyeux_Grpc_LandingServiceAsyncClient) {
@@ -16,6 +19,9 @@ internal struct HelloExample {
 
     func run() async {
         await talk()
+        await talkOneAnswerMore()
+        await talkMoreAnswerOne()
+        await talkBidirectional()
 
     }
 }
@@ -23,21 +29,21 @@ internal struct HelloExample {
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 extension HelloExample {
     private func talk() async {
-        print("\n→ talk:")
+        logger.info("\n→ talk:")
         let request: Org_Feuyeux_Grpc_TalkRequest = .with {
             $0.data = "0"
             $0.meta = "SWIFT"
         }
         do {
             let response = try await client.talk(request)
-            print("response \(response.status) \(response.results)")
+            logger.info("response \(response.status) \(response.results)")
         } catch {
-            print("RPC failed: \(error)")
+            logger.info("RPC failed: \(error)")
         }
     }
 
     private func talkOneAnswerMore() async {
-        print("\n→ talkOneAnswerMore:")
+        logger.info("\n→ talkOneAnswerMore:")
         let request: Org_Feuyeux_Grpc_TalkRequest = .with {
             $0.data = "0,1,2"
             $0.meta = "SWIFT"
@@ -45,16 +51,16 @@ extension HelloExample {
         do {
             var resultCount = 1
             for try await response in self.client.talkOneAnswerMore(request) {
-                print("response[\(resultCount)] \(response.status) \(response.results)")
+                logger.info("response[\(resultCount)] \(response.status) \(response.results)")
                 resultCount += 1
             }
         } catch {
-            print("RPC failed: \(error)")
+            logger.info("RPC failed: \(error)")
         }
     }
 
     private func talkMoreAnswerOne() async {
-        print("\n→ talkMoreAnswerOne")
+        logger.info("\n→ talkMoreAnswerOne")
 
         let requests: [Org_Feuyeux_Grpc_TalkRequest] = [
             .with {
@@ -82,14 +88,14 @@ extension HelloExample {
 
             streamingCall.requestStream.finish()
             let response = try await streamingCall.response
-            print("response \(response.status) \(response.results)")
+            logger.info("response \(response.status) \(response.results)")
         } catch {
-            print("talkMoreAnswerOne Failed: \(error)")
+            logger.info("talkMoreAnswerOne Failed: \(error)")
         }
     }
 
     private func talkBidirectional() async {
-        print("\n→ talkBidirectional")
+        logger.info("\n→ talkBidirectional")
 
         let requests: [Org_Feuyeux_Grpc_TalkRequest] = [
             .with {
@@ -120,21 +126,21 @@ extension HelloExample {
                     streamingCall.requestStream.finish()
                 }
 
-                // Add a task to print each message received on the response stream.
+                // Add a task to logger.info each message received on the response stream.
                 group.addTask {
                     do {
                         for try await response in streamingCall.responseStream {
-                            print("response \(response.status) \(response.results)")
+                            logger.info("response \(response.status) \(response.results)")
                         }
                     } catch {
-                        print("talkBidirectional Failed: \(error)")
+                        logger.info("talkBidirectional Failed: \(error)")
                     }
                 }
 
                 try await group.waitForAll()
             }
         } catch {
-            print("talkBidirectional Failed: \(error)")
+            logger.info("talkBidirectional Failed: \(error)")
         }
     }
 }
@@ -142,17 +148,15 @@ extension HelloExample {
 @main
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 struct RouteGuide: AsyncParsableCommand {
-    @Option(help: "The port to connect to")
-    var port: Int = 1234
-
     func run() async throws {
+        let conn: HelloConn = HelloConn()
         let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
         defer {
             try? group.syncShutdownGracefully()
         }
 
         let channel = try GRPCChannelPool.with(
-                target: .host("localhost", port: self.port),
+                target: .host("localhost", port: conn.port),
                 transportSecurity: .plaintext,
                 eventLoopGroup: group
         )
@@ -164,24 +168,20 @@ struct RouteGuide: AsyncParsableCommand {
         let example = HelloExample(client: client)
         await example.run()
     }
-}
 
-extension Routeguide_Point: CustomStringConvertible {
-    public var description: String {
-        return "(\(self.latitude), \(self.longitude))"
+    init() {
+
     }
-}
 
-extension Routeguide_Feature: CustomStringConvertible {
-    public var description: String {
-        return "\(self.name) at \(self.location)"
+    init(from decoder: Decoder) throws {
+
     }
 }
 #else
 @main
 enum NotAvailable {
 static func main() {
-print("This example requires Swift >= 5.6")
+logger.info("This example requires Swift >= 5.6")
 }
 }
 #endif // compiler(>=5.6)

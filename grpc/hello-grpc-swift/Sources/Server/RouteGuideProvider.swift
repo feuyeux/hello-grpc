@@ -2,20 +2,25 @@ import Foundation
 import GRPC
 import NIOConcurrencyHelpers
 import NIOCore
+import Logging
 import HelloCommon
 
 #if compiler(>=5.6)
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 internal final class RouteGuideProvider: Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
-    private let helloList: [String] = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
+    let logger = Logger(label: "HelloService")
 
-    private let features: [Routeguide_Feature]
-    private let notes: Notes
+    let helloList: [String] = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
+    let ansMap: [String: String] = ["你好": "非常感谢",
+                                    "Hello": "Thank you very much",
+                                    "Bonjour": "Merci beaucoup",
+                                    "Hola": "Muchas Gracias",
+                                    "こんにちは": "どうも ありがとう ございます",
+                                    "Ciao": "Mille Grazie",
+                                    "안녕하세요": "대단히 감사합니다"]
+    internal init() {
 
-    internal init(features: [Routeguide_Feature]) {
-        self.features = features
-        self.notes = Notes()
     }
 
     // 1
@@ -26,83 +31,37 @@ internal final class RouteGuideProvider: Org_Feuyeux_Grpc_LandingServiceAsyncPro
         .with {
             $0.status = 200
             $0.results = []
-
         }
     }
 
-    internal func getFeature(
-            request point: Routeguide_Point,
-            context: GRPCAsyncServerCallContext
-    ) async throws -> Routeguide_Feature {
-        return self.lookupFeature(at: point) ?? .unnamedFeature(at: point)
-    }
-
     // 2
-    func talkOneAnswerMore(
+    internal func talkOneAnswerMore(
             request: Org_Feuyeux_Grpc_TalkRequest,
             responseStream: GRPCAsyncResponseStreamWriter<Org_Feuyeux_Grpc_TalkResponse>,
             context: GRPCAsyncServerCallContext
     ) async throws {
-
-    }
-
-    internal func listFeatures(
-            request: Routeguide_Rectangle,
-            responseStream: GRPCAsyncResponseStreamWriter<Routeguide_Feature>,
-            context: GRPCAsyncServerCallContext
-    ) async throws {
-        let longitudeRange = request.lo.longitude...request.hi.longitude
-        let latitudeRange = request.lo.latitude...request.hi.latitude
-
-        for feature in self.features where !feature.name.isEmpty {
-            if feature.location.isWithin(latitude: latitudeRange, longitude: longitudeRange) {
-                try await responseStream.send(feature)
-            }
+        let datas = request.data.split(separator: ",")
+        for d in datas {
+            print("received: \(d)")
+            try await responseStream.send(.with {
+                $0.status = 200
+                $0.results = []
+            })
         }
     }
 
     // 3
     internal func talkMoreAnswerOne(
-            requestStream: GRPCAsyncRequestStream<Org_Feuyeux_Grpc_TalkRequest>,
+            requestStream requests: GRPCAsyncRequestStream<Org_Feuyeux_Grpc_TalkRequest>,
             context: GRPCAsyncServerCallContext
     ) async throws -> Org_Feuyeux_Grpc_TalkResponse {
-        .with {
-            $0.status = 200
+        let results: [Org_Feuyeux_Grpc_TalkResult] = []
+        for try await request in requests {
+            logger.info("received: \(request)")
         }
-    }
-
-    internal func recordRoute(
-            requestStream points: GRPCAsyncRequestStream<Routeguide_Point>,
-            context: GRPCAsyncServerCallContext
-    ) async throws -> Routeguide_RouteSummary {
-        var pointCount: Int32 = 0
-        var featureCount: Int32 = 0
-        var distance = 0.0
-        var previousPoint: Routeguide_Point?
-        let startTimeNanos = DispatchTime.now().uptimeNanoseconds
-
-        for try await point in points {
-            pointCount += 1
-
-            if let feature = self.lookupFeature(at: point), !feature.name.isEmpty {
-                featureCount += 1
-            }
-
-            if let previous = previousPoint {
-                distance += previous.distance(to: point)
-            }
-
-            previousPoint = point
-        }
-
-        let durationInNanos = DispatchTime.now().uptimeNanoseconds - startTimeNanos
-        let durationInSeconds = Double(durationInNanos) / 1e9
-
         return .with {
-            $0.pointCount = pointCount
-            $0.featureCount = featureCount
-            $0.elapsedTime = Int32(durationInSeconds)
-            $0.distance = Int32(distance)
+            $0.status = 200
+            $0.results = results
         }
     }
 
@@ -112,94 +71,12 @@ internal final class RouteGuideProvider: Org_Feuyeux_Grpc_LandingServiceAsyncPro
             responseStream: GRPCAsyncResponseStreamWriter<Org_Feuyeux_Grpc_TalkResponse>,
             context: GRPCAsyncServerCallContext
     ) async throws {
-
-    }
-
-    internal func routeChat(
-            requestStream: GRPCAsyncRequestStream<Routeguide_RouteNote>,
-            responseStream: GRPCAsyncResponseStreamWriter<Routeguide_RouteNote>,
-            context: GRPCAsyncServerCallContext
-    ) async throws {
-        for try await note in requestStream {
-            let existingNotes = await self.notes.addNote(note, to: note.location)
-
-            // Respond with all existing notes.
-            for existingNote in existingNotes {
-                try await responseStream.send(existingNote)
-            }
+        for try await request in requestStream {
+            try await responseStream.send(.with {
+                $0.status = 200
+                $0.results = []
+            })
         }
     }
-
-/// Returns a feature at the given location or an unnamed feature if none exist at that location.
-    private func lookupFeature(at location: Routeguide_Point) -> Routeguide_Feature? {
-        return self.features.first(where: {
-            $0.location.latitude == location.latitude && $0.location.longitude == location.longitude
-        })
-    }
-
 }
-
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-internal final actor Notes {
-    private var recordedNotes: [Routeguide_Point: [Routeguide_RouteNote]]
-
-    internal init() {
-        self.recordedNotes = [:]
-    }
-
-    /// Record a note at the given location and return the all notes which were previously recorded
-    /// at the location.
-    internal func addNote(
-            _ note: Routeguide_RouteNote,
-            to location: Routeguide_Point
-    ) -> ArraySlice<Routeguide_RouteNote> {
-        self.recordedNotes[location, default: []].append(note)
-        return self.recordedNotes[location]!.dropLast(1)
-    }
-}
-
 #endif // compiler(>=5.6)
-
-private func degreesToRadians(_ degrees: Double) -> Double {
-    return degrees * .pi / 180.0
-}
-
-extension Routeguide_Point {
-    fileprivate func distance(to other: Routeguide_Point) -> Double {
-        // Radius of Earth in meters
-        let radius = 6_371_000.0
-        // Points are in the E7 representation (degrees multiplied by 10**7 and rounded to the nearest
-        // integer). See also `Routeguide_Point`.
-        let coordinateFactor = 1.0e7
-
-        let lat1 = degreesToRadians(Double(self.latitude) / coordinateFactor)
-        let lat2 = degreesToRadians(Double(other.latitude) / coordinateFactor)
-        let lon1 = degreesToRadians(Double(self.longitude) / coordinateFactor)
-        let lon2 = degreesToRadians(Double(other.longitude) / coordinateFactor)
-
-        let deltaLat = lat2 - lat1
-        let deltaLon = lon2 - lon1
-
-        let a = sin(deltaLat / 2) * sin(deltaLat / 2)
-                + cos(lat1) * cos(lat2) * sin(deltaLon / 2) * sin(deltaLon / 2)
-        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-        return radius * c
-    }
-
-    func isWithin<Range: RangeExpression>(
-            latitude: Range,
-            longitude: Range
-    ) -> Bool where Range.Bound == Int32 {
-        return latitude.contains(self.latitude) && longitude.contains(self.longitude)
-    }
-}
-
-extension Routeguide_Feature {
-    static func unnamedFeature(at location: Routeguide_Point) -> Routeguide_Feature {
-        return .with {
-            $0.name = ""
-            $0.location = location
-        }
-    }
-}

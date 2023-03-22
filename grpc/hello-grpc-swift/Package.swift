@@ -74,10 +74,11 @@ extension Target {
                 .grpc,
                 .nio,
                 .protobuf,
+                .logging
             ],
             path: "Sources/Common",
             exclude: [
-                "route_guide.proto",
+                "landing.proto",
             ]
     )
 
@@ -105,6 +106,14 @@ extension Target {
             ],
             path: "Sources/Server"
     )
+    
+    static let helloCommonUT: Target = .testTarget(
+        name: "HelloCommonTest",
+        dependencies: [
+            "HelloCommon"
+            ],
+        path: "Tests/helloTests"
+    )
 }
 
 let package = Package(
@@ -114,5 +123,6 @@ let package = Package(
             .helloCommon,
             .helloClient,
             .helloServer,
+            .helloCommonUT
         ]
 )
