@@ -39,3 +39,4 @@ packages
 *.userprefs
 *.jar
 grpc/docker/hello-grpc-*
+Package.resolved

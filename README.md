@@ -1,6 +1,7 @@
 # Hello gRPC
 
-Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with 
+Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with
+
 - Java
 - Go
 - NodeJs
@@ -13,7 +14,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 
 ## :coffee: What is ... >
 
-### 1 Diagram
+### 1 Diagram(4 MODELS)
 
 ![grpc_diagram](img/hello_grpc_diagram.png)
 
@@ -27,27 +28,31 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 
 ### 3 Features
 
-|                | [java](grpc/hello-grpc-java)               | [go](grpc/hello-grpc-go)             | [nodejs](grpc/hello-grpc-nodejs)                 | [python](grpc/hello-grpc-python) | [rust](grpc/hello-grpc-rust)     | [c++](grpc/hello-grpc-cpp)             | [c#](grpc/hello-grpc-csharp)              | [kotlin](grpc/hello-grpc-kotlin)           | [swift](grpc/hello-grpc-swift)                            |
-| :------------- | :----------------------------------------- | :----------------------------------- | :----------------------------------------------- | :------------------------------- | :------------------------------- | :------------------------------------- | :---------------------------------------- | :----------------------------------------- | :-------------------------------------------------------- |
-| 4 MODELS       | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| build tools    | maven                                      | mod                                  | npm                                              | pip                              | cargo                            | cmake                                  | gradle                                    | nuget                                      | [Package Manager](https://www.swift.org/package-manager/) |
-| Array/Link/Map | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| Sleep          | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| Random         | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| Timestamp      | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| UUID           | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :green_apple:                          | :apple:                                   | :apple:                                    |                                                           |
-| UT             | [junit5](https://junit.org/junit5/)        | (testing)                            | [mocha](https://www.npmjs.com/package/mocha)     | (unittest)                       |                                  |                                        |                                           |                                            | (XCTest)                                                  |
-| LOG            | [log4j2](https://logging.apache.org/log4j) | [logrus](github.com/sirupsen/logrus) | [winston](https://www.npmjs.com/package/winston) | (logging)                        | [log4rs](https://docs.rs/log4rs) | [glog](https://github.com/google/glog) | [log4net](https://logging.apache.org/log) | [log4j2](https://logging.apache.org/log4j) | [swift-log](https://github.com/apple/swift-log.git)       |
-| Env            | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| Header         | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| TLS            | :apple:                                    | :apple:                              | 🥑                                                | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| Proxy          | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| Docker         | :apple:                                    | :apple:                              | :apple:                                          | :apple:                          | :apple:                          | :apple:                                | :apple:                                   | :apple:                                    |                                                           |
-| IDE            | IDEA                                       | GoLand                               | WebStorm                                         | PyCharm                          | CLion                            | CLion                                  | Rider                                     | IDEA                                       | Xcode                                                     |
+> 🍎 done 🍏 unimplemented 🥑 known issues
 
-> - :apple: done
-> - :green_apple: unimplemented
-> - 🥑 known issues
+|                                                                                  | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID |
+| :------------------------------------------------------------------------------- | :------- | :--------- | :---- | :----- | :-------- | :--- |
+| [java](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-java)     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [go](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-go)         | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [nodejs](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-nodejs) | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [python](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-python) | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [rust](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-rust)     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [c++](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-cpp)       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍏    |
+| [c#](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-csharp)     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [kotlin](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-kotlin) | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    |
+| [swift](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-swift)   | 🍎        | 🍎          | 🍏     | 🍎      | 🍎         | 🍎    |
+
+|                                                                                  | build tools                                               | UT                                           | LOG                                                                                  | Env  | Header | TLS  | Proxy | Docker | IDE      |
+| :------------------------------------------------------------------------------- | :-------------------------------------------------------- | :------------------------------------------- | :----------------------------------------------------------------------------------- | :--- | :----- | :--- | :---- | :----- | :------- |
+| [java](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-java)     | maven                                                     | [junit5](https://junit.org/junit5/)          | [log4j2](https://logging.apache.org/log4j)                                           | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | IDEA     |
+| [go](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-go)         | mod                                                       | (testing)                                    | [logrus](https://github.com/feuyeux/hello-grpc/blob/main/github.com/sirupsen/logrus) | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | GoLand   |
+| [nodejs](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-nodejs) | npm                                                       | [mocha](https://www.npmjs.com/package/mocha) | [winston](https://www.npmjs.com/package/winston)                                     | 🍎    | 🍎      | 🥑    | 🍎     | 🍎      | WebStorm |
+| [python](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-python) | pip                                                       | (unittest)                                   | (logging)                                                                            | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | PyCharm  |
+| [rust](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-rust)     | cargo                                                     |                                              | [log4rs](https://docs.rs/log4rs)                                                     | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | CLion    |
+| [c++](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-cpp)       | cmake                                                     |                                              | [glog](https://github.com/google/glog)                                               | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | CLion    |
+| [c#](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-csharp)     | gradle                                                    |                                              | [log4net](https://logging.apache.org/log)                                            | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | Rider    |
+| [kotlin](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-kotlin) | nuget                                                     |                                              | [log4j2](https://logging.apache.org/log4j)                                           | 🍎    | 🍎      | 🍎    | 🍎     | 🍎      | IDEA     |
+| [swift](https://github.com/feuyeux/hello-grpc/blob/main/grpc/hello-grpc-swift)   | [Package Manager](https://www.swift.org/package-manager/) | (XCTest)                                     | [swift-log](https://github.com/apple/swift-log.git)                                  | 🍏    | 🍏      | 🍏    | 🍏     | 🍏      | Xcode    |
 
 ### 4 Propagate
 
