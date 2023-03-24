@@ -1,6 +1,5 @@
 package org.feuyeux.grpc
 
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import org.apache.logging.log4j.kotlin.logger
 import org.feuyeux.grpc.proto.*
@@ -10,7 +9,6 @@ class LandingService(
     private var client: ProtoClient?
 ) : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
     private val log = logger()
-    private val helloList = listOf("Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요")
 
     override suspend fun talk(request: TalkRequest): TalkResponse {
         log.info("TALK REQUEST: data=${request.data},meta=${request.meta}")
@@ -78,21 +76,21 @@ class LandingService(
         }
     }
 
-    private fun buildResult(id: String): TalkResult {
+    fun buildResult(id: String): TalkResult {
         val index = try {
             id.toInt()
         } catch (ignored: NumberFormatException) {
             0
         }
-        val data = if (index > 5) {
+        val hello: String = if (index > 5) {
             "你好"
         } else {
-            helloList[index]
+            Utils.helloList[index]
         }
         val kv: MutableMap<String, String> = HashMap()
         kv["id"] = UUID.randomUUID().toString()
         kv["idx"] = id
-        kv["data"] = data
+        kv["data"] = hello + "," + Utils.match(hello)
         kv["meta"] = "KOTLIN"
         return TalkResult.newBuilder()
             .setId(System.nanoTime())
