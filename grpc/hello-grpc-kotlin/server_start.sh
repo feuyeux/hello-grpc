@@ -4,7 +4,7 @@ SCRIPT_PATH="$(
   pwd -P
 )/"
 cd "$SCRIPT_PATH" || exit
-export JAVA_HOME=${JAVA_17_HOME}
+export JAVA_HOME=${JAVA_19_HOME}
 cd server
 gradle clean installShadowDist
 build/install/server-shadow/bin/server

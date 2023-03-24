@@ -1,7 +1,7 @@
 ## grpc kotlin demo
 
 ```bash
-export JAVA_HOME=${JAVA_17_HOME}
+export JAVA_HOME=${JAVA_19_HOME}
 gradle clean installDist --warning-mode all
 gradle :server:ProtoServer
 gradle :client:ProtoClient

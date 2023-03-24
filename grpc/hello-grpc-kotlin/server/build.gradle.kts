@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":stub"))
     api(project(":client"))
     runtimeOnly("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
+    testImplementation(kotlin("test"))
 }
 
 tasks.register<JavaExec>("ProtoServer") {

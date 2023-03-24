@@ -1,4 +1,5 @@
-import com.google.protobuf.gradle.*
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.protobuf
 
 plugins {
     idea
@@ -21,6 +22,7 @@ dependencies {
     api("org.apache.logging.log4j:log4j-core:${rootProject.ext["log4jVersion"]}")
     api("com.fasterxml.jackson.core:jackson-databind:${rootProject.ext["jacksonVersion"]}")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${rootProject.ext["jacksonVersion"]}")
+    testImplementation(kotlin("test"))
 }
 
 java {
@@ -37,8 +39,7 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:${rootProject.ext["grpcVersion"]}"
         }
         id("grpckt") {
-            // https://repo1.maven.org/maven2/io/grpc/protoc-gen-grpc-kotlin/1.1.0/
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:${rootProject.ext["grpcKotlinVersion"]}:jdk7@jar"
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${rootProject.ext["grpcKotlinVersion"]}:jdk8@jar"
         }
     }
     generateProtoTasks {
@@ -53,6 +54,10 @@ protobuf {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.jvmTarget = "16"
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 idea {
