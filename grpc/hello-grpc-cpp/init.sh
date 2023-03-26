@@ -10,8 +10,7 @@ protoc --version
 ld -v
 
 echo "brew install"
-brew install autoconf automake libtool pkg-config
-
+# brew install autoconf automake libtool pkg-config
 # xcode-select --install
 
 ls -hlt /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
@@ -19,11 +18,16 @@ ls -hlt /Library/Developer/CommandLineTools/SDKs
 
 echo "build and install grpc & protobuf"
 
-export GRPC_RELEASE_TAG=v1.48.1
-# export GRPC_REPO=https://gitee.com/feuyeux/grpc.git
-# export GRPC_REPO=git@gitee.com:feuyeux/grpc.git
-export GRPC_REPO=https://github.com/grpc/grpc.git
-git clone -b ${GRPC_RELEASE_TAG} ${GRPC_REPO}
+if [ ! -d "grpc" ]; then
+  # https://gitee.com/feuyeux/grpc/tags
+  export GRPC_RELEASE_TAG=v1.53.0
+  # export GRPC_REPO=https://gitee.com/feuyeux/grpc.git
+  export GRPC_REPO=https://github.com/grpc/grpc.git
+  git clone -b ${GRPC_RELEASE_TAG} ${GRPC_REPO}
+else
+  echo "grpc dir has benn existed"
+fi
+
 cd grpc
 git submodule update --init --recursive
 
@@ -54,14 +58,14 @@ echo "build and install Abseil"
 
 mkdir -p third_party/abseil-cpp/cmake/build
 pushd third_party/abseil-cpp/cmake/build
-cmake -DCMAKE_INSTALL_PREFIX=$GRPC_INSTALL_PATH \
+cmake -DCMAKE_INSTALL_PREFIX="$GRPC_INSTALL_PATH" \
   -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
   ../..
 make -j
 make install
 popd
 
-ls -lht $GRPC_INSTALL_PATH
+ls -lht "$GRPC_INSTALL_PATH"
 
 brew install coreutils
 nproc --version

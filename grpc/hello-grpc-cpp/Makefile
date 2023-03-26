@@ -19,9 +19,9 @@ PROTOC = protoc
 GRPC_CPP_PLUGIN = grpc_cpp_plugin
 GRPC_CPP_PLUGIN_PATH ?= `which $(GRPC_CPP_PLUGIN)`
 
-PROTOS_PATH = protos
+PROTO_PATH = protos
 
-vpath %.proto $(PROTOS_PATH)
+vpath %.proto $(PROTO_PATH)
 
 all: system-check proto_client proto_server
 
@@ -33,11 +33,11 @@ proto_server: landing.pb.o landing.grpc.pb.o proto_server.o
 
 .PRECIOUS: %.grpc.pb.cc
 %.grpc.pb.cc: %.proto
-	$(PROTOC) -I $(PROTOS_PATH) --grpc_out=. --plugin=protoc-gen-grpc=$(GRPC_CPP_PLUGIN_PATH) $<
+	$(PROTOC) -I $(PROTO_PATH) --grpc_out=. --plugin=protoc-gen-grpc=$(GRPC_CPP_PLUGIN_PATH) $<
 
 .PRECIOUS: %.pb.cc
 %.pb.cc: %.proto
-	$(PROTOC) -I $(PROTOS_PATH) --cpp_out=. $<
+	$(PROTOC) -I $(PROTO_PATH) --cpp_out=. $<
 
 clean:
 	rm -f *.o *.pb.cc *.pb.h proto_client proto_server greeter_async_client greeter_async_client2 greeter_async_server
