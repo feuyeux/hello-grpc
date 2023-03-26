@@ -254,6 +254,7 @@ fn build_result(id: String) -> TalkResult {
     map.insert("idx".to_string(), id);
     let hello = HELLOS[index];
     let mut data = hello.to_string();
+    data += ",";
     data += thanks(hello);
     map.insert("data".to_string(), data);
     map.insert("meta".to_string(), "RUST".to_string());

@@ -14,7 +14,6 @@ namespace HelloClient
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(ProtoClient));
         private readonly LandingService.LandingServiceClient _client;
-        private readonly Random _random = new Random();
 
         private ProtoClient(LandingService.LandingServiceClient client)
         {
@@ -88,16 +87,11 @@ namespace HelloClient
             try
             {
                 using var call = _client.TalkMoreAnswerOne(BuildHeaders());
-                for (var i = 0; i < 3; ++i)
-                {
-                    var request = new TalkRequest
-                    {
-                        Data = _random.Next(5).ToString(),
-                        Meta = "C#"
-                    };
+                var requests = Utils.BuildLinkRequests();
+                foreach (var request in requests){
                     Log.Info($"Request: data={request.Data},meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
-                    await Task.Delay(_random.Next(100) + 100);
+                    await Task.Delay(Utils.HelloRandom.Next(100) + 100);
                 }
                 await call.RequestStream.CompleteAsync();
                 var talkResponse = await call.ResponseAsync;
@@ -122,17 +116,12 @@ namespace HelloClient
                         PrintResponse(talkResponse);
                     }
                 });
-
-                for (var i = 0; i < 3; ++i)
+                var requests = Utils.BuildLinkRequests();
+                foreach (var request in requests)
                 {
-                    var request = new TalkRequest
-                    {
-                        Data = _random.Next(5).ToString(),
-                        Meta = "C#"
-                    };
                     Log.Info($"Request: data={request.Data},meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
-                    await Task.Delay(_random.Next(100) + 100);
+                    await Task.Delay(Utils.HelloRandom.Next(100) + 100);
                 }
                 await call.RequestStream.CompleteAsync();
                 await responseReaderTask;

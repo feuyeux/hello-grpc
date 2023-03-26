@@ -1,12 +1,12 @@
-## grpc java demo
+# grpc java demo
 
-### 1 Generate & Build
+## 1 Generate & Build
 
 ```bash
 sh build.sh
 ```
 
-### 2 Run
+## 2 Run
 
 ```bash
 mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.server.ProtoServer"
@@ -16,7 +16,7 @@ mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.server.ProtoServer"
 mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.client.ProtoClient"
 ```
 
-### TLS
+## TLS
 
 ```bash
 openssl pkcs8 -topk8 -nocrypt -in /var/hello_grpc/server_certs/private.key -out
@@ -24,7 +24,7 @@ openssl pkcs8 -topk8 -nocrypt -in /var/hello_grpc/server_certs/private.key -out
 /var/hello_grpc/client_certs/private.key -out /var/hello_grpc/client_certs/private.pkcs8.key
 ```
 
-### Reference
+## Reference
 
 - [Language Guide (proto3)](https://developers.google.com/protocol-buffers/docs/proto3)
 - [gRPC Java Tutorials](https://grpc.io/docs/tutorials/basic/java.html)

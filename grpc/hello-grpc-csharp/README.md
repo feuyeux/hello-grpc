@@ -10,8 +10,12 @@
 ## BUILD
 
 ```bash
-rm -rf */bin */obj
+dotnet clean
 dotnet build
+
+sh server_start.sh
+
+sh client_start.sh
 ```
 
 grpc generated files:

@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Threading;
 using Common;
 using Grpc.Core;
-using HelloClient;
 using log4net;
 using log4net.Config;
 using Org.Feuyeux.Grpc;
@@ -54,7 +53,7 @@ namespace HelloServer
                 {
                     Services =
                     {
-                        Org.Feuyeux.Grpc.LandingService.BindService(landingServiceImpl)
+                        LandingService.BindService(landingServiceImpl)
                     },
                     Ports = { new ServerPort("0.0.0.0", int.Parse(port), sslCredentials) }
                 };
@@ -66,7 +65,7 @@ namespace HelloServer
                 {
                     Services =
                     {
-                        Org.Feuyeux.Grpc.LandingService.BindService(landingServiceImpl)
+                        LandingService.BindService(landingServiceImpl)
                     },
                     Ports = { new ServerPort("0.0.0.0", int.Parse(port), ServerCredentials.Insecure) }
                 };

@@ -1,9 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Common;
 using Grpc.Core;
-using HelloClient;
 using log4net;
 using Org.Feuyeux.Grpc;
 
@@ -12,17 +11,12 @@ namespace HelloServer
     public class LandingServiceImpl : LandingService.LandingServiceBase
     {
         private readonly ILog _log = LogManager.GetLogger(typeof(LandingServiceImpl));
-        private LandingService.LandingServiceClient _protoClient;
-        
+        private LandingService.LandingServiceClient? _protoClient;
+
         public void SetProtoClient(LandingService.LandingServiceClient protoClient)
         {
             this._protoClient = protoClient;
         }
-
-        private readonly List<string> _helloList = new()
-        {
-            "Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"
-        };
 
         public override Task<TalkResponse> Talk(TalkRequest request, ServerCallContext context)
         {
@@ -44,7 +38,8 @@ namespace HelloServer
             }
         }
 
-        public override async Task TalkOneAnswerMore(TalkRequest request, IServerStreamWriter<TalkResponse> responseStream, ServerCallContext context)
+        public override async Task TalkOneAnswerMore(TalkRequest request,
+            IServerStreamWriter<TalkResponse> responseStream, ServerCallContext context)
         {
             _log.Info($"TalkOneAnswerMore REQUEST: data={request.Data},meta={request.Meta}");
 
@@ -75,7 +70,8 @@ namespace HelloServer
             }
         }
 
-        public override async Task<TalkResponse> TalkMoreAnswerOne(IAsyncStreamReader<TalkRequest> requestStream, ServerCallContext context)
+        public override async Task<TalkResponse> TalkMoreAnswerOne(IAsyncStreamReader<TalkRequest> requestStream,
+            ServerCallContext context)
         {
             if (_protoClient == null)
             {
@@ -92,6 +88,7 @@ namespace HelloServer
                     _log.Info($"TalkMoreAnswerOne REQUEST: data={request.Data},meta={request.Meta}");
                     talkResponse.Results.Add(BuildResult(request.Data));
                 }
+
                 PrintHeaders(context);
                 stopwatch.Stop();
                 return talkResponse;
@@ -107,6 +104,7 @@ namespace HelloServer
                     _log.Info($"Request: data={request.Data},meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
                 }
+
                 stopwatch.Stop();
                 await call.RequestStream.CompleteAsync();
                 var talkResponse = await call.ResponseAsync;
@@ -114,7 +112,8 @@ namespace HelloServer
             }
         }
 
-        public override async Task TalkBidirectional(IAsyncStreamReader<TalkRequest> requestStream, IServerStreamWriter<TalkResponse> responseStream,
+        public override async Task TalkBidirectional(IAsyncStreamReader<TalkRequest> requestStream,
+            IServerStreamWriter<TalkResponse> responseStream,
             ServerCallContext context)
         {
             if (_protoClient == null)
@@ -132,6 +131,7 @@ namespace HelloServer
 
                     await responseStream.WriteAsync(response);
                 }
+
                 PrintHeaders(context);
             }
             else
@@ -147,11 +147,12 @@ namespace HelloServer
                 });
 
                 while (await requestStream.MoveNext())
-                { 
+                {
                     var request = requestStream.Current;
                     _log.Info($"Request: data={request.Data},meta={request.Meta}");
-                    await call.RequestStream.WriteAsync(request); 
+                    await call.RequestStream.WriteAsync(request);
                 }
+
                 await call.RequestStream.CompleteAsync();
                 await responseReaderTask;
             }
@@ -159,6 +160,7 @@ namespace HelloServer
 
         private TalkResult BuildResult(string id)
         {
+            var hello = Utils.HelloList[int.Parse(id)];
             return new TalkResult
             {
                 Id = DateTimeOffset.Now.ToUnixTimeSeconds(),
@@ -167,7 +169,7 @@ namespace HelloServer
                 {
                     ["id"] = Guid.NewGuid().ToString(),
                     ["idx"] = id,
-                    ["data"] = _helloList[int.Parse(id)],
+                    ["data"] = hello + "," + Utils.AnsMap[hello],
                     ["meta"] = "C#"
                 }
             };
@@ -180,6 +182,7 @@ namespace HelloServer
             {
                 _log.Info($"->H {header.Key}:{header.Value}");
             }
+
             return headers;
         }
     }
