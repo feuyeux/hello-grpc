@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
+
 
 use std::collections::HashMap;
 use std::env;
@@ -20,35 +19,13 @@ use tonic::{
 };
 use uuid::Uuid;
 
-use hello_grpc_rust::common::*;
+use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH, grpc_backend_host, has_backend};
+use hello_grpc_rust::common::trans::{CERT_CHAIN,CERT_KEY,TRACING_KEYS};
+use hello_grpc_rust::common::utils::{HELLOS};
 use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::landing_service_server::{LandingService, LandingServiceServer};
 
-static HELLOS: [&'static str; 6] = [
-    "Hello",
-    "Bonjour",
-    "Hola",
-    "こんにちは",
-    "Ciao",
-    "안녕하세요",
-];
-
-static TRACING_KEYS: [&'static str; 7] = [
-    "x-request-id",
-    "x-b3-traceid",
-    "x-b3-spanid",
-    "x-b3-parentspanid",
-    "x-b3-sampled",
-    "x-b3-flags",
-    "x-ot-span-context",
-];
-
-//https://myssl.com/create_test_cert.html
-const CERT: &str = "/var/hello_grpc/server_certs/cert.pem";
-const CERT_KEY: &str = "/var/hello_grpc/server_certs/private.key";
-const CERT_CHAIN: &str = "/var/hello_grpc/server_certs/full_chain.pem";
-const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

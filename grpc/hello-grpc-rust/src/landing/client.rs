@@ -3,18 +3,15 @@ use std::time::Duration;
 
 use futures::stream;
 use log::{debug, error, info};
-use rand::Rng;
+
 use tokio::time;
 use tonic::Request;
 use tonic::transport::Channel;
 
-use hello_grpc_rust::common::*;
+use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH};
+use hello_grpc_rust::common::utils::{random_id};
 use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
-
-pub mod landing {
-    tonic::include_proto!("org.feuyeux.grpc");
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -129,13 +126,6 @@ async fn talk(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn 
     let response = client.talk(request).await?;
     print_response(response.get_ref());
     Ok(())
-}
-
-fn random_id(max: i32) -> String {
-    let mut rng = rand::thread_rng();
-    let r = rng.gen_range(0..max);
-    let s = format!("{}", r);
-    s
 }
 
 fn print_response(response: &TalkResponse) {
