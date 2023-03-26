@@ -1,5 +1,3 @@
-
-
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
@@ -20,12 +18,11 @@ use tonic::{
 use uuid::Uuid;
 
 use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH, grpc_backend_host, has_backend};
-use hello_grpc_rust::common::trans::{CERT_CHAIN,CERT_KEY,TRACING_KEYS};
-use hello_grpc_rust::common::utils::{HELLOS};
 use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::landing_service_server::{LandingService, LandingServiceServer};
-
+use hello_grpc_rust::common::trans::{CERT_CHAIN, CERT_KEY, TRACING_KEYS};
+use hello_grpc_rust::common::utils::{HELLOS, thanks};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -255,7 +252,10 @@ fn build_result(id: String) -> TalkResult {
     let uuid = Uuid::new_v4();
     map.insert("id".to_string(), uuid.to_string());
     map.insert("idx".to_string(), id);
-    map.insert("data".to_string(), HELLOS[index].to_string());
+    let hello = HELLOS[index];
+    let mut data = hello.to_string();
+    data += thanks(hello);
+    map.insert("data".to_string(), data);
     map.insert("meta".to_string(), "RUST".to_string());
     let ok = ResultType::Ok as i32;
     let result = TalkResult {

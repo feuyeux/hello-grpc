@@ -3,15 +3,14 @@ use std::time::Duration;
 
 use futures::stream;
 use log::{debug, error, info};
-
 use tokio::time;
 use tonic::Request;
 use tonic::transport::Channel;
 
 use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH};
-use hello_grpc_rust::common::utils::{random_id};
 use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
+use hello_grpc_rust::common::utils::{build_link_requests, random_id};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -69,19 +68,7 @@ async fn talk_bidirectional(client: &mut LandingServiceClient<Channel>) -> Resul
 
 async fn talk_more_answer_one(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn std::error::Error>> {
     info!("TalkMoreAnswerOne");
-    let mut requests = vec![];
-    requests.push(TalkRequest {
-        data: random_id(5),
-        meta: "RUST".to_string(),
-    });
-    requests.push(TalkRequest {
-        data: random_id(5),
-        meta: "RUST".to_string(),
-    });
-    requests.push(TalkRequest {
-        data: random_id(5),
-        meta: "RUST".to_string(),
-    });
+    let requests = build_link_requests();
 
     let mut request = Request::new(stream::iter(requests));
     request.metadata_mut().insert("k1", "v1".parse().unwrap());
