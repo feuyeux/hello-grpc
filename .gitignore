@@ -41,3 +41,4 @@ packages
 grpc/docker/hello-grpc-*
 Package.resolved
 *.sln.DotSettings.user
+grpc/hello-grpc-cpp/grpc/*

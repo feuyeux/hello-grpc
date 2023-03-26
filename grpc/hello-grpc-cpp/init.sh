@@ -21,8 +21,8 @@ echo "build and install grpc & protobuf"
 if [ ! -d "grpc" ]; then
   # https://gitee.com/feuyeux/grpc/tags
   export GRPC_RELEASE_TAG=v1.53.0
-  # export GRPC_REPO=https://gitee.com/feuyeux/grpc.git
-  export GRPC_REPO=https://github.com/grpc/grpc.git
+  export GRPC_REPO=https://gitee.com/feuyeux/grpc.git
+  # export GRPC_REPO=https://github.com/grpc/grpc.git
   git clone -b ${GRPC_RELEASE_TAG} ${GRPC_REPO}
 else
   echo "grpc dir has benn existed"
