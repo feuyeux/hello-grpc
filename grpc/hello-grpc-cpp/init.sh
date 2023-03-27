@@ -62,3 +62,18 @@ ls -lht "$GRPC_INSTALL_PATH"
 
 brew install coreutils
 nproc --version
+
+# ut
+cd "$HOME"/github
+git clone https://gitee.com/feuyeux/Catch2
+cd Catch2
+cmake -Bbuild -H. -DBUILD_TESTING=OFF
+sudo cmake --build build/ --target install
+
+## uuid https://github.com/crashoz/uuid_v4
+#cd "$HOME"/github
+#git clone https://gitee.com/feuyeux/uuid_v4
+#cd uuid_v4
+#mkdir build && cd build
+#cmake -DCMAKE_INSTALL_PREFIX="$GRPC_INSTALL_PATH"
+#cmake --install .

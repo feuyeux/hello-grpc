@@ -11,6 +11,7 @@
 #include <regex>
 #include "connection.h"
 #include "utils.h"
+//#include <uuid_v4/uuid_v4.h>
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -153,7 +154,15 @@ public:
         talkResult->set_type(ResultType::OK);
         google::protobuf::Map<string, string> *pMap = talkResult->mutable_kv();
         int index = stoi(id);
-        (*pMap)["id"] = "UUID-TODO";
+
+        // UUIDv4::UUIDGenerator<std::mt19937_64> uuidGenerator;
+        // UUIDv4::UUID uuid = uuidGenerator.getUUID();
+        // TODO
+        //  uuid_v4/uuid_v4.h It heavily relies on SIMD operations (instruction sets SSE4.1/AVX/AVX2)
+        //  Mac does not support AVX2 instruction set
+        // const string &iid = uuid.str();
+
+        (*pMap)["id"] = "iid";
         (*pMap)["idx"] = id;
         (*pMap)["meta"] = "C++";
         const string &hello = Utils::hello(index);
@@ -230,5 +239,3 @@ int main(__attribute__((unused)) int argc, char **argv) {
     google::ShutdownGoogleLogging();
     return 0;
 }
-
-//TODO UUID https://github.com/r-lyeh-archived/sole

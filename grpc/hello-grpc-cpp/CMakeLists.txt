@@ -52,9 +52,11 @@ add_executable(tests "tests/hello_test.cpp")
 find_package(glog 0.6.0 REQUIRED)
 # UT
 find_package(Catch2 3 REQUIRED)
+# UUID
+#find_package(uuid_v4 1.0.0 REQUIRED)
 
 #https://cmake.org/cmake/help/latest/command/target_link_libraries.html
-target_link_libraries(proto_server landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog)
+target_link_libraries(proto_server landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog #[[uuid_v4::uuid_v4]])
 target_link_libraries(proto_client landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog)
 target_link_libraries(tests PRIVATE Catch2::Catch2 landing_grpc_proto glog::glog)
 
