@@ -162,7 +162,7 @@ public:
         //  Mac does not support AVX2 instruction set
         // const string &iid = uuid.str();
 
-        (*pMap)["id"] = "iid";
+        (*pMap)["id"] = "UUID-TODO";
         (*pMap)["idx"] = id;
         (*pMap)["meta"] = "C++";
         const string &hello = Utils::hello(index);
@@ -239,3 +239,5 @@ int main(__attribute__((unused)) int argc, char **argv) {
     google::ShutdownGoogleLogging();
     return 0;
 }
+
+//TODO UUID https://github.com/r-lyeh-archived/sole
