@@ -1,0 +1,16 @@
+## Add c++14 flags BEGIN ##
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  if (CMAKE_CXX_STANDARD LESS 14)
+    message(FATAL_ERROR "CMAKE_CXX_STANDARD is less than 14, please specify at least SET(CMAKE_CXX_STANDARD 14)")
+  endif()
+endif()
+if (NOT DEFINED CMAKE_CXX_STANDARD_REQUIRED)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+if (NOT DEFINED CMAKE_CXX_EXTENSIONS)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
+## Add c++14 flags END ##
