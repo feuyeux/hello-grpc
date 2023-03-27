@@ -28,7 +28,7 @@ using hello::Utils;
 
 class LandingClient {
 public:
-    explicit LandingClient(const std::shared_ptr<Channel>& channel) : client(LandingService::NewStub(channel)) {}
+    explicit LandingClient(const std::shared_ptr<Channel> &channel) : client(LandingService::NewStub(channel)) {}
 
     void Talk() {
         ClientContext context;
@@ -55,7 +55,7 @@ public:
         const std::unique_ptr<::grpc::ClientReader<TalkResponse>>
                 &response(client->TalkOneAnswerMore(&context, talkRequest));
         while (response->Read(&talkResponse)) {
-            printResponse(context,talkResponse);
+            printResponse(context, talkResponse);
         }
     }
 
@@ -64,13 +64,9 @@ public:
         buildHeaders(context);
         TalkResponse talkResponse;
         std::unique_ptr<ClientWriter<TalkRequest>> writer(client->TalkMoreAnswerOne(&context, &talkResponse));
-        TalkRequest talkRequest;
-        for (int i = 0; i < 3; ++i) {
-            string data = grpc::to_string(hello::Utils::random(5));
-            //std::to_string
-            talkRequest.set_data(data);
-            talkRequest.set_meta("C++");
-            if (!writer->Write(talkRequest)) {
+        const list<TalkRequest> &requests = Utils::buildLinkRequests();
+        for (auto &&request: requests) {
+            if (!writer->Write(request)) {
                 // Broken stream.
                 break;
             }
@@ -79,7 +75,7 @@ public:
         writer->WritesDone();
         Status status = writer->Finish();
         if (status.ok()) {
-            printResponse(context,talkResponse);
+            printResponse(context, talkResponse);
         } else {
             LOG(INFO) << "Error:" << status.error_code() << ": " << status.error_message();
         }
@@ -91,21 +87,14 @@ public:
         TalkResponse talkResponse;
         std::shared_ptr<ClientReaderWriter<TalkRequest, TalkResponse>> stream(client->TalkBidirectional(&context));
         std::thread writer([stream]() {
-            std::vector<TalkRequest> request_list;
-            for (int i = 0; i < 3; ++i) {
-                TalkRequest talkRequest;
-                string data = grpc::to_string(hello::Utils::random(5));
-                talkRequest.set_data(data);
-                talkRequest.set_meta("C++");
-                request_list.push_back(talkRequest);
-            }
-            for (const TalkRequest &talkRequest: request_list) {
-                stream->Write(talkRequest);
+            const list<TalkRequest> &requests = Utils::buildLinkRequests();
+            for (auto &&request: requests) {
+                stream->Write(request);
             }
             stream->WritesDone();
         });
         while (stream->Read(&talkResponse)) {
-            printResponse(context,talkResponse);
+            printResponse(context, talkResponse);
         }
         writer.join();
         Status status = stream->Finish();
@@ -114,13 +103,13 @@ public:
         }
     }
 
-    static void printResponse(ClientContext &context, const TalkResponse& response) {
+    static void printResponse(ClientContext &context, const TalkResponse &response) {
         const multimap<grpc::string_ref, grpc::string_ref> &headers = context.GetServerInitialMetadata();
-        for (const auto & header : headers) {
+        for (const auto &header: headers) {
             LOG(INFO) << "<-H " << header.first << ":" << header.second;
         }
         const RepeatedPtrField<TalkResult> &talkResults = response.results();
-        for (const TalkResult& result: talkResults) {
+        for (const TalkResult &result: talkResults) {
             const Map<string, string> &kv = result.kv();
             string id(kv.at("id"));
             string idx(kv.at("idx"));
@@ -136,7 +125,7 @@ public:
                       << "]";
         }
         const multimap<grpc::string_ref, grpc::string_ref> &tails = context.GetServerTrailingMetadata();
-        for (const auto & tail : tails) {
+        for (const auto &tail: tails) {
             LOG(INFO) << "<-L " << tail.first << ":" << tail.second;
         }
     }

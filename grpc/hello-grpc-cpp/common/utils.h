@@ -1,8 +1,20 @@
 using namespace std;
 
+#include "landing.grpc.pb.h"
+
+using org::feuyeux::grpc::TalkRequest;
+
+#include <list>
+
 namespace hello {
     class Utils {
     public:
+        static string hello(int index);
+
+        static string thanks(string key);
+
+        static list<TalkRequest> buildLinkRequests();
+
         static void initLog(char *const *argv);
 
         static int random(int n);

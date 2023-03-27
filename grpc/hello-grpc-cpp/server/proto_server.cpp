@@ -37,8 +37,6 @@ const char rootCert[] = "/var/hello_grpc/server_certs/myssl_root.cer";
 
 class LandingServiceImpl final : public LandingService::Service {
 public:
-    std::vector<string> HELLO_LIST{"Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"};
-
     Status Talk(ServerContext *context, const TalkRequest *request, TalkResponse *response) override {
         if (client != nullptr) {
             grpc::ClientContext c;
@@ -157,8 +155,9 @@ public:
         int index = stoi(id);
         (*pMap)["id"] = "UUID-TODO";
         (*pMap)["idx"] = id;
-        (*pMap)["meta"] = "c++";
-        (*pMap)["data"] = HELLO_LIST[index];
+        (*pMap)["meta"] = "C++";
+        const string &hello = Utils::hello(index);
+        (*pMap)["data"] = hello + "," + Utils::thanks(hello);
     }
 
     static void printHeaders(const ServerContext *context) {

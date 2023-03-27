@@ -1,12 +1,45 @@
 #include <chrono>
-#include <stdlib.h>
 #include <string>
 #include <glog/logging.h>
 #include "utils.h"
+#include <map>
+#include <list>
 
 using std::getenv;
 
 namespace hello {
+    static vector<string> HELLO_LIST{"Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"};
+    static map<string, string> ANS_MAP = {
+            {"你好",    "非常感谢"},
+            {"Hello",   "Thank you very much"},
+            {"Bonjour", "Merci beaucoup"},
+            {"Hola",    "Muchas Gracias"},
+            {"こんにちは",   "どうも ありがとう ございます"},
+            {"Ciao",    "Mille Grazie"},
+            {"안녕하세요",   "대단히 감사합니다"}
+    };
+
+    string Utils::hello(int index) {
+        return HELLO_LIST[index];
+    }
+
+    string Utils::thanks(string key) {
+        return ANS_MAP[key];
+    }
+
+    list<TalkRequest> Utils::buildLinkRequests() {
+        list<TalkRequest> requests = {};
+        TalkRequest talkRequest;
+        for (int i = 0; i < 3; ++i) {
+            string data = grpc::to_string(random(5));
+            //std::to_string
+            talkRequest.set_data(data);
+            talkRequest.set_meta("C++");
+            requests.push_front(talkRequest);
+        }
+        return requests;
+    }
+
     int Utils::random(int n) {
         int a = 0;
         int b = n;

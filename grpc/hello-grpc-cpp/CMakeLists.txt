@@ -24,7 +24,7 @@ add_custom_command(
         ARGS --grpc_out "${PB_PATH}"
         --cpp_out "${PB_PATH}"
         -I "${landing_proto_path}"
-        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
+        --plugin=protoc-gen-grpc= "${_GRPC_CPP_PLUGIN_EXECUTABLE}"
         "${landing_proto}"
         DEPENDS "${landing_proto}")
 
@@ -54,9 +54,9 @@ find_package(glog 0.6.0 REQUIRED)
 find_package(Catch2 3 REQUIRED)
 
 #https://cmake.org/cmake/help/latest/command/target_link_libraries.html
-target_link_libraries(proto_server landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog )
+target_link_libraries(proto_server landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog)
 target_link_libraries(proto_client landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog)
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(tests PRIVATE Catch2::Catch2 landing_grpc_proto glog::glog)
 
 include(CTest)
 include(Catch)

@@ -1,20 +1,24 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_session.hpp>
+#include <glog/logging.h>
+#include "utils.h"
 
-static int Factorial(int number)
+
+TEST_CASE("Hello List[1] is Bonjour", "[single-file]")
 {
-    return number <= 1 ? number : Factorial(number - 1) * number; // fail
-    // return number <= 1 ? 1      : Factorial( number - 1 ) * number;  // pass
+    const string &hello = hello::Utils::hello(1);
+    LOG(INFO) << "hello:" << hello;
+    REQUIRE(hello == "Bonjour");
+    const string &thanks= hello::Utils::thanks(hello);
+    LOG(INFO) << "thanks:" << thanks;
+    REQUIRE(thanks == "Merci beaucoup");
 }
 
-TEST_CASE("Factorial of 0 is 1 (fail)", "[single-file]")
-{
-    REQUIRE(Factorial(0) == 1);
-}
+int main(__attribute__((unused)) int argc, char **argv) {
+    // your setup ...
+    hello::Utils::initLog(argv);
+    int result = Catch::Session().run(argc, argv);
+    // your clean-up...
 
-TEST_CASE("Factorials of 1 and higher are computed (pass)", "[single-file]")
-{
-    REQUIRE(Factorial(1) == 1);
-    REQUIRE(Factorial(2) == 2);
-    REQUIRE(Factorial(3) == 6);
-    REQUIRE(Factorial(10) == 3628800);
+    return result;
 }

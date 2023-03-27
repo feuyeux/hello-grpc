@@ -35,3 +35,9 @@ sh build.sh
 ```bash
 ./build/proto_client
 ```
+
+## 4 Test
+
+```bash
+./build/tests
+```
