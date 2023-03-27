@@ -45,13 +45,22 @@ target_link_libraries(landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTO
 #https://cmake.org/cmake/help/latest/command/add_executable.html
 add_executable(proto_client "client/proto_client.cpp")
 add_executable(proto_server "server/proto_server.cpp")
+add_executable(tests "tests/hello_test.cpp")
 
 # dependencies
+# LOG
 find_package(glog 0.6.0 REQUIRED)
+# UT
+find_package(Catch2 3 REQUIRED)
 
 #https://cmake.org/cmake/help/latest/command/target_link_libraries.html
-target_link_libraries(proto_server landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog)
+target_link_libraries(proto_server landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog )
 target_link_libraries(proto_client landing_grpc_proto ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} glog::glog)
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(tests)
 
 #https://cmake.org/cmake/help/latest/command/add_definitions.html
 #add_definitions(-DFOO -DBAR ...)

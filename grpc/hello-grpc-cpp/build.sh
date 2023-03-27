@@ -12,11 +12,13 @@ else
   rm -rf build
   mkdir build
 fi
+
+echo "start to build hello grpc ..."
 pushd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 echo
 
 echo "make:"
-make -j$(nproc)
+make -j"$(nproc)"
 popd
-echo "DONE."
+echo "build hello grpc successfully."
