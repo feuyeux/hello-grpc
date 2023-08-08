@@ -9,7 +9,7 @@
 
   <properties>
     <jdk.version>19</jdk.version>
-    <grpc.version>1.54.0</grpc.version>
+    <grpc.version>1.57.0</grpc.version>
     <protoc.version>3.21.1</protoc.version>
     <log4j-slf4j-impl.version>2.20.0</log4j-slf4j-impl.version>
     <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
@@ -17,8 +17,8 @@
     <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
     <annotations-api.version>6.0.53</annotations-api.version>
     <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
-    <lombok.version>1.18.26</lombok.version>
-    <junit.version>5.9.2</junit.version>
+    <lombok.version>1.18.28</lombok.version>
+    <junit.version>5.9.3</junit.version>
     <system-rules.version>1.19.0</system-rules.version>
   </properties>
 

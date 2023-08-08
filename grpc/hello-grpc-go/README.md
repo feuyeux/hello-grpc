@@ -1,26 +1,30 @@
-## grpc golang demo
+# grpc golang demo
 
-### 1 Setup
+## 1 Setup
 
 ```bash
 sh init.sh
 ```
 
-### 2 Generate
+## 2 Generate
 
 ```bash
 sh proto2go.sh
 ```
 
-### 3 Build
+## 3 Build
+
 ```bash
 go mod tidy
-go install .
-go list -mod=mod -json all
-go build
+go fmt hello-grpc/...
+go fmt server/proto_server.go
+go fmt client/proto_client.go
+go install server/proto_server.go
+go install client/proto_client.go
 ```
 
-### 4 Run
+## 4 Run
+
 ```bash
 sh server_start.sh
 ```
@@ -28,4 +32,3 @@ sh server_start.sh
 ```bash
 sh client_start.sh
 ```
-
