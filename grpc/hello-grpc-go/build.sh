@@ -1,5 +1,8 @@
-go env -w GOPROXY=https://mirrors.aliyun.com/goproxy,direct
+#!/bin/bash
+export GOPROXY=https://mirrors.aliyun.com/goproxy/
 go mod tidy
-go install .
-go list -mod=mod -json all
-go build
+go fmt hello-grpc/...
+go fmt server/proto_server.go
+go fmt client/proto_client.go
+go install server/proto_server.go
+go install client/proto_client.go
