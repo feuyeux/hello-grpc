@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package org.feuyeux.grpc;
+
+message PingRequest {
+    string ping = 1;
+}
+
+message PingResponse {
+    string pong = 1;
+}
+
+service Ping {
+    rpc Ping(PingRequest) returns (PingResponse);
+}

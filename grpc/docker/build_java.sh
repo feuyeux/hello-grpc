@@ -6,7 +6,7 @@ cd "$(
   pwd -P
 )/" || exit
 
-export JAVA_HOME=${JAVA_17_HOME}
+export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 echo "JAVA_HOME=${JAVA_HOME}"
 mvn -v
 echo
