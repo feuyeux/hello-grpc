@@ -38,6 +38,9 @@ public class Connection {
   public static String backPort = System.getenv(GRPC_HELLO_BACKEND_PORT);
   public static String secure = System.getenv(GRPC_HELLO_SECURE);
 
+  public static String PING_TARGET = "etcd:///pingsvc";
+  public static String PING_DIR = "pingsvc/";
+
   private static String getGrcServerHost() {
     if (server == null) {
       return "localhost";

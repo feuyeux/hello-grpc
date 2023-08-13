@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC2046
+
 cd "$(
     cd "$(dirname "$0")" >/dev/null 2>&1
     pwd -P
@@ -57,8 +59,8 @@ echo "start server3:8883"
 docker run --rm --name server3 -d \
     -p 8883:8883 \
     -e GRPC_SERVER_PORT=8883 \
-    -e GRPC_HELLO_SECURE=${is_tls} \
-    feuyeux/grpc_server_${server3_lang}:1.0.0
+    -e GRPC_HELLO_SECURE="${is_tls}" \
+    feuyeux/grpc_server_"${server3_lang}":1.0.0
 docker ps
 
 echo "start server2:8882"
@@ -67,8 +69,8 @@ docker run --rm --name server2 -d \
     -e GRPC_SERVER_PORT=8882 \
     -e GRPC_HELLO_BACKEND=$(ipconfig getifaddr en0) \
     -e GRPC_HELLO_BACKEND_PORT=8883 \
-    -e GRPC_HELLO_SECURE=${is_tls} \
-    feuyeux/grpc_server_${server2_lang}:1.0.0
+    -e GRPC_HELLO_SECURE="${is_tls}" \
+    feuyeux/grpc_server_"${server2_lang}":1.0.0
 docker ps
 
 echo "start server1:8881"
@@ -77,8 +79,8 @@ docker run --rm --name server1 -d \
     -e GRPC_SERVER_PORT=8881 \
     -e GRPC_HELLO_BACKEND=$(ipconfig getifaddr en0) \
     -e GRPC_HELLO_BACKEND_PORT=8882 \
-    -e GRPC_HELLO_SECURE=${is_tls} \
-    feuyeux/grpc_server_${server1_lang}:1.0.0
+    -e GRPC_HELLO_SECURE="${is_tls}" \
+    feuyeux/grpc_server_"${server1_lang}":1.0.0
 docker ps
 
 sleep 5s
@@ -87,7 +89,7 @@ echo "start client"
 docker run --rm --name grpc_client \
     -e GRPC_SERVER=$(ipconfig getifaddr en0) \
     -e GRPC_SERVER_PORT=8882 \
-    -e GRPC_HELLO_SECURE=${is_tls} \
-    feuyeux/grpc_client_${client_lang}:1.0.0
+    -e GRPC_HELLO_SECURE="${is_tls}" \
+    feuyeux/grpc_client_"${client_lang}":1.0.0
 
 # sh docker/tools/clean_world.sh

@@ -8,21 +8,22 @@ import io.etcd.jetcd.options.PutOption;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.PingGrpc;
 import org.feuyeux.grpc.PingOuterClass;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Logger;
 
+import static org.feuyeux.grpc.common.Connection.PING_DIR;
+
+@Slf4j
 public class PingServer {
-    private static final Logger logger = Logger.getLogger(PingServer.class.getName());
     private static final String ENDPOINT = "http://127.0.0.1:2379";
-    private static final String PING_DIR = "pingsvc/";
     private static final long TTL = 5L;
 
-    private int port;
+    private final int port;
     private Server server;
     private Client etcd;
 
@@ -35,17 +36,17 @@ public class PingServer {
                 .addService(new PingImpl())
                 .build()
                 .start();
-        logger.info("Server started on port:" + port);
+        log.info("Server started on port:" + port);
 
         final URI uri = URI.create("http://localhost:" + port);
         this.etcd = Client.builder()
                 .endpoints(URI.create(ENDPOINT))
                 .build();
         long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
-        etcd.getKVClient().put(
-                ByteSequence.from(PING_DIR + uri.toASCIIString(), Charsets.US_ASCII),
-                ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII),
-                PutOption.newBuilder().withLeaseId(leaseId).build());
+        ByteSequence key = ByteSequence.from(PING_DIR + uri.toASCIIString(), Charsets.US_ASCII);
+        ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
+        PutOption option = PutOption.builder().withLeaseId(leaseId).build();
+        etcd.getKVClient().put(key, value, option);
         etcd.getLeaseClient().keepAlive(leaseId, new EtcdServiceRegisterer());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -76,7 +77,7 @@ public class PingServer {
 
         @Override
         public void ping(PingOuterClass.PingRequest request, StreamObserver<PingOuterClass.PingResponse> responseObserver) {
-            logger.info(request.getPing());
+            log.info(request.getPing());
             responseObserver.onNext(PingOuterClass.PingResponse.newBuilder()
                     .setPong("PONG from port: " + port)
                     .build());
@@ -84,17 +85,19 @@ public class PingServer {
         }
     }
 
-    class EtcdServiceRegisterer implements StreamObserver<LeaseKeepAliveResponse> {
+    static class EtcdServiceRegisterer implements StreamObserver<LeaseKeepAliveResponse> {
 
         @Override
         public void onNext(LeaseKeepAliveResponse value) {
-            logger.info("got renewal for lease: " + value.getID());
+            log.info("got renewal for lease: " + value.getID());
         }
 
         @Override
-        public void onError(Throwable t) {}
+        public void onError(Throwable t) {
+        }
 
         @Override
-        public void onCompleted() {}
+        public void onCompleted() {
+        }
     }
 }

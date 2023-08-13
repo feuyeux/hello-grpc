@@ -3,6 +3,7 @@ package org.feuyeux.grpc.etcd;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.PingGrpc;
 import org.feuyeux.grpc.PingOuterClass;
 
@@ -10,13 +11,12 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import static org.feuyeux.grpc.common.Connection.PING_TARGET;
+
+@Slf4j
 public class PingClient {
-    private static final Logger logger = Logger.getLogger(PingClient.class.getName());
     private static final String ENDPOINT = "http://127.0.0.1:2379";
-    private static final String TARGET = "etcd:///pingsvc";
 
     private final ManagedChannel channel;
     private final PingGrpc.PingBlockingStub blockingStub;
@@ -24,7 +24,7 @@ public class PingClient {
     public PingClient() {
         List<URI> endpoints = new ArrayList<>();
         endpoints.add(URI.create(ENDPOINT));
-        this.channel = ManagedChannelBuilder.forTarget(TARGET)
+        this.channel = ManagedChannelBuilder.forTarget(PING_TARGET)
                 .nameResolverFactory(
                         EtcdNameResolverProvider
                                 .forEndpoints(endpoints)
@@ -41,16 +41,16 @@ public class PingClient {
     }
 
     public void ping() {
-        logger.info("trying to PING ");
+        log.info("trying to PING ");
         PingOuterClass.PingRequest request = PingOuterClass.PingRequest.newBuilder().setPing("PING").build();
         PingOuterClass.PingResponse response;
         try {
             response = blockingStub.ping(request);
         } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+            log.warn("RPC failed: {}", e.getStatus());
             return;
         }
-        logger.info("got response: " + response.getPong());
+        log.info("got response: " + response.getPong());
     }
 
     /**
