@@ -53,19 +53,13 @@ public class ProtoClient {
     try {
       protoClient = new ProtoClient();
       log.info("Unary RPC");
-      TalkRequest talkRequest = TalkRequest.newBuilder()
-          .setMeta("JAVA")
-          .setData("0")
-          .build();
+      TalkRequest talkRequest = TalkRequest.newBuilder().setMeta("JAVA").setData("0").build();
       log.info("Request data:{},meta:{}", talkRequest.getData(), talkRequest.getMeta());
       TalkResponse response = protoClient.talk(talkRequest);
       printResponse(response);
 
       log.info("Server streaming RPC");
-      talkRequest = TalkRequest.newBuilder()
-          .setMeta("JAVA")
-          .setData("0,1,2")
-          .build();
+      talkRequest = TalkRequest.newBuilder().setMeta("JAVA").setData("0,1,2").build();
       log.info("Request data:{},meta:{}", talkRequest.getData(), talkRequest.getMeta());
       List<TalkResponse> talkResponses = protoClient.talkOneAnswerMore(talkRequest);
       talkResponses.forEach(ProtoClient::printResponse);
@@ -88,15 +82,22 @@ public class ProtoClient {
     }
   }
 
-
-
   private static void printResponse(TalkResponse response) {
-    response.getResultsList().forEach(result -> {
-          Map<String, String> kv = result.getKvMap();
-          log.info("{} {} [{} {} {},{}:{}]", response.getStatus(), result.getId(),
-              kv.get("meta"), result.getType(), kv.get("id"), kv.get("idx"), kv.get("data"));
-        }
-    );
+    response
+        .getResultsList()
+        .forEach(
+            result -> {
+              Map<String, String> kv = result.getKvMap();
+              log.info(
+                  "{} {} [{} {} {},{}:{}]",
+                  response.getStatus(),
+                  result.getId(),
+                  kv.get("meta"),
+                  result.getType(),
+                  kv.get("id"),
+                  kv.get("idx"),
+                  kv.get("data"));
+            });
   }
 
   public void shutdown() throws InterruptedException {
@@ -116,19 +117,20 @@ public class ProtoClient {
 
   public void talkMoreAnswerOne(LinkedList<TalkRequest> requests) throws InterruptedException {
     final CountDownLatch finishLatch = new CountDownLatch(1);
-    final StreamObserver<TalkRequest> requestObserver = asyncStub.talkMoreAnswerOne(
-        getResponseObserver(finishLatch));
+    final StreamObserver<TalkRequest> requestObserver =
+        asyncStub.talkMoreAnswerOne(getResponseObserver(finishLatch));
     try {
-      requests.forEach(request -> {
-        if (finishLatch.getCount() > 0) {
-          log.info("Request data:{},meta:{}", request.getData(), request.getMeta());
-          requestObserver.onNext(request);
-          try {
-            TimeUnit.MICROSECONDS.sleep(5);
-          } catch (InterruptedException ignored) {
-          }
-        }
-      });
+      requests.forEach(
+          request -> {
+            if (finishLatch.getCount() > 0) {
+              log.info("Request data:{},meta:{}", request.getData(), request.getMeta());
+              requestObserver.onNext(request);
+              try {
+                TimeUnit.MICROSECONDS.sleep(5);
+              } catch (InterruptedException ignored) {
+              }
+            }
+          });
     } catch (Exception e) {
       requestObserver.onError(e);
       throw e;
@@ -144,19 +146,20 @@ public class ProtoClient {
 
   public void talkBidirectional(List<TalkRequest> requests) throws InterruptedException {
     final CountDownLatch finishLatch = new CountDownLatch(1);
-    final StreamObserver<TalkRequest> requestObserver = asyncStub.talkBidirectional(
-        getResponseObserver(finishLatch));
+    final StreamObserver<TalkRequest> requestObserver =
+        asyncStub.talkBidirectional(getResponseObserver(finishLatch));
     try {
-      requests.forEach(request -> {
-        if (finishLatch.getCount() > 0) {
-          log.info("Request data:{},meta:{}", request.getData(), request.getMeta());
-          requestObserver.onNext(request);
-          try {
-            TimeUnit.SECONDS.sleep(1);
-          } catch (InterruptedException ignored) {
-          }
-        }
-      });
+      requests.forEach(
+          request -> {
+            if (finishLatch.getCount() > 0) {
+              log.info("Request data:{},meta:{}", request.getData(), request.getMeta());
+              requestObserver.onNext(request);
+              try {
+                TimeUnit.SECONDS.sleep(1);
+              } catch (InterruptedException ignored) {
+              }
+            }
+          });
     } catch (Exception e) {
       requestObserver.onError(e);
       throw e;

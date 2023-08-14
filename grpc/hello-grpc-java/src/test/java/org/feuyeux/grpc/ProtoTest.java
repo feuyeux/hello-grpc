@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.client.ProtoClient;
 import org.feuyeux.grpc.proto.TalkRequest;
@@ -18,14 +19,11 @@ import org.junit.Rule;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.jupiter.api.Test;
 
-/**
- * Created by erichan feuyeux on 16/8/22
- */
+/** Created by erichan feuyeux on 16/8/22 */
 @Slf4j
 public class ProtoTest {
 
-  @Rule
-  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+  @Rule public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
   public static String getLocalIp() {
     try {
@@ -57,14 +55,12 @@ public class ProtoTest {
   }
 
   @Test()
-  public void testProto() throws InterruptedException, IOException {
+  public void testProto() throws InterruptedException, IOException, ExecutionException {
     environmentVariables.set("GRPC_HELLO_SECURE", "Y");
     ProtoServer protoServer = new ProtoServer(new LandingServiceImpl());
     ProtoClient protoClient = new ProtoClient();
-    TalkRequest talkRequest = TalkRequest.newBuilder()
-        .setMeta("id=" + System.nanoTime())
-        .setData("eric")
-        .build();
+    TalkRequest talkRequest =
+        TalkRequest.newBuilder().setMeta("id=" + System.nanoTime()).setData("eric").build();
     log.info("REQUEST:{}", talkRequest);
     TalkResponse talkResponse = protoClient.talk(talkRequest);
 

@@ -36,9 +36,11 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
     log.info("TALK REQUEST: data={},meta={}", request.getData(), request.getMeta());
     TalkResponse response;
     if (blockingStub == null) {
-      response = TalkResponse.newBuilder()
-          .setStatus(200)
-          .addResults(buildResult(request.getData())).build();
+      response =
+          TalkResponse.newBuilder()
+              .setStatus(200)
+              .addResults(buildResult(request.getData()))
+              .build();
     } else {
       response = blockingStub.talk(request);
     }
@@ -47,16 +49,15 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   }
 
   @Override
-  public void talkOneAnswerMore(TalkRequest request,
-      StreamObserver<TalkResponse> responseObserver) {
+  public void talkOneAnswerMore(
+      TalkRequest request, StreamObserver<TalkResponse> responseObserver) {
     log.info("TalkOneAnswerMore REQUEST: data={},meta={}", request.getData(), request.getMeta());
     if (blockingStub == null) {
       List<TalkResponse> talkResponses = new ArrayList<>();
       String[] datas = request.getData().split(",");
       for (String data : datas) {
-        TalkResponse response = TalkResponse.newBuilder()
-            .setStatus(200)
-            .addResults(buildResult(data)).build();
+        TalkResponse response =
+            TalkResponse.newBuilder().setStatus(200).addResults(buildResult(data)).build();
         talkResponses.add(response);
       }
       talkResponses.forEach(responseObserver::onNext);
@@ -76,8 +77,8 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
 
         @Override
         public void onNext(TalkRequest request) {
-          log.info("TalkMoreAnswerOne REQUEST: data={},meta={}",
-              request.getData(), request.getMeta());
+          log.info(
+              "TalkMoreAnswerOne REQUEST: data={},meta={}", request.getData(), request.getMeta());
           talkResults.add(buildResult(request.getData()));
         }
 
@@ -96,13 +97,13 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
     } else {
       StreamObserver<TalkResponse> nextObserver = nextObserver(responseObserver);
       return new StreamObserver<>() {
-        final StreamObserver<TalkRequest> requestObserver = asyncStub.talkMoreAnswerOne(
-            nextObserver);
+        final StreamObserver<TalkRequest> requestObserver =
+            asyncStub.talkMoreAnswerOne(nextObserver);
 
         @Override
         public void onNext(TalkRequest request) {
-          log.info("TalkMoreAnswerOne REQUEST: data={},meta={}", request.getData(),
-              request.getMeta());
+          log.info(
+              "TalkMoreAnswerOne REQUEST: data={},meta={}", request.getData(), request.getMeta());
           requestObserver.onNext(request);
         }
 
@@ -119,8 +120,7 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
     }
   }
 
-  private StreamObserver<TalkResponse> nextObserver(
-      StreamObserver<TalkResponse> responseObserver) {
+  private StreamObserver<TalkResponse> nextObserver(StreamObserver<TalkResponse> responseObserver) {
     return new StreamObserver<>() {
       @Override
       public void onNext(TalkResponse talkResponse) {
@@ -146,10 +146,12 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
       return new StreamObserver<>() {
         @Override
         public void onNext(TalkRequest request) {
-          log.info("TalkBidirectional REQUEST: data={},meta={}", request.getData(),
-              request.getMeta());
+          log.info(
+              "TalkBidirectional REQUEST: data={},meta={}", request.getData(), request.getMeta());
           responseObserver.onNext(
-              TalkResponse.newBuilder().setStatus(200).addResults(buildResult(request.getData()))
+              TalkResponse.newBuilder()
+                  .setStatus(200)
+                  .addResults(buildResult(request.getData()))
                   .build());
         }
 
@@ -169,8 +171,8 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
       return new StreamObserver<>() {
         @Override
         public void onNext(TalkRequest request) {
-          log.info("TalkBidirectional REQUEST: data={},meta={}", request.getData(),
-              request.getMeta());
+          log.info(
+              "TalkBidirectional REQUEST: data={},meta={}", request.getData(), request.getMeta());
           requestObserver.onNext(request);
         }
 

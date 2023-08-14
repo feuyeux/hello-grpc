@@ -4,5 +4,5 @@ etcd
 $ brew install etcd
 $ etcd
 $ etcdctl member list
-$ etcdctl lease lis
+$ etcdctl lease list
 ```

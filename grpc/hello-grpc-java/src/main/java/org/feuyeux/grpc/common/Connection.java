@@ -1,30 +1,41 @@
 package org.feuyeux.grpc.common;
 
+import com.google.common.base.Charsets;
+import io.etcd.jetcd.ByteSequence;
+import io.etcd.jetcd.Client;
+import io.etcd.jetcd.lease.LeaseKeepAliveResponse;
+import io.etcd.jetcd.options.PutOption;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLException;
 import lombok.extern.slf4j.Slf4j;
+import org.feuyeux.grpc.etcd.EtcdNameResolverProvider;
 
 @Slf4j
 public class Connection {
+  public static String version = "grpc.version=1.56.1,protoc.version=3.21.1";
 
   public static final String GRPC_HELLO_SECURE = "GRPC_HELLO_SECURE";
   public static final String GRPC_SERVER = "GRPC_SERVER";
   public static final String GRPC_SERVER_PORT = "GRPC_SERVER_PORT";
   public static final String GRPC_HELLO_BACKEND = "GRPC_HELLO_BACKEND";
   public static final String GRPC_HELLO_BACKEND_PORT = "GRPC_HELLO_BACKEND_PORT";
-
-  public static String version = "grpc.version=1.49.0,protoc.version=3.21.1,20220913";
+  public static final String GRPC_HELLO_DISCOVERY = "GRPC_HELLO_DISCOVERY";
 
   private static final int port = 9996;
 
-  //https://myssl.com/create_test_cert.html
+  // https://myssl.com/create_test_cert.html
   private static String cert = "/var/hello_grpc/client_certs/cert.pem";
   private static String certKey = "/var/hello_grpc/client_certs/private.pkcs8.key";
   private static String certChain = "/var/hello_grpc/client_certs/full_chain.pem";
@@ -38,8 +49,14 @@ public class Connection {
   public static String backPort = System.getenv(GRPC_HELLO_BACKEND_PORT);
   public static String secure = System.getenv(GRPC_HELLO_SECURE);
 
+  /* == discovery == */
+  public static String discovery = System.getenv(GRPC_HELLO_DISCOVERY);
+  private static final String ENDPOINT = "http://127.0.0.1:2379";
+  private static final long TTL = 5L;
+
   public static String PING_TARGET = "etcd:///pingsvc";
   public static String PING_DIR = "pingsvc/";
+  /* == discovery == */
 
   private static String getGrcServerHost() {
     if (server == null) {
@@ -84,16 +101,63 @@ public class Connection {
     } else {
       connectTo = getGrcServerHost();
     }
+    ManagedChannelBuilder<?> builder;
+    if (isDiscovery()) {
+      List<URI> endpoints = new ArrayList<>();
+      endpoints.add(URI.create(ENDPOINT));
+      EtcdNameResolverProvider nameResolver = EtcdNameResolverProvider.forEndpoints(endpoints);
+      builder =
+          ManagedChannelBuilder.forTarget(PING_TARGET)
+              .nameResolverFactory(nameResolver)
+              .defaultLoadBalancingPolicy("round_robin");
+    } else {
+      builder = NettyChannelBuilder.forAddress(connectTo, port);
+    }
     if (secure == null || !secure.equals("Y")) {
       log.info("Connect with InSecure({}:{}) [{}]", connectTo, port, version);
-      return ManagedChannelBuilder.forAddress(connectTo, port).usePlaintext().build();
+      return builder.usePlaintext().build();
     } else {
       log.info("Connect with TLS({}:{}) [{}]", connectTo, port, version);
-      return NettyChannelBuilder.forAddress(connectTo, port)
-          .overrideAuthority(serverName)  /* Only for using provided test certs. */
+      return ((NettyChannelBuilder) builder)
+          .overrideAuthority(serverName) /* Only for using provided test certs. */
           .sslContext(buildSslContext())
           .negotiationType(NegotiationType.TLS)
           .build();
     }
+  }
+
+  public static void register(Client etcd) throws ExecutionException, InterruptedException {
+    if (isDiscovery()) {
+      final URI uri = URI.create("http://" + getGrcServerHost() + ":" + getGrcServerPort());
+      etcd = Client.builder().endpoints(URI.create(ENDPOINT)).build();
+      long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
+      ByteSequence key = ByteSequence.from(PING_DIR + uri.toASCIIString(), Charsets.US_ASCII);
+      ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
+      PutOption option = PutOption.builder().withLeaseId(leaseId).build();
+      etcd.getKVClient().put(key, value, option);
+      etcd.getLeaseClient()
+          .keepAlive(
+              leaseId,
+              new StreamObserver<>() {
+                @Override
+                public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
+                  log.debug("got renewal for lease: " + leaseKeepAliveResponse.getID());
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                  log.error("", throwable);
+                }
+
+                @Override
+                public void onCompleted() {
+                  log.info("lease completed");
+                }
+              });
+    }
+  }
+
+  private static boolean isDiscovery() {
+    return discovery != null && "etcd".equals(discovery);
   }
 }

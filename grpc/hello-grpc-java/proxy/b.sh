@@ -7,5 +7,5 @@ cd "$(
 cd ..
 sh build.sh
 export GRPC_SERVER_PORT=9997
-export JAVA_HOME=${JAVA_17_HOME}
+export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.server.ProtoServer"

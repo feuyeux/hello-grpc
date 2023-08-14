@@ -4,6 +4,6 @@ SCRIPT_PATH="$(
   pwd -P
 )"
 cd "$SCRIPT_PATH" || exit
-export JAVA_HOME=${JAVA_17_HOME}
+export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 cd hello-grpc-java
 mvn clean install -DskipTests
