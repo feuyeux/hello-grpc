@@ -30,29 +30,29 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 
 > 🍎 done 🍏 unimplemented 🥑 known issues
 
-||4 MODELS|Collection|Sleep|Random|Timestamp|UUID|
-|:---|:--|:---|:---|:---|:---|:---|
-|java|🍎|🍎|🍎|🍎|🍎|🍎|
-|go|🍎|🍎|🍎|🍎|🍎|🍎|
-|nodejs|🍎|🍎|🍎|🍎|🍎|🍎|
-|python|🍎|🍎|🍎|🍎|🍎|🍎|
-|rust|🍎|🍎|🍎|🍎|🍎|🍎|
-|c++|🍎|🍎|🍎|🍎|🍎|🍏|
-|c#|🍎|🍎|🍎|🍎|🍎|🍎|
-|kotlin|🍎|🍎|🍎|🍎|🍎|🍎|
-|swift|🍎|🍎|🍎|🍎|🍎|🍎|
+|        | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env  |
+| :----- | :------- | :--------- | :---- | :----- | :-------- | :--- | :--- |
+| java   | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| go     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| nodejs | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| python | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| rust   | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| c++    | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍏    | 🍎    |
+| c#     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| kotlin | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+| swift  | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍏    |
 
-||build tools|UT|LOG|Env|Header|TLS|Proxy|Docker|IDE|
-|:-----|:----|:---|:---|:---|:-----|:---|:----|:-----|:--|
-|java|[maven][1]|[junit5][2]|[log4j2][3]|🍎|🍎|🍎|🍎|🍎|[IDEA][4]|
-|go|(mod)|(testing)|[logrus][5]|🍎|🍎|🍎|🍎|🍎|[GoLand][6]|
-|nodejs|[npm][7]|[mocha][8]|[winston][9]|🍎|🍎|🥑|🍎|🍎|[WebStorm][10]|
-|python|[pip][11]|(unittest)|(logging)|🍎|🍎|🍎|🍎|🍎|[PyCharm][12]|
-|rust|[cargo][13]|(test)|[log4rs][14]|🍎|🍎|🍎|🍎|🍎|[CLion][15]|
-|c++|[cmake][16]|[Catch2][24]|[glog][17]|🍎|🍎|🍎|🍎|🍎|[CLion][15]|
-|c#|[nuget][18]|[NUnit](https://nunit.org/)|[log4net][19]|🍎|🍎|🍎|🍎|🍎|[Rider][20]|
-|kotlin|[gradle][21]|[junit5][2]|[log4j2][3]|🍎|🍎|🍎|🍎|🍎|[IDEA][4]|
-|swift|[spm][22]|(XCTest)|[swift-log][23]|🍏|🍏|🍏|🍏|🍏|Xcode|
+|        | build tools  | UT                          | LOG             | Header | TLS  | Proxy | Discovery | Docker | IDE            |
+| :----- | :----------- | :-------------------------- | :-------------- | :----- | :--- | :---- | :-------- | :----- | :------------- |
+| java   | [maven][1]   | [junit5][2]                 | [log4j2][3]     | 🍎      | 🍎    | 🍎     | 🍎         | 🍎      | [IDEA][4]      |
+| go     | (mod)        | (testing)                   | [logrus][5]     | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [GoLand][6]    |
+| nodejs | [npm][7]     | [mocha][8]                  | [winston][9]    | 🍎      | 🥑    | 🍎     | 🍏         | 🍎      | [WebStorm][10] |
+| python | [pip][11]    | (unittest)                  | (logging)       | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [PyCharm][12]  |
+| rust   | [cargo][13]  | (test)                      | [log4rs][14]    | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [CLion][15]    |
+| c++    | [cmake][16]  | [Catch2][24]                | [glog][17]      | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [CLion][15]    |
+| c#     | [nuget][18]  | [NUnit](https://nunit.org/) | [log4net][19]   | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [Rider][20]    |
+| kotlin | [gradle][21] | [junit5][2]                 | [log4j2][3]     | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [IDEA][4]      |
+| swift  | [spm][22]    | (XCTest)                    | [swift-log][23] | 🍏      | 🍏    | 🍏     | 🍏         | 🍏      | Xcode          |
 
 ### 4 Propagate
 
