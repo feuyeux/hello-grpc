@@ -43,7 +43,7 @@ public class ProtoClient {
     log.info("GRPC_HELLO_BACKEND:{}", backEnd);
     log.info("GRPC_HELLO_BACKEND_PORT:{}", backPort);
     log.info("GRPC_HELLO_SECURE:{}", secure);
-    log.info("GRPC_HELLO_DISCOVERY:{} {}", discovery,discoveryEndpoint);
+    log.info("GRPC_HELLO_DISCOVERY:{} {}", discovery, discoveryEndpoint);
     log.info("host:{}", System.getenv("host.docker.internal"));
 
     ProtoClient protoClient = null;
