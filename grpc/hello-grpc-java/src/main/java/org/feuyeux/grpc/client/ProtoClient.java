@@ -1,10 +1,6 @@
 package org.feuyeux.grpc.client;
 
-import static org.feuyeux.grpc.common.Connection.backEnd;
-import static org.feuyeux.grpc.common.Connection.backPort;
-import static org.feuyeux.grpc.common.Connection.currentPort;
-import static org.feuyeux.grpc.common.Connection.secure;
-import static org.feuyeux.grpc.common.Connection.server;
+import static org.feuyeux.grpc.common.Connection.*;
 import static org.feuyeux.grpc.common.HelloUtils.buildLinkRequests;
 
 import io.grpc.Channel;
@@ -47,6 +43,7 @@ public class ProtoClient {
     log.info("GRPC_HELLO_BACKEND:{}", backEnd);
     log.info("GRPC_HELLO_BACKEND_PORT:{}", backPort);
     log.info("GRPC_HELLO_SECURE:{}", secure);
+    log.info("GRPC_HELLO_DISCOVERY:{} {}", discovery,discoveryEndpoint);
     log.info("host:{}", System.getenv("host.docker.internal"));
 
     ProtoClient protoClient = null;
