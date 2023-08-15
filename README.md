@@ -28,7 +28,9 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 
 ### 3 Features
 
-> 🍎 done 🍏 unimplemented 🥑 known issues
+> 🍎 `:apple:` done 
+> 🍏 `:green_apple:` unimplemented
+> 🥑 `:avocado:` known issues
 
 |        | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env  |
 | :----- | :------- | :--------- | :---- | :----- | :-------- | :--- | :--- |
