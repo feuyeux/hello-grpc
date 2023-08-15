@@ -1,6 +1,6 @@
-## grpc rust[tonic] demo
+# grpc rust[tonic] demo
 
-### 1 Generate & Build
+## 1 Generate & Build
 
 ```bash
 export RUSTUP_DIST_SERVER="https://mirrors.tuna.tsinghua.edu.cn/rustup"
@@ -13,7 +13,7 @@ rustup show
 cargo build
 ```
 
-#### dev
+### dev
 
 find generated rust code(org.feuyeux.grpc.rs)
 
@@ -28,7 +28,7 @@ $ find . -name "*.rs"
 ./src/server.rs
 ```
 
-### 2 Run
+## 2 Run
 
 ```bash
 cargo run --bin proto-server
@@ -38,7 +38,7 @@ cargo run --bin proto-server
 cargo run --bin proto-client
 ```
 
-### Release(Crossing Platform Support)
+## Release(Crossing Platform Support)
 
 ```bash
 # https://doc.rust-lang.org/nightly/rustc/platform-support.html
@@ -73,6 +73,6 @@ rustup show
 CROSS_COMPILE=x86_64-linux-musl-gcc cargo build --release --bin proto-server --target=x86_64-unknown-linux-musl
 ```
 
-### Reference
+## Reference
 
 - <https://github.com/hyperium/tonic>
