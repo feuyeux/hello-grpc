@@ -13,5 +13,6 @@ require (
 	google.golang.org/grpc latest
 	// https://github.com/protocolbuffers/protobuf-go/tags
 	google.golang.org/protobuf latest
+	github.com/stretchr/testify latest
 )
 
