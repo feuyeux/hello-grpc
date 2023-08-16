@@ -56,8 +56,7 @@ public class Connection {
   private static final String ENDPOINT = "http://127.0.0.1:2379";
   private static final long TTL = 5L;
 
-  public static String PING_TARGET = "etcd:///pingsvc";
-  public static String PING_DIR = "pingsvc/";
+  public static String SVC_DISC_NAME = "hello-grpc";
   /* == discovery == */
 
   private static String getGrcServerHost() {
@@ -104,22 +103,31 @@ public class Connection {
       connectTo = getGrcServerHost();
     }
     ManagedChannelBuilder<?> builder;
+    String target = "etcd:///" + SVC_DISC_NAME;
     if (isDiscovery()) {
       List<URI> endpoints = new ArrayList<>();
       endpoints.add(URI.create(getDiscoveryEndpoint()));
       EtcdNameResolverProvider nameResolver = EtcdNameResolverProvider.forEndpoints(endpoints);
       builder =
-          ManagedChannelBuilder.forTarget(PING_TARGET)
+          ManagedChannelBuilder.forTarget(target)
               .nameResolverFactory(nameResolver)
               .defaultLoadBalancingPolicy("round_robin");
     } else {
       builder = NettyChannelBuilder.forAddress(connectTo, port);
     }
     if (secure == null || !secure.equals("Y")) {
-      log.info("Connect with InSecure({}:{}) [{}]", connectTo, port, version);
+      if (isDiscovery()) {
+        log.info("Connect with InSecure({}) [{}]", target, port, version);
+      } else {
+        log.info("Connect with InSecure({}:{}) [{}]", connectTo, port, version);
+      }
       return builder.usePlaintext().build();
     } else {
-      log.info("Connect with TLS({}:{}) [{}]", connectTo, port, version);
+      if (isDiscovery()) {
+        log.info("Connect with TLS({}) [{}]", target, port, version);
+      } else {
+        log.info("Connect with TLS({}:{}) [{}]", connectTo, port, version);
+      }
       return ((NettyChannelBuilder) builder)
           .overrideAuthority(serverName) /* Only for using provided test certs. */
           .sslContext(buildSslContext())
@@ -129,11 +137,11 @@ public class Connection {
   }
 
   private static String getDiscoveryEndpoint() {
-    String endpoint=ENDPOINT;
+    String endpoint = ENDPOINT;
     if (discoveryEndpoint != null) {
-      endpoint= discoveryEndpoint;
+      endpoint = discoveryEndpoint;
     }
-    log.info("DiscoveryEndpoint:{}",endpoint);
+    log.info("DiscoveryEndpoint:{}", endpoint);
     return endpoint;
   }
 
@@ -142,7 +150,8 @@ public class Connection {
       final URI uri = URI.create("http://" + getGrcServerHost() + ":" + getGrcServerPort());
       etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build();
       long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
-      ByteSequence key = ByteSequence.from(PING_DIR + uri.toASCIIString(), Charsets.US_ASCII);
+      ByteSequence key =
+          ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), Charsets.US_ASCII);
       ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
       PutOption option = PutOption.builder().withLeaseId(leaseId).build();
       etcd.getKVClient().put(key, value, option);

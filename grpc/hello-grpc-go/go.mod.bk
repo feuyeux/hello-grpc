@@ -1,6 +1,6 @@
 module hello-grpc
 
-go 1.20
+go 1.21
 
 require (
     // https://github.com/google/uuid/tags
@@ -13,6 +13,8 @@ require (
 	google.golang.org/grpc latest
 	// https://github.com/protocolbuffers/protobuf-go/tags
 	google.golang.org/protobuf latest
+	// https://github.com/stretchr/testify/tags
 	github.com/stretchr/testify latest
+	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
+	go.etcd.io/etcd/client/v3 latest
 )
-

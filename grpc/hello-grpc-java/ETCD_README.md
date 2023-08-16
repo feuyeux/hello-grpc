@@ -40,5 +40,6 @@ http GET http://127.0.0.1:2379/version
 export HOST="$(ipconfig getifaddr en0)"
 http GET "http://${HOST}:2379/version"
 
-GRPC_HELLO_DISCOVERY_ENDPOINT=http://192.168.0.105:2379;GRPC_HELLO_DISCOVERY=etcd
+export GRPC_HELLO_DISCOVERY_ENDPOINT=http://${HOST}:2379
+export GRPC_HELLO_DISCOVERY=etcd
 ```

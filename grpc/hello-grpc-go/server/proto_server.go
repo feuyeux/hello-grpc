@@ -2,13 +2,15 @@ package main
 
 import (
 	"crypto/tls"
-	"google.golang.org/grpc/keepalive"
 	"hello-grpc/common/pb"
 	"hello-grpc/conn"
+	"hello-grpc/etcd/register"
 	"hello-grpc/server/service"
 	"net"
 	"os"
 	"time"
+
+	"google.golang.org/grpc/keepalive"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -25,11 +27,6 @@ var (
 
 func main() {
 	port := conn.GrpcServerPort()
-	lis, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-		return
-	}
 	var s *grpc.Server
 	var srv service.ProtoServer
 	if os.Getenv("GRPC_HELLO_SECURE") == "Y" {
@@ -69,6 +66,29 @@ func main() {
 	pb.RegisterLandingServiceServer(s, &srv)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
+
+	lis, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+		return
+	}
+
+	// 注册服务
+	if os.Getenv("GRPC_HELLO_DISCOVERY") == "etcd" {
+		etcdRegister, err := register.NewEtcdRegister()
+		if err != nil {
+			log.Errorln(err)
+			return
+		}
+		defer etcdRegister.Close()
+		endpoint := os.Getenv("GRPC_HELLO_DISCOVERY_ENDPOINT")
+		svcDiscName := "hello-grpc"
+		err = etcdRegister.RegisterServer("/etcd/"+svcDiscName, endpoint, 5)
+		if err != nil {
+			log.Errorf("register error %v \n", err)
+			return
+		}
+	}
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
