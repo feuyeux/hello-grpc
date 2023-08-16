@@ -30,16 +30,19 @@ etcd -advertise-client-urls http://192.168.0.105:2379 -listen-client-urls http:/
 ```
 
 ```sh
-$ etcdctl member list
-$ etcdctl lease list
+etcdctl member list
+```
+
+```sh
+etcdctl lease list
 ```
 
 ```sh
 http GET http://127.0.0.1:2379/version
 
 export HOST="$(ipconfig getifaddr en0)"
-http GET "http://${HOST}:2379/version"
-
-export GRPC_HELLO_DISCOVERY_ENDPOINT=http://${HOST}:2379
+export GRPC_HELLO_DISCOVERY_ENDPOINT=${HOST}:2379
 export GRPC_HELLO_DISCOVERY=etcd
+
+http GET "http://${HOST}:2379/version"
 ```

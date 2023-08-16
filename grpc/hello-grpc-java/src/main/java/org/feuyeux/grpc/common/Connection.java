@@ -117,14 +117,14 @@ public class Connection {
     }
     if (secure == null || !secure.equals("Y")) {
       if (isDiscovery()) {
-        log.info("Connect with InSecure({}) [{}]", target, port, version);
+        log.info("Connect with InSecure({}) [{}]", target, version);
       } else {
         log.info("Connect with InSecure({}:{}) [{}]", connectTo, port, version);
       }
       return builder.usePlaintext().build();
     } else {
       if (isDiscovery()) {
-        log.info("Connect with TLS({}) [{}]", target, port, version);
+        log.info("Connect with TLS({}) [{}]", target, version);
       } else {
         log.info("Connect with TLS({}:{}) [{}]", connectTo, port, version);
       }
@@ -139,7 +139,7 @@ public class Connection {
   private static String getDiscoveryEndpoint() {
     String endpoint = ENDPOINT;
     if (discoveryEndpoint != null) {
-      endpoint = discoveryEndpoint;
+      endpoint = "http://" + discoveryEndpoint;
     }
     log.info("DiscoveryEndpoint:{}", endpoint);
     return endpoint;

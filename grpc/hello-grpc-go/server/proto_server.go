@@ -26,6 +26,7 @@ var (
 )
 
 func main() {
+	host := conn.GrpcServerHost()
 	port := conn.GrpcServerPort()
 	var s *grpc.Server
 	var srv service.ProtoServer
@@ -66,8 +67,9 @@ func main() {
 	pb.RegisterLandingServiceServer(s, &srv)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-
-	lis, err := net.Listen("tcp", ":"+port)
+	address := host + ":" + port
+	log.Infof("address %s", address)
+	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 		return
@@ -81,9 +83,8 @@ func main() {
 			return
 		}
 		defer etcdRegister.Close()
-		endpoint := os.Getenv("GRPC_HELLO_DISCOVERY_ENDPOINT")
 		svcDiscName := "hello-grpc"
-		err = etcdRegister.RegisterServer("/etcd/"+svcDiscName, endpoint, 5)
+		err = etcdRegister.RegisterServer("/etcd/"+svcDiscName, address, 5)
 		if err != nil {
 			log.Errorf("register error %v \n", err)
 			return

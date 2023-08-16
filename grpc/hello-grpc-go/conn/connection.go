@@ -4,12 +4,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/keepalive"
 	"hello-grpc/common/pb"
-	"io/ioutil"
+	"hello-grpc/etcd/discover"
 	"os"
 	"time"
+
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/resolver"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -52,19 +54,66 @@ func Connect() *pb.LandingServiceClient {
 		address = fmt.Sprintf("%s:%s", backend, port)
 	} else {
 		port = GrpcServerPort()
-		address = fmt.Sprintf("%s:%s", grpcServerHost(), port)
+		address = fmt.Sprintf("%s:%s", GrpcServerHost(), port)
 	}
+	discovery := os.Getenv("GRPC_HELLO_DISCOVERY")
+	var client pb.LandingServiceClient
+	if discovery == "etcd" {
+		client = pb.NewLandingServiceClient(buildConnByDisc())
+	} else {
+		client = pb.NewLandingServiceClient(buildConn(address))
+	}
+	return &client
+}
+
+func buildConnByDisc() *grpc.ClientConn {
+	etcdResolverBuilder := discover.NewEtcdResolverBuilder()
+	resolver.Register(etcdResolverBuilder)
+	const grpcServiceConfig = `{"loadBalancingPolicy":"round_robin"}`
+	secure := os.Getenv("GRPC_HELLO_SECURE")
+	if secure == "Y" {
+		log.Infof("Connect With TLS through discovery")
+		cert, err := tls.LoadX509KeyPair(certChain, certKey)
+		if err != nil {
+			panic(err)
+		}
+		c := &tls.Config{
+			ServerName:   serverName,
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      GetCertPool(rootCert),
+		}
+		conn, err := grpc.Dial("etcd:///",
+			grpc.WithStatsHandler(&StatsHandler{}),
+			grpc.WithTransportCredentials(credentials.NewTLS(c)),
+			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+		if err != nil {
+			panic(err)
+		}
+		return conn
+	} else {
+		log.Infof("Connect With InSecure through discovery")
+		conn, err := grpc.Dial("etcd:///",
+			grpc.WithStatsHandler(&StatsHandler{}),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+		if err != nil {
+			panic(err)
+		}
+		return conn
+	}
+}
+
+func buildConn(address string) *grpc.ClientConn {
 	var conn *grpc.ClientConn
 	secure := os.Getenv("GRPC_HELLO_SECURE")
 	if secure == "Y" {
-		log.Infof("Connect With TLS(%s)", port)
+		log.Infof("Connect With TLS(%s)", address)
 		conn, _ = transportCredentials(address)
 	} else {
-		log.Infof("Connect With InSecure(%s)", port)
+		log.Infof("Connect With InSecure(%s)", address)
 		conn, _ = transportInsecure(address)
 	}
-	client := pb.NewLandingServiceClient(conn)
-	return &client
+	return conn
 }
 
 func transportInsecure(address string) (*grpc.ClientConn, error) {
@@ -99,7 +148,7 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 
 func GetCertPool(rootCert string) *x509.CertPool {
 	certPool := x509.NewCertPool()
-	bs, err := ioutil.ReadFile(rootCert)
+	bs, err := os.ReadFile(rootCert)
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +166,7 @@ func getBackend() string {
 	return os.Getenv("GRPC_HELLO_BACKEND")
 }
 
-func grpcServerHost() string {
+func GrpcServerHost() string {
 	server := os.Getenv("GRPC_SERVER")
 	if len(server) == 0 {
 		return "localhost"

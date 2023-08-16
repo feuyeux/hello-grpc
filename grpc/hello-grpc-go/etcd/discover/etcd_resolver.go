@@ -20,11 +20,11 @@ type etcdResolver struct {
 }
 
 func (e *etcdResolver) ResolveNow(resolver.ResolveNowOptions) {
-	log.Println("etcd resolver resolve now")
+	log.Infoln("etcd resolver resolve now")
 }
 
 func (e *etcdResolver) Close() {
-	log.Println("etcd resolver close")
+	log.Infoln("etcd resolver close")
 	e.cancel()
 }
 
@@ -37,10 +37,10 @@ func (e *etcdResolver) watcher() {
 				switch event.Type {
 				case 0: // 0 是有数据增加
 					e.store(event.Kv.Key, event.Kv.Value)
-					log.Println("put:", string(event.Kv.Key))
+					log.Infoln("put:", string(event.Kv.Key))
 					e.updateState()
 				case 1: // 1是有数据减少
-					log.Println("del:", string(event.Kv.Key))
+					log.Infoln("del:", string(event.Kv.Key))
 					e.del(event.Kv.Key)
 					e.updateState()
 				}

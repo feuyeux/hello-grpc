@@ -2,9 +2,11 @@ package register
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
-	"go.etcd.io/etcd/client/v3"
+	"hello-grpc/etcd/discover"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type EtcdRegister struct {
@@ -52,7 +54,7 @@ func (r *EtcdRegister) Watcher(key string, resChan <-chan *clientv3.LeaseKeepAli
 	for {
 		select {
 		case l := <-resChan:
-			log.Debugf("续约成功,val:%+v \n", l)
+			log.Infof("续约成功,val:%+v \n", l)
 		case <-r.ctx.Done():
 			log.Infof("续约关闭")
 			return
@@ -69,8 +71,10 @@ func (r *EtcdRegister) Close() error {
 }
 
 func NewEtcdRegister() (*EtcdRegister, error) {
+	endpoint := discover.GetDiscoveryEndpoint()
+	log.Infof("ectd endpoint %s", endpoint)
 	client, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{"127.0.0.1:2379"},
+		Endpoints:   []string{endpoint},
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
