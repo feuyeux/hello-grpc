@@ -47,7 +47,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 |        | build tools  | UT                          | LOG             | Header | TLS  | Proxy | Discovery | Docker | IDE            |
 | :----- | :----------- | :-------------------------- | :-------------- | :----- | :--- | :---- | :-------- | :----- | :------------- |
 | java   | [maven][1]   | [junit5][2]                 | [log4j2][3]     | 🍎      | 🍎    | 🍎     | 🍎         | 🍎      | [IDEA][4]      |
-| go     | (mod)        | (testing)                   | [logrus][5]     | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [GoLand][6]    |
+| go     | (mod)        | (testing)                   | [logrus][5]     | 🍎      | 🍎    | 🍎     | 🍎         | 🍎      | [GoLand][6]    |
 | nodejs | [npm][7]     | [mocha][8]                  | [winston][9]    | 🍎      | 🥑    | 🍎     | 🍏         | 🍎      | [WebStorm][10] |
 | python | [pip][11]    | (unittest)                  | (logging)       | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [PyCharm][12]  |
 | rust   | [cargo][13]  | (test)                      | [log4rs][14]    | 🍎      | 🍎    | 🍎     | 🍏         | 🍎      | [CLion][15]    |
