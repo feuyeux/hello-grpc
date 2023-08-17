@@ -31,6 +31,8 @@ etcd -advertise-client-urls http://192.168.0.105:2379 -listen-client-urls http:/
 
 ```sh
 etcdctl member list
+
+etcdctl --endpoints=10.255.6.18:2379 -w table member list
 ```
 
 ```sh

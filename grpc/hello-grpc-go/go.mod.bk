@@ -17,4 +17,10 @@ require (
 	github.com/stretchr/testify latest
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
 	go.etcd.io/etcd/client/v3 latest
+
+	// Golang gRPC Middlewares: interceptor chaining, auth, logging, retries and more.
+	// https://github.com/grpc-ecosystem/go-grpc-middleware/tags
+	github.com/grpc-ecosystem/go-grpc-middleware latest
+	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
+	go.uber.org/ratelimit latest
 )

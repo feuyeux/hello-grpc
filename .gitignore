@@ -43,3 +43,4 @@ Package.resolved
 *.sln.DotSettings.user
 grpc/hello-grpc-cpp/grpc/*
 default.etcd
+gradlew*

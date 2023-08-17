@@ -8,15 +8,16 @@ import (
 	"sync"
 	"time"
 
+	"hello-grpc/common/pb"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
-	"hello-grpc/common/pb"
 )
 
 func main() {
 	for retry := 1; retry <= 3; retry++ {
-		err := startTalking(*conn.Connect(), 2*time.Second)
+		err := startTalking(*conn.Connect(), 200*time.Millisecond)
 		if err != nil {
 			log.Infof("retry %d", retry)
 		}
@@ -24,7 +25,7 @@ func main() {
 }
 
 func startTalking(c pb.LandingServiceClient, tt time.Duration) error {
-	for round := 1; round <= 3; round++ {
+	for round := 1; round <= 100; round++ {
 		log.Infof("round %d", round)
 		//
 		log.Infof("Unary RPC")
