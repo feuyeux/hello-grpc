@@ -60,34 +60,37 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
   @Override
   public void onNext(WatchResponse watchResponse) {
     for (WatchEvent event : watchResponse.getEvents()) {
-      String addr;
+      String svcAddress;
       switch (event.getEventType()) {
         case PUT:
-          addr = event.getKeyValue().getKey().toString(Charsets.UTF_8);
+          svcAddress = event.getKeyValue().getKey().toString(Charsets.UTF_8);
           try {
-            URI uri = new URI(addr);
+            URI uri = new URI(svcAddress);
             serviceUris.add(uri);
           } catch (URISyntaxException e) {
             logger.log(
                 Level.WARNING,
-                String.format("ignoring invalid uri. dir='%s', addr='%s'", serviceDir, addr),
+                String.format(
+                    "ignoring invalid uri. dir='%s', svcAddress='%s'", serviceDir, svcAddress),
                 e);
           }
           break;
         case DELETE:
-          addr = event.getKeyValue().getKey().toString(Charsets.UTF_8);
+          svcAddress = event.getKeyValue().getKey().toString(Charsets.UTF_8);
           try {
-            URI uri = new URI(addr);
+            URI uri = new URI(svcAddress);
             boolean removed = serviceUris.remove(uri);
             if (!removed) {
               logger.log(
                   Level.WARNING,
-                  String.format("did not remove address. dir='%s', addr='%s'", serviceDir, addr));
+                  String.format(
+                      "did not remove address. dir='%s', svcAddress='%s'", serviceDir, svcAddress));
             }
           } catch (URISyntaxException e) {
             logger.log(
                 Level.WARNING,
-                String.format("ignoring invalid uri. dir='%s', addr='%s'", serviceDir, addr),
+                String.format(
+                    "ignoring invalid uri. dir='%s', svcAddress='%s'", serviceDir, svcAddress),
                 e);
           }
           break;
@@ -118,14 +121,16 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
     }
 
     for (KeyValue kv : query.getKvs()) {
-      String addr = getUriFromDir(kv.getKey().toString(Charsets.UTF_8));
+      String svcAddress = getUriFromDir(kv.getKey().toString(Charsets.UTF_8));
       try {
-        URI uri = new URI(addr);
+        URI uri = new URI(svcAddress);
         serviceUris.add(uri);
       } catch (URISyntaxException e) {
         logger.log(
             Level.WARNING,
-            String.format("Unable to parse server address. dir='%s', addr='%s'", serviceDir, addr),
+            String.format(
+                "Unable to parse server address. dir='%s', svcAddress='%s'",
+                serviceDir, svcAddress),
             e);
       }
     }
@@ -141,17 +146,17 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
 
   private void updateListener() {
     logger.info("updating server list...");
-    List<EquivalentAddressGroup> addrs = new ArrayList<>();
+    List<EquivalentAddressGroup> svcAddressList = new ArrayList<>();
     for (URI uri : serviceUris) {
       logger.info("online: " + uri);
       List<SocketAddress> socketAddresses = new ArrayList<>();
       socketAddresses.add(new InetSocketAddress(uri.getHost(), uri.getPort()));
-      addrs.add(new EquivalentAddressGroup(socketAddresses));
+      svcAddressList.add(new EquivalentAddressGroup(socketAddresses));
     }
-    if (addrs.isEmpty()) {
+    if (svcAddressList.isEmpty()) {
       logger.log(Level.WARNING, String.format("no servers online. dir='%s'", serviceDir));
     } else {
-      listener.onAddresses(addrs, Attributes.EMPTY);
+      listener.onAddresses(svcAddressList, Attributes.EMPTY);
     }
   }
 

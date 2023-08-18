@@ -58,6 +58,9 @@ public class Connection {
 
   public static String SVC_DISC_NAME = "hello-grpc";
   /* == discovery == */
+  // https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
+  public static final String LB_ROUND_ROBIN = "round_robin";
+  public static final String LB_PICK_FIRST = "pick_first";
 
   private static String getGrcServerHost() {
     if (server == null) {
@@ -111,7 +114,7 @@ public class Connection {
       builder =
           ManagedChannelBuilder.forTarget(target)
               .nameResolverFactory(nameResolver)
-              .defaultLoadBalancingPolicy("round_robin");
+              .defaultLoadBalancingPolicy(LB_ROUND_ROBIN);
     } else {
       builder = NettyChannelBuilder.forAddress(connectTo, port);
     }
