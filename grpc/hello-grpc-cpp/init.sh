@@ -4,6 +4,10 @@ cd "$(
   pwd -P
 )/" || exit
 set -e
+
+# https://gitee.com/feuyeux/grpc/tags
+export GRPC_RELEASE_TAG=v1.57.0
+
 # brew install cmake
 cmake --version
 protoc --version
@@ -17,7 +21,7 @@ echo " == brew install == "
 ls -hlt /Library/Developer/CommandLineTools/SDKs
 
 export GRPC_INSTALL_PATH=$HOME/.local
-export BASE_DIR=/Users/han/cooo
+export BASE_DIR=/Users/han/github
 export GRPC_SRC_HOME=$BASE_DIR/grpc
 BASE_PATH="$(pwd)"
 export BASE_PATH
@@ -29,8 +33,6 @@ fi
 cd "$BASE_DIR"
 echo " == build and install grpc & protobuf == "
 if [ ! -d "$GRPC_SRC_HOME" ]; then
-  # https://gitee.com/feuyeux/grpc/tags
-  export GRPC_RELEASE_TAG=v1.57.0
   export GRPC_REPO=https://gitee.com/feuyeux/grpc.git
   # export GRPC_REPO=https://github.com/grpc/grpc.git
   git clone -b ${GRPC_RELEASE_TAG} ${GRPC_REPO}
