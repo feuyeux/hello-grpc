@@ -11,39 +11,44 @@
 #include <regex>
 #include "connection.h"
 #include "utils.h"
-//#include <uuid_v4/uuid_v4.h>
+// #include <uuid_v4/uuid_v4.h>
 
+using google::protobuf::Map;
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
+using grpc::ServerReader;
+using grpc::ServerReaderWriter;
+using grpc::ServerWriter;
 using grpc::Status;
+using hello::Connection;
+using hello::Utils;
 using org::feuyeux::grpc::LandingService;
+using org::feuyeux::grpc::ResultType;
 using org::feuyeux::grpc::TalkRequest;
 using org::feuyeux::grpc::TalkResponse;
 using org::feuyeux::grpc::TalkResult;
-using org::feuyeux::grpc::ResultType;
-using grpc::ServerWriter;
-using grpc::ServerReader;
-using grpc::ServerReaderWriter;
 using std::string;
-using google::protobuf::Map;
-using hello::Connection;
-using hello::Utils;
 
-//https://myssl.com/create_test_cert.html
+// https://myssl.com/create_test_cert.html
 __attribute__((unused)) const char cert[] = "/var/hello_grpc/server_certs/cert.pem";
 const char certKey[] = "/var/hello_grpc/server_certs/private.key";
 const char certChain[] = "/var/hello_grpc/server_certs/full_chain.pem";
 const char rootCert[] = "/var/hello_grpc/server_certs/myssl_root.cer";
 
-class LandingServiceImpl final : public LandingService::Service {
+class LandingServiceImpl final : public LandingService::Service
+{
 public:
-    Status Talk(ServerContext *context, const TalkRequest *request, TalkResponse *response) override {
-        if (client != nullptr) {
+    Status Talk(ServerContext *context, const TalkRequest *request, TalkResponse *response) override
+    {
+        if (client != nullptr)
+        {
             grpc::ClientContext c;
             propagateHeaders(context, c);
             return client->Talk(&c, *request, response);
-        } else {
+        }
+        else
+        {
             printHeaders(context);
             context->AddInitialMetadata("h1", "v1");
             context->AddTrailingMetadata("l1", "v1");
@@ -59,24 +64,30 @@ public:
 
     Status
     TalkOneAnswerMore(ServerContext *context, const TalkRequest *request,
-                      ServerWriter<TalkResponse> *writer) override {
+                      ServerWriter<TalkResponse> *writer) override
+    {
         printHeaders(context);
-        if (client != nullptr) {
+        if (client != nullptr)
+        {
             grpc::ClientContext c;
             propagateHeaders(context, c);
             TalkResponse talkResponse;
             const std::unique_ptr<::grpc::ClientReader<TalkResponse>>
-                    &response(client->TalkOneAnswerMore(&c, *request));
-            while (response->Read(&talkResponse)) {
+                &response(client->TalkOneAnswerMore(&c, *request));
+            while (response->Read(&talkResponse))
+            {
                 writer->Write(talkResponse);
             }
-        } else {
+        }
+        else
+        {
             const string &data = request->data();
             LOG(INFO) << "TalkOneAnswerMore REQUEST: data=" << data << ", meta=" << request->meta();
             std::regex ws_re(",");
             std::vector<std::string> ids(std::sregex_token_iterator(data.begin(), data.end(), ws_re, -1),
                                          std::sregex_token_iterator());
-            for (const string &id: ids) {
+            for (const string &id : ids)
+            {
                 TalkResponse response;
                 response.set_status(200);
                 TalkResult *talkResult;
@@ -89,24 +100,31 @@ public:
     }
 
     Status
-    TalkMoreAnswerOne(ServerContext *context, ServerReader<TalkRequest> *reader, TalkResponse *response) override {
+    TalkMoreAnswerOne(ServerContext *context, ServerReader<TalkRequest> *reader, TalkResponse *response) override
+    {
         printHeaders(context);
-        if (client != nullptr) {
+        if (client != nullptr)
+        {
             grpc::ClientContext c;
             propagateHeaders(context, c);
             std::unique_ptr<grpc::ClientWriter<TalkRequest>> writer(client->TalkMoreAnswerOne(&c, response));
             TalkRequest request;
-            while (reader->Read(&request)) {
-                if (!writer->Write(request)) {
+            while (reader->Read(&request))
+            {
+                if (!writer->Write(request))
+                {
                     // Broken stream.
                     break;
                 }
             }
             writer->WritesDone();
             return writer->Finish();
-        } else {
+        }
+        else
+        {
             TalkRequest request;
-            while (reader->Read(&request)) {
+            while (reader->Read(&request))
+            {
                 const string &id = request.data();
                 LOG(INFO) << "TalkMoreAnswerOne REQUEST: data=" << id << ", meta=" << request.meta();
                 response->set_status(200);
@@ -118,24 +136,31 @@ public:
         }
     }
 
-    Status TalkBidirectional(ServerContext *context, ServerReaderWriter<TalkResponse, TalkRequest> *stream) override {
+    Status TalkBidirectional(ServerContext *context, ServerReaderWriter<TalkResponse, TalkRequest> *stream) override
+    {
         printHeaders(context);
-        if (client != nullptr) {
+        if (client != nullptr)
+        {
             grpc::ClientContext c;
             propagateHeaders(context, c);
             TalkResponse talkResponse;
             std::shared_ptr<grpc::ClientReaderWriter<TalkRequest, TalkResponse>> s(client->TalkBidirectional(&c));
             TalkRequest request;
-            while (stream->Read(&request)) {
+            while (stream->Read(&request))
+            {
                 s->Write(request);
             }
-            while (s->Read(&talkResponse)) {
+            while (s->Read(&talkResponse))
+            {
                 stream->Write(talkResponse);
             }
             return s->Finish();
-        } else {
+        }
+        else
+        {
             TalkRequest request;
-            while (stream->Read(&request)) {
+            while (stream->Read(&request))
+            {
                 const string &id = request.data();
                 LOG(INFO) << "TalkBidirectional REQUEST: data=" << id << ", meta=" << request.meta();
                 TalkResponse response;
@@ -149,47 +174,69 @@ public:
         }
     }
 
-    void buildResult(const string &id, TalkResult *talkResult) {
+    void buildResult(const string &id, TalkResult *talkResult)
+    {
         talkResult->set_id(Utils::now());
         talkResult->set_type(ResultType::OK);
         google::protobuf::Map<string, string> *pMap = talkResult->mutable_kv();
         int index = stoi(id);
-
-        // UUIDv4::UUIDGenerator<std::mt19937_64> uuidGenerator;
-        // UUIDv4::UUID uuid = uuidGenerator.getUUID();
-        // TODO
-        //  uuid_v4/uuid_v4.h It heavily relies on SIMD operations (instruction sets SSE4.1/AVX/AVX2)
-        //  Mac does not support AVX2 instruction set
-        // const string &iid = uuid.str();
-
-        (*pMap)["id"] = "UUID-TODO";
+        (*pMap)["id"] = uuid();
         (*pMap)["idx"] = id;
         (*pMap)["meta"] = "C++";
         const string &hello = Utils::hello(index);
         (*pMap)["data"] = hello + "," + Utils::thanks(hello);
     }
 
-    static void printHeaders(const ServerContext *context) {
+    int string uuid()
+    {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        unsigned char bytes[16];
+        std::generate(std::begin(bytes), std::end(bytes), std::ref(gen));
+
+        std::string uuid_str;
+        uuid_str += std::to_string((bytes[6] & 0x0F) << 4 | (bytes[7] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string((bytes[8] & 0x3F) << 4 | (bytes[9] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string((bytes[10] & 0x3F) << 4 | (bytes[11] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string((bytes[12] & 0x3F) << 4 | (bytes[13] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string(bytes[14] >> 4);
+        uuid_str += std::to_string(bytes[14] & 0x0F);
+        uuid_str += bytes[15];
+        return uuid_str;
+    }
+
+    static void printHeaders(const ServerContext *context)
+    {
         const multimap<grpc::string_ref, grpc::string_ref> &metadata = context->client_metadata();
-        for (const auto &iter: metadata) {
+        for (const auto &iter : metadata)
+        {
             const grpc::string_ref &key = iter.first;
             const grpc::string_ref &value = iter.second;
             LOG(INFO) << "->H " << key << ":" << value;
         }
     }
 
-    static void propagateHeaders(const ServerContext *context, grpc::ClientContext &c) {
+    static void propagateHeaders(const ServerContext *context, grpc::ClientContext &c)
+    {
         const multimap<grpc::string_ref, grpc::string_ref> &metadata = context->client_metadata();
-        for (const auto &iter: metadata) {
+        for (const auto &iter : metadata)
+        {
             const grpc::string_ref &key = iter.first;
             const grpc::string_ref &value = iter.second;
             LOG(INFO) << "->H " << key << ":" << value;
-            //c.AddMetadata((basic_string<char> &&) key, (basic_string<char> &&) value);
+            // c.AddMetadata((basic_string<char> &&) key, (basic_string<char> &&) value);
         }
     }
 
-    void setChannel(const std::shared_ptr<Channel> &channel) {
-        if (channel != nullptr) {
+    void setChannel(const std::shared_ptr<Channel> &channel)
+    {
+        if (channel != nullptr)
+        {
             client = LandingService::NewStub(channel);
         }
     }
@@ -198,7 +245,8 @@ private:
     std::unique_ptr<LandingService::Stub> client;
 };
 
-void RunServer() {
+void RunServer()
+{
     const string &port = Utils::getServerPort();
     std::string server_address("0.0.0.0:" + port);
 
@@ -206,7 +254,8 @@ void RunServer() {
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
     ServerBuilder builder;
     const string &secure = Utils::getSecure();
-    if (!secure.empty() && secure == "Y") {
+    if (!secure.empty() && secure == "Y")
+    {
         LOG(INFO) << "Start GRPC TLS Server[" << port << "]";
         grpc::SslServerCredentialsOptions ssl_opts(GRPC_SSL_REQUEST_CLIENT_CERTIFICATE_BUT_DONT_VERIFY);
         ssl_opts.pem_root_certs = Connection::getFileContent(rootCert);
@@ -215,7 +264,9 @@ void RunServer() {
         pemKeyCertPair.cert_chain = Connection::getFileContent(certChain);
         ssl_opts.pem_key_cert_pairs.push_back({pemKeyCertPair});
         builder.AddListeningPort(server_address, grpc::SslServerCredentials(ssl_opts));
-    } else {
+    }
+    else
+    {
         LOG(INFO) << "Start GRPC Server[" << port << "]";
         builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
     }
@@ -223,7 +274,8 @@ void RunServer() {
     LandingServiceImpl landingService;
     const char *backend = getenv("GRPC_HELLO_BACKEND");
     string endpoint(backend ? backend : "");
-    if (!endpoint.empty()) {
+    if (!endpoint.empty())
+    {
         landingService.setChannel(Connection::getChannel());
     }
     builder.RegisterService(&landingService);
@@ -232,7 +284,8 @@ void RunServer() {
     server->Wait();
 }
 
-int main(__attribute__((unused)) int argc, char **argv) {
+int main(__attribute__((unused)) int argc, char **argv)
+{
     Utils::initLog(argv);
     RunServer();
     LOG(WARNING) << "Hello gRPC C++ Server is stopping";
@@ -240,4 +293,4 @@ int main(__attribute__((unused)) int argc, char **argv) {
     return 0;
 }
 
-//TODO UUID https://github.com/r-lyeh-archived/sole
+// TODO UUID https://github.com/r-lyeh-archived/sole

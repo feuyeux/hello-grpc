@@ -4,6 +4,7 @@ cd "$(
   pwd -P
 )/" || exit
 set -e
+# brew install cmake
 cmake --version
 protoc --version
 ld -v
@@ -12,23 +13,24 @@ echo " == brew install == "
 # brew install autoconf automake libtool pkg-config
 # xcode-select --install
 
-ls -hlt /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
+# ls -hlt /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
 ls -hlt /Library/Developer/CommandLineTools/SDKs
 
 export GRPC_INSTALL_PATH=$HOME/.local
-export GRPC_SRC_HOME=$HOME/github/grpc
+export BASE_DIR=/Users/han/cooo
+export GRPC_SRC_HOME=$BASE_DIR/grpc
 BASE_PATH="$(pwd)"
 export BASE_PATH
 
-if [ ! -d "$HOME/github" ]; then
-  mkdir "$HOME"/github
+if [ ! -d "$BASE_DIR" ]; then
+  mkdir "$BASE_DIR"
 fi
 
-cd "$HOME"/github
+cd "$BASE_DIR"
 echo " == build and install grpc & protobuf == "
 if [ ! -d "$GRPC_SRC_HOME" ]; then
   # https://gitee.com/feuyeux/grpc/tags
-  export GRPC_RELEASE_TAG=v1.53.0
+  export GRPC_RELEASE_TAG=v1.57.0
   export GRPC_REPO=https://gitee.com/feuyeux/grpc.git
   # export GRPC_REPO=https://github.com/grpc/grpc.git
   git clone -b ${GRPC_RELEASE_TAG} ${GRPC_REPO}
