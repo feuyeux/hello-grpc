@@ -9,7 +9,7 @@
 
     <properties>
         <jdk.version>20</jdk.version>
-        <grpc.version>1.56.1</grpc.version>
+        <grpc.version>1.57.0</grpc.version>
         <protoc.version>3.21.1</protoc.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
