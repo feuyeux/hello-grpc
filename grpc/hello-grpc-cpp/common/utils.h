@@ -11,6 +11,8 @@ namespace hello {
     public:
         static string hello(int index);
 
+        static string uuid();
+
         static string thanks(string key);
 
         static list<TalkRequest> buildLinkRequests();

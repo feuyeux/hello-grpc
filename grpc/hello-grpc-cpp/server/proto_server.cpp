@@ -11,7 +11,6 @@
 #include <regex>
 #include "connection.h"
 #include "utils.h"
-// #include <uuid_v4/uuid_v4.h>
 
 using google::protobuf::Map;
 using grpc::Server;
@@ -180,34 +179,12 @@ public:
         talkResult->set_type(ResultType::OK);
         google::protobuf::Map<string, string> *pMap = talkResult->mutable_kv();
         int index = stoi(id);
-        (*pMap)["id"] = uuid();
+        const string &uuid = Utils::uuid();
+        (*pMap)["id"] = uuid;
         (*pMap)["idx"] = id;
         (*pMap)["meta"] = "C++";
         const string &hello = Utils::hello(index);
         (*pMap)["data"] = hello + "," + Utils::thanks(hello);
-    }
-
-    int string uuid()
-    {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-
-        unsigned char bytes[16];
-        std::generate(std::begin(bytes), std::end(bytes), std::ref(gen));
-
-        std::string uuid_str;
-        uuid_str += std::to_string((bytes[6] & 0x0F) << 4 | (bytes[7] & 0x0F));
-        uuid_str += "-";
-        uuid_str += std::to_string((bytes[8] & 0x3F) << 4 | (bytes[9] & 0x0F));
-        uuid_str += "-";
-        uuid_str += std::to_string((bytes[10] & 0x3F) << 4 | (bytes[11] & 0x0F));
-        uuid_str += "-";
-        uuid_str += std::to_string((bytes[12] & 0x3F) << 4 | (bytes[13] & 0x0F));
-        uuid_str += "-";
-        uuid_str += std::to_string(bytes[14] >> 4);
-        uuid_str += std::to_string(bytes[14] & 0x0F);
-        uuid_str += bytes[15];
-        return uuid_str;
     }
 
     static void printHeaders(const ServerContext *context)
@@ -293,4 +270,3 @@ int main(__attribute__((unused)) int argc, char **argv)
     return 0;
 }
 
-// TODO UUID https://github.com/r-lyeh-archived/sole

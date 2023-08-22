@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.18)
 project(Hello-GRPC-CPP C CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "$ENV{HOME}/.local")
@@ -24,7 +24,7 @@ add_custom_command(
         ARGS --grpc_out "${PB_PATH}"
         --cpp_out "${PB_PATH}"
         -I "${landing_proto_path}"
-        --plugin=protoc-gen-grpc= "${_GRPC_CPP_PLUGIN_EXECUTABLE}"
+        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
         "${landing_proto}"
         DEPENDS "${landing_proto}")
 
@@ -49,7 +49,7 @@ add_executable(tests "tests/hello_test.cpp")
 
 # dependencies
 # LOG
-find_package(glog 0.6.0 REQUIRED)
+find_package(glog 0.7.0 REQUIRED)
 # UT
 find_package(Catch2 3 REQUIRED)
 # UUID

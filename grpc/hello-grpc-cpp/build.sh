@@ -19,6 +19,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 echo
 
 echo "make:"
-make -j"$(nproc)"
+make -j 4
 popd
 echo "build hello grpc successfully."

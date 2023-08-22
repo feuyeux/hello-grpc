@@ -4,23 +4,53 @@
 #include "utils.h"
 #include <map>
 #include <list>
+#include <random>
+#include <absl/strings/str_cat.h>
+#include <absl/random/distributions.h>
+#include <absl/random/random.h>
+#include <iostream>
+#include <random>
+#include <string>
 
 using std::getenv;
 
 namespace hello {
     static vector<string> HELLO_LIST{"Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"};
     static map<string, string> ANS_MAP = {
-            {"你好",    "非常感谢"},
-            {"Hello",   "Thank you very much"},
-            {"Bonjour", "Merci beaucoup"},
-            {"Hola",    "Muchas Gracias"},
-            {"こんにちは",   "どうも ありがとう ございます"},
-            {"Ciao",    "Mille Grazie"},
-            {"안녕하세요",   "대단히 감사합니다"}
+            {"你好",       "非常感谢"},
+            {"Hello",      "Thank you very much"},
+            {"Bonjour",    "Merci beaucoup"},
+            {"Hola",       "Muchas Gracias"},
+            {"こんにちは", "どうも ありがとう ございます"},
+            {"Ciao",       "Mille Grazie"},
+            {"안녕하세요",      "대단히 감사합니다"}
     };
 
     string Utils::hello(int index) {
         return HELLO_LIST[index];
+    }
+
+    string Utils::uuid() {
+        /*absl::BitGen bit_gen;
+        absl::uniform_int_distribution<uint32_t> distribution;
+        uint32_t random_uuid = distribution(bit_gen);
+        std::string uuid = absl::StrCat(absl::FormatTime("%Y-%m-%d-%H-%M-%S-", absl::Now(), absl::LocalTimeZone()), random_uuid);*/
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        unsigned char bytes[16];
+        std::generate(std::begin(bytes), std::end(bytes), std::ref(gen));
+        std::string uuid_str;
+        uuid_str += std::to_string((bytes[6] & 0x0F) << 4 | (bytes[7] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string((bytes[8] & 0x3F) << 4 | (bytes[9] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string((bytes[10] & 0x3F) << 4 | (bytes[11] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string((bytes[12] & 0x3F) << 4 | (bytes[13] & 0x0F));
+        uuid_str += "-";
+        uuid_str += std::to_string(bytes[14] >> 4);
+        uuid_str += std::to_string(bytes[14] & 0x0F);
+        return uuid_str;
     }
 
     string Utils::thanks(string key) {

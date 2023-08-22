@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 export GRPC_INSTALL_PATH=$HOME/.local
-
 #
 if [ ! -d "$HOME/github" ]; then
     mkdir "$HOME"/github
@@ -20,7 +19,6 @@ if [ ! -d "$HOME/github/glog" ]; then
     git clone https://gitee.com/feuyeux/glog
 fi
 cd "$HOME"/github/glog
-# set(CMAKE_CXX_STANDARD 14) > CMakeLists.txt
 rm -rf build
 cmake -S . -B build -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$GRPC_INSTALL_PATH"
 cmake --build build --target install

@@ -17,17 +17,18 @@ else
     mkdir -p cmake/build
 fi
 
-
 pushd cmake/build
 cmake -DgRPC_INSTALL=ON \
     -DgRPC_BUILD_TESTS=OFF \
     -DCMAKE_INSTALL_PREFIX="$GRPC_INSTALL_PATH" \
     ../..
-# brew install coreutils
-# nproc --version
-# alias nproc="sysctl -n hw.logicalcpu"
-# make -j$(nproc)
-make -j 4
+make -j$(nproc)
 make install
 popd
 echo "done"
+
+ls -hlt "$GRPC_INSTALL_PATH"
+
+protoc --version
+
+which protoc
