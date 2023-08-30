@@ -15,6 +15,8 @@ build
 ```sh
 # 老 Mac 用上最新 macOS
 # https://dortania.github.io/OpenCore-Legacy-Patcher/INSTALLER.html#creating-the-installer
+# https://github.com/getlantern/lantern
+
 brew install swift-protobuf grpc-swift
 cd Sources/Common
 sh proto2swift.sh
