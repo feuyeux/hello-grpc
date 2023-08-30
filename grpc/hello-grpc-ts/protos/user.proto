@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+service UserManager {
+  rpc get (UserRequest) returns (UserResponse) {}
+}
+
+message User {
+  uint32 id = 1;
+  string name = 2;
+  bool is_admin = 3;
+}
+
+message UserRequest {
+  uint32 id = 1;
+}
+
+message UserResponse {
+  User user = 1;
+}

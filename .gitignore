@@ -1,4 +1,5 @@
 .DS_Store
+codegen
 *.ipr
 *.iws
 *.iml
@@ -22,7 +23,7 @@ node_modules
 landing_pb*
 *.pyc
 package-lock.json
-cargo.lock
+*.lock
 envoy/*.pb
 dependency-reduced-pom.xml
 go.sum
@@ -44,3 +45,4 @@ Package.resolved
 grpc/hello-grpc-cpp/grpc/*
 default.etcd
 gradlew*
+.next
