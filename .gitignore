@@ -46,3 +46,5 @@ grpc/hello-grpc-cpp/grpc/*
 default.etcd
 gradlew*
 .next
+.build
+.swiftpm

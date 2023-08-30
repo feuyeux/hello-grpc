@@ -13,6 +13,9 @@ swiftformat --indent 4 --swiftversion 5.7 --exclude "**/*.grpc.swift,**/*.pb.swi
 build
 
 ```sh
+# 老 Mac 用上最新 macOS
+# https://dortania.github.io/OpenCore-Legacy-Patcher/INSTALLER.html#creating-the-installer
+brew install swift-protobuf grpc-swift
 cd Sources/Common
 sh proto2swift.sh
 ```
