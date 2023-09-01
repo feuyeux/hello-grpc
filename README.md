@@ -41,6 +41,8 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | c#     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
 | kotlin | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
 | swift  | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍏    | 🍏      |
+| dart| 🍏         | 🍏           | 🍏      | 🍏      | 🍏           | 🍏     | 🍏    | 🍏      |
+| typescript| 🍏          | 🍏            | 🍏     | 🍏        | 🍏           | 🍏      | 🍏    | 🍏      |
 
 |        | Header | TLS  | Proxy | Propagate | Discovery | LB   | Resilience |
 | :----- | :----- | :--- | :---- | :-------- | :-------- | :--- | :--------- |
@@ -53,6 +55,8 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | c#     | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
 | kotlin | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
 | swift  | 🍏      | 🍏    | 🍏     | 🍏         | 🍏         | 🍏    | 🍏          |
+| dart| 🍏      | 🍏    | 🍏     | 🍏         | 🍏         | 🍏    | 🍏          |
+| typescript| 🍏      | 🍏    | 🍏     | 🍏         | 🍏         | 🍏    | 🍏          |
 
 |        | Build        | UT                          | LOG             | IDE            |
 | :----- | :----------- | :-------------------------- | :-------------- | :------------- |
@@ -65,6 +69,8 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | c#     | [nuget][18]  | [NUnit](https://nunit.org/) | [log4net][19]   | [Rider][20]    |
 | kotlin | [gradle][21] | [junit5][2]                 | [log4j2][3]     | [IDEA][4]      |
 | swift  | [spm][22]    | (XCTest)                    | [swift-log][23] | Xcode          |
+| dart|||||
+| typescript|||||
 
 ### 3 Service Mesh
 
