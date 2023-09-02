@@ -50,3 +50,4 @@ gradlew*
 .next
 .build
 .swiftpm
+*.drawio.bkp

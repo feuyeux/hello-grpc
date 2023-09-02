@@ -2,23 +2,23 @@
 
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with
 
-1. [C++](grpc/hello-grpc-cpp)
-1. [Rust](grpc/hello-grpc-rust)
-1. [Java](grpc/hello-grpc-java)
-1. [Go](grpc/hello-grpc-go)
-1. [C#](grpc/hello-grpc-csharp)
-1. [Python](grpc/hello-grpc-python)
-1. [Node.js](grpc/hello-grpc-nodejs)
-1. [TypeScript](grpc/hello-grpc-ts)
-1. [Dart](grpc/hello-grpc-dart)
-1. [Kotlin](grpc/hello-grpc-kotlin)
-1. [Swift](grpc/hello-grpc-swift)
+1. [C++](hello-grpc-cpp)
+2. [Rust](hello-grpc-rust)
+3. [Java](hello-grpc-java)
+4. [Go](hello-grpc-go)
+5. [C#](hello-grpc-csharp)
+6. [Python](hello-grpc-python)
+7. [Node.js](hello-grpc-nodejs)
+8. [TypeScript](hello-grpc-ts)
+9. [Dart](hello-grpc-dart)
+10. [Kotlin](hello-grpc-kotlin)
+11. [Swift](hello-grpc-swift)
 
 ## :coffee: What is ... >
 
-### 1 Diagram(4 MODELS)
+### 1 Diagram
 
-![grpc_diagram](img/hello_grpc_diagram.png)
+![grpc_diagram](diagram/hello-grpc.png)
 
 `client [end of stream (EOS)]->[Length-Prefixed Message][]->[Headers] server`
 
@@ -30,56 +30,42 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 > 🍏 `:green_apple:` unimplemented
 > 🥑 `:avocado:` known issues
 
-|        | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env  | Docker |
-| :----- | :------- | :--------- | :---- | :----- | :-------- | :--- | :--- | :----- |
-| java   | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| go     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| nodejs | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| python | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| rust   | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| c++    | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍏    | 🍎    | 🍎      |
-| c#     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| kotlin | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    | 🍎      |
-| swift  | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍏    | 🍏      |
-| dart| 🍏         | 🍏           | 🍏      | 🍏      | 🍏           | 🍏     | 🍏    | 🍏      |
-| typescript| 🍏          | 🍏            | 🍏     | 🍏        | 🍏           | 🍏      | 🍏    | 🍏      |
+|            | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env | Docker |
+|:-----------|:---------|:-----------|:------|:-------|:----------|:-----|:----|:-------|
+| java       | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| go         | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| nodejs     | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| python     | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| rust       | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| c++        | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍏   | 🍎  | 🍎     |
+| c#         | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| kotlin     | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍎  | 🍎     |
+| swift      | 🍎       | 🍎         | 🍎    | 🍎     | 🍎        | 🍎   | 🍏  | 🍏     |
+| dart       | 🍏       | 🍏         | 🍏    | 🍏     | 🍏        | 🍏   | 🍏  | 🍏     |
+| typescript | 🍏       | 🍏         | 🍏    | 🍏     | 🍏        | 🍏   | 🍏  | 🍏     |
 
-|        | Header | TLS  | Proxy | Propagate | Discovery | LB   | Resilience |
-| :----- | :----- | :--- | :---- | :-------- | :-------- | :--- | :--------- |
-| java   | 🍎      | 🍎    | 🍎     | 🍎         | 🍎         | 🍏    | 🍏          |
-| go     | 🍎      | 🍎    | 🍎     | 🍎         | 🍎         | 🍏    | 🍏          |
-| nodejs | 🍎      | 🥑    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
-| python | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
-| rust   | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
-| c++    | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
-| c#     | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
-| kotlin | 🍎      | 🍎    | 🍎     | 🍎         | 🍏         | 🍏    | 🍏          |
-| swift  | 🍏      | 🍏    | 🍏     | 🍏         | 🍏         | 🍏    | 🍏          |
-| dart| 🍏      | 🍏    | 🍏     | 🍏         | 🍏         | 🍏    | 🍏          |
-| typescript| 🍏      | 🍏    | 🍏     | 🍏         | 🍏         | 🍏    | 🍏          |
-
-|        | Build        | UT                          | LOG             | IDE            |
-| :----- | :----------- | :-------------------------- | :-------------- | :------------- |
-| java   | [maven][1]   | [junit5][2]                 | [log4j2][3]     | [IDEA][4]      |
-| go     | (mod)        | (testing)                   | [logrus][5]     | [GoLand][6]    |
-| nodejs | [npm][7]     | [mocha][8]                  | [winston][9]    | [WebStorm][10] |
-| python | [pip][11]    | (unittest)                  | (logging)       | [PyCharm][12]  |
-| rust   | [cargo][13]  | (test)                      | [log4rs][14]    | [CLion][15]    |
-| c++    | [cmake][16]  | [Catch2][24]                | [glog][17]      | [CLion][15]    |
-| c#     | [nuget][18]  | [NUnit](https://nunit.org/) | [log4net][19]   | [Rider][20]    |
-| kotlin | [gradle][21] | [junit5][2]                 | [log4j2][3]     | [IDEA][4]      |
-| swift  | [spm][22]    | (XCTest)                    | [swift-log][23] | Xcode          |
-| dart|||||
-| typescript|||||
+|            | Header | TLS | Proxy | Propagate | Build        | UT                          | LOG             | IDE            | 
+|:-----------|:-------|:----|:------|:----------|:-------------|:----------------------------|:----------------|:---------------| 
+| java       | 🍎     | 🍎  | 🍎    | 🍎        | [maven][1]   | [junit5][2]                 | [log4j2][3]     | [IDEA][4]      | 
+| go         | 🍎     | 🍎  | 🍎    | 🍎        | (mod)        | (testing)                   | [logrus][5]     | [GoLand][6]    | 
+| nodejs     | 🍎     | 🥑  | 🍎    | 🍎        | [npm][7]     | [mocha][8]                  | [winston][9]    | [WebStorm][10] | 
+| python     | 🍎     | 🍎  | 🍎    | 🍎        | [pip][11]    | (unittest)                  | (logging)       | [PyCharm][12]  | 
+| rust       | 🍎     | 🍎  | 🍎    | 🍎        | [cargo][13]  | (test)                      | [log4rs][14]    | [CLion][15]    | 
+| c++        | 🍎     | 🍎  | 🍎    | 🍎        | [cmake][16]  | [Catch2][24]                | [glog][17]      | [CLion][15]    | 
+| c#         | 🍎     | 🍎  | 🍎    | 🍎        | [nuget][18]  | [NUnit](https://nunit.org/) | [log4net][19]   | [Rider][20]    | 
+| kotlin     | 🍎     | 🍎  | 🍎    | 🍎        | [gradle][21] | [junit5][2]                 | [log4j2][3]     | [IDEA][4]      | 
+| swift      | 🍏     | 🍏  | 🍏    | 🍏        | [spm][22]    | (XCTest)                    | [swift-log][23] | Xcode          | 
+| dart       | 🍏     | 🍏  | 🍏    | 🍏        |              |                             |                 |                |
+| typescript | 🍏     | 🍏  | 🍏    | 🍏        |              |                             |                 |                |
 
 ### 3 Service Mesh
 
-> [build and publish docker image](grpc/docker/README.md)
+> [build and publish docker image](docker/README.md)
 
-- [running on kube](kube)
-- [running above service mesh](mesh)
-- [support open tracing](tracing)
-- [transcoder(Http2gRPC)](transcoder)
+- [running on kube](k8s/kube)
+- [running above service mesh](k8s/mesh)
+- [support open tracing](k8s/tracing)
+- [transcoder(Http2gRPC)](k8s/transcoder)
 
 ## :coffee: How to use
 
