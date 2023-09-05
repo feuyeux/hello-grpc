@@ -6,13 +6,13 @@ $ pub get
 Then, to run the server:
 
 ```sh
-$ dart bin/server.dart
+$ dart server.dart
 ```
 
 Likewise, to run the client:
 
 ```sh
-$ dart bin/client.dart
+$ dart client.dart
 ```
 
 Debugging Troubleshoot

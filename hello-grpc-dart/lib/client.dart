@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'dart:math' show Random;
-
 import 'package:grpc/grpc.dart';
 import 'package:logger/logger.dart';
-
+import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
 
 var logger = Logger(
@@ -23,7 +21,7 @@ class Client {
     // Run all of the demos in order.
     try {
       TalkRequest request = TalkRequest()
-        ..data = randomId(5)
+        ..data = Utils.randomId(5)
         ..meta = "DART";
       await talk(request);
       await talkOneAnswerMore();
@@ -53,9 +51,4 @@ class Client {
   Future<void> talkMoreAnswerOne() async {}
 
   Future<void> talkBidirectional() async {}
-
-  String randomId(int max) {
-    var id = Random().nextInt(max);
-    return id.toString();
-  }
 }

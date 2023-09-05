@@ -1,16 +1,13 @@
-import 'package:collection/collection.dart' show IterableExtension;
-import 'package:fixnum/src/int64.dart';
 import 'package:grpc/grpc.dart' as grpc;
+import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
 import 'package:logger/logger.dart';
-import 'package:uuid/uuid.dart';
 import 'dart:io' as io show Platform;
 
 var logger = Logger(
   printer: PrettyPrinter(),
 );
 
-var uuid = Uuid();
 const hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"];
 
 Map<String, String> ans = {
@@ -29,7 +26,7 @@ class Server {
     await server.serve(port: 8080);
     logger.i("Server listening on port ${server.port}...");
     Map<String, String> envVars = io.Platform.environment;
-    var user =envVars['USER'];
+    var user = envVars['USER'];
     logger.i("User:$user");
   }
 }
@@ -40,13 +37,13 @@ class LandingService extends LandingServiceBase {
     var index = int.parse(id);
     var hello = hellos[index];
     var kv = Map<String, String>();
-    kv['id'] = uuid.v4();
+    kv['id'] = Utils.getUuid();
     kv['idx'] = id;
     kv['data'] = hello + "," + ans[hello]!;
     kv['meta'] = 'DART';
 
     var result = new TalkResult()
-      ..id = Int64(DateTime.now().millisecondsSinceEpoch)
+      ..id = Utils.timestamp()
       ..type = ResultType.OK;
     result.kv.addAll(kv);
     return result;

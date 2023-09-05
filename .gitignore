@@ -51,3 +51,4 @@ gradlew*
 .build
 .swiftpm
 *.drawio.bkp
+.dart_tool

@@ -18,6 +18,8 @@ dependencies:
   logger: ^2.0.2
   # https://pub.dev/packages/uuid
   uuid: ^4.0.0
+  # https://pub.dev/packages/test
+  test: ^1.24.6
 dev_dependencies:
   # https://pub.dev/packages/lints
   lints: ^2.1.1
