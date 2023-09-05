@@ -6,10 +6,11 @@ const certKey = "/var/hello_grpc/client_certs/private.key"
 const certChain = "/var/hello_grpc/client_certs/full_chain.pem"
 const rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
 const serverName = "hello.grpc.io"
-const {createLogger, format, transports} = require('winston')
-const {LandingServiceClient} = require("./landing_grpc_pb")
-const {combine, timestamp, printf} = format
-const formatter = printf(({level, message, timestamp}) => {
+const { createLogger, format, transports } = require('winston')
+const { LandingServiceClient } = require("./landing_grpc_pb")
+// 
+const { combine, timestamp, printf } = format
+const formatter = printf(({ level, message, timestamp }) => {
     return `${timestamp} [${level}] ${message}`
 })
 

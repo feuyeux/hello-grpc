@@ -53,7 +53,8 @@ protoc-gen-grpc \
   protos/landing.proto
 
 # 8 TypeScript
-# TODO
+# npm config list
+# code /Users/han/.npmrc
 # npm install typescript -g
 # rm -rf node_modules gen_svc/ts gen_msg/ts
 # yarn add @grpc/grpc-js google-protobuf 
@@ -61,8 +62,8 @@ protoc-gen-grpc \
 mkdir -p gen_svc/ts gen_msg/ts
 grpc_tools_node_protoc \
   --grpc_out=grpc_js:gen_svc/ts \
-  --js_out=import_style=commonjs,binary:gen_msg/ts \
-  --ts_out=grpc_js:gen_msg/ts \
+  --js_out=import_style=commonjs,binary:gen_svc/ts \
+  --ts_out=grpc_js:gen_svc/ts \
   -I protos \
   --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts\
   protos/landing.proto
