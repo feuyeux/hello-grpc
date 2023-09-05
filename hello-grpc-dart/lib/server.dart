@@ -2,13 +2,13 @@ import 'dart:io';
 import 'dart:io' as io show Platform;
 
 import 'package:grpc/grpc.dart' as grpc;
-import 'package:logger/logger.dart';
 
 import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
-import 'common/log.dart';
 
-late Logger logger;
+import 'package:logging/logging.dart';
+
+import 'conn/conn.dart';
 
 const hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"];
 
@@ -23,16 +23,22 @@ Map<String, String> ans = {
 };
 
 Map<String, String> envVars = io.Platform.environment;
+var outputFile = new File('hello_server.log');
 
 class Server {
   Future<void> main(List<String> args) async {
-    var file = File('./hello.log');
-    logger = HelloLog(file).buildLogger();
+    Logger.root.level = Level.ALL;
+    Logger.root.onRecord.listen((LogRecord rec) {
+      print('${rec.level.name}: ${rec.time}: ${rec.message}');
+      outputFile.writeAsStringSync("${rec.time} | ${rec.level} | ${rec.message}\n", mode: FileMode.append);
+    });
+    final Logger logger = new Logger('HelloServer');
+
     var user = envVars['USER'];
-    logger.i("User:$user");
+    logger.info("User:$user");
     final server = grpc.Server.create(services: [LandingService()]);
-    await server.serve(port: 8080);
-    logger.i("Server listening on port ${server.port}...");
+    await server.serve(port: Conn.port);
+    logger.info("Server listening on port ${server.port}...");
   }
 }
 

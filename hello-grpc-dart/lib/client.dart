@@ -1,21 +1,29 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:grpc/grpc.dart';
-import 'package:logger/logger.dart';
 import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
+import 'package:logging/logging.dart';
 
-var logger = Logger(
-  printer: PrettyPrinter(),
-  output: null,
-);
+import 'conn/conn.dart';
+
+var outputFile = new File('hello_client.log');
 
 class Client {
   late LandingServiceClient stub;
+  late Logger logger;
 
   Future<void> main(List<String> args) async {
+    Logger.root.level = Level.ALL;
+    Logger.root.onRecord.listen((LogRecord rec) {
+      print('${rec.level.name}: ${rec.time}: ${rec.message}');
+      outputFile.writeAsStringSync(
+          "${rec.time} | ${rec.level} | ${rec.message}\n",
+          mode: FileMode.append);
+    });
+    logger = new Logger('HelloClient');
     final channel = ClientChannel('127.0.0.1',
-        port: 8080,
+        port: Conn.port,
         options:
             const ChannelOptions(credentials: ChannelCredentials.insecure()));
     stub = LandingServiceClient(channel,
@@ -51,13 +59,13 @@ class Client {
 
   Future<TalkResponse> talk(TalkRequest request) async {
     final response = await stub.talk(request);
-    logger.i(response);
+    logger.info(response);
     return response;
   }
 
   Future<void> talkOneAnswerMore(TalkRequest request) async {
     await for (var response in stub.talkOneAnswerMore(request)) {
-      logger.i(response);
+      logger.info(response);
     }
   }
 
@@ -74,7 +82,7 @@ class Client {
     }
 
     final response = await stub.talkMoreAnswerOne(generateRequest(3));
-    logger.i(response);
+    logger.info(response);
   }
 
   Future<void> talkBidirectional() async {
@@ -85,14 +93,14 @@ class Client {
           ..meta = "DART";
         // Short delay to simulate some other interaction.
         await Future.delayed(Duration(milliseconds: 10));
-        logger.i('Sending message {data:${request.data}, meta:${request.meta}}');
+        logger.info('Sending message {data:${request.data}, meta:${request.meta}}');
         yield request;
       }
     }
+
     final call = stub.talkBidirectional(generateRequests());
     await for (var response in call) {
-      logger.i(response);
-      ;
+      logger.info(response);
     }
   }
 }

@@ -1,21 +1,30 @@
 
+# build
 ```sh
 $ pub get
 ```
 
-Then, to run the server:
+## run the server
 
 ```sh
 $ dart server.dart
 ```
 
-Likewise, to run the client:
+## run the client
 
 ```sh
 $ dart client.dart
 ```
 
-Debugging Troubleshoot
+```sh
+dart compile exe server.dart -o bin/hello_server
+./bin/hello_server
+
+dart compile exe client.dart -o bin/hello_client
+./bin/hello_client
+```
+
+## Debugging Troubleshoot
 
 ```sh
 Problem:
