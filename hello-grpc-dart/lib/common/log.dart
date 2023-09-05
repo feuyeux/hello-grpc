@@ -21,9 +21,10 @@ class HelloLog {
             // number of method calls if stacktrace is provided
             lineLength: 120,
             // width of the output
-            colors: true,
+            colors: false,
             // Colorful log messages
             printEmojis: false,
+
             // Print an emoji for each log message
             printTime: true // Should each log print contain a timestamp
             ),

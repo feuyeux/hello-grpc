@@ -62,23 +62,36 @@ class LandingService extends LandingServiceBase {
   }
 
   @override
-  Stream<TalkResponse> talkBidirectional(
-      grpc.ServiceCall call, Stream<TalkRequest> request) {
-    // TODO: implement talkBidirectional
-    throw UnimplementedError();
+  Stream<TalkResponse> talkOneAnswerMore(
+      grpc.ServiceCall call, TalkRequest request) async* {
+    var datas = request.data.split(",");
+    for (var data in datas) {
+      var response = TalkResponse()..status = 200;
+      response.results.add(buildResult(data));
+      yield response;
+    }
   }
 
   @override
   Future<TalkResponse> talkMoreAnswerOne(
-      grpc.ServiceCall call, Stream<TalkRequest> request) {
-    // TODO: implement talkMoreAnswerOne
-    throw UnimplementedError();
+      grpc.ServiceCall call, Stream<TalkRequest> requests) async {
+    final timer = Stopwatch();
+    var response = TalkResponse()..status = 200;
+    await for (var request in requests) {
+      if (!timer.isRunning) timer.start();
+      response.results.add(buildResult(request.data));
+    }
+    timer.stop();
+    return response;
   }
 
   @override
-  Stream<TalkResponse> talkOneAnswerMore(
-      grpc.ServiceCall call, TalkRequest request) {
-    // TODO: implement talkOneAnswerMore
-    throw UnimplementedError();
+  Stream<TalkResponse> talkBidirectional(
+      grpc.ServiceCall call, Stream<TalkRequest> requests) async* {
+    await for (var request in requests) {
+      var response = TalkResponse()..status = 200;
+      response.results.add(buildResult(request.data));
+      yield response;
+    }
   }
 }

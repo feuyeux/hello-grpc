@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:grpc/grpc.dart';
 import 'package:logger/logger.dart';
 import 'common/common.dart';
@@ -25,7 +26,14 @@ class Client {
         ..data = Utils.randomId(5)
         ..meta = "DART";
       await talk(request);
-      await talkOneAnswerMore();
+      request = TalkRequest()
+        ..data = Utils.randomId(5) +
+            "," +
+            Utils.randomId(5) +
+            "," +
+            Utils.randomId(5)
+        ..meta = "DART";
+      await talkOneAnswerMore(request);
       await talkMoreAnswerOne();
       await talkBidirectional();
     } catch (e) {
@@ -47,11 +55,44 @@ class Client {
     return response;
   }
 
-  Future<void> talkOneAnswerMore() async {
-
+  Future<void> talkOneAnswerMore(TalkRequest request) async {
+    await for (var response in stub.talkOneAnswerMore(request)) {
+      logger.i(response);
+    }
   }
 
-  Future<void> talkMoreAnswerOne() async {}
+  Future<void> talkMoreAnswerOne() async {
+    Stream<TalkRequest> generateRequest(int count) async* {
+      final random = Random();
+      for (var i = 0; i < count; i++) {
+        TalkRequest request = TalkRequest()
+          ..data = Utils.randomId(5)
+          ..meta = "DART";
+        yield request;
+        await Future.delayed(Duration(milliseconds: 100 + random.nextInt(100)));
+      }
+    }
 
-  Future<void> talkBidirectional() async {}
+    final response = await stub.talkMoreAnswerOne(generateRequest(3));
+    logger.i(response);
+  }
+
+  Future<void> talkBidirectional() async {
+    Stream<TalkRequest> generateRequests() async* {
+      for (var i = 0; i < 3; i++) {
+        TalkRequest request = TalkRequest()
+          ..data = Utils.randomId(5)
+          ..meta = "DART";
+        // Short delay to simulate some other interaction.
+        await Future.delayed(Duration(milliseconds: 10));
+        logger.i('Sending message {data:${request.data}, meta:${request.meta}}');
+        yield request;
+      }
+    }
+    final call = stub.talkBidirectional(generateRequests());
+    await for (var response in call) {
+      logger.i(response);
+      ;
+    }
+  }
 }
