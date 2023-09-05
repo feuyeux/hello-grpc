@@ -45,7 +45,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | c#         | 🍎      | 🍎   | 🍎     | 🍎      | [nuget][18]  | [NUnit](https://nunit.org/) | [log4net][19]   | [Rider][20]    |
 | kotlin     | 🍎      | 🍎   | 🍎     | 🍎      | [gradle][21] | [junit5][2]                 | [log4j2][3]     | [IDEA][4]      |
 | swift      | 🍏      | 🍏   | 🍏     | 🍏      | [spm][22]    | (XCTest)                    | [swift-log][23] | Xcode          |
-| dart       | 🍏      | 🍏   | 🍏     | 🍏      | [pub][25]    |                             |                 | [WebStorm][10] |
+| dart       | 🍏      | 🍏   | 🍏     | 🍏      | [pub][25]    |                             | [logger][26]    | [WebStorm][10] |
 | typescript | 🍏      | 🍏   | 🍏     | 🍏      |              |                             |                 |                |
 > 🍎 `:apple:` done 
 > 🍏 `:green_apple:` unimplemented
@@ -142,3 +142,4 @@ export GRPC_TRACE=all
 [23]: <https://github.com/apple/swift-log>
 [24]: <https://github.com/catchorg/Catch2>
 [25]: <https://dart.dev/guides/packages>
+[26]: <https://pub.dev/packages/logger>
