@@ -6,6 +6,7 @@ import 'common/landing.pbgrpc.dart';
 
 var logger = Logger(
   printer: PrettyPrinter(),
+  output: null,
 );
 
 class Client {
@@ -46,7 +47,9 @@ class Client {
     return response;
   }
 
-  Future<void> talkOneAnswerMore() async {}
+  Future<void> talkOneAnswerMore() async {
+
+  }
 
   Future<void> talkMoreAnswerOne() async {}
 

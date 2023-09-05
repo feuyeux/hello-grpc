@@ -5,7 +5,11 @@ import 'package:logger/logger.dart';
 import 'dart:io' as io show Platform;
 
 var logger = Logger(
-  printer: PrettyPrinter(),
+  printer: PrettyPrinter(
+    lineLength: 120,
+    colors: true,
+  ),
+  output: LogOutput(),
 );
 
 const hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"];
@@ -20,14 +24,15 @@ Map<String, String> ans = {
   "안녕하세요": "대단히 감사합니다"
 };
 
+Map<String, String> envVars = io.Platform.environment;
+
 class Server {
   Future<void> main(List<String> args) async {
+    var user = envVars['USER'];
+    logger.i("User:$user");
     final server = grpc.Server.create(services: [LandingService()]);
     await server.serve(port: 8080);
     logger.i("Server listening on port ${server.port}...");
-    Map<String, String> envVars = io.Platform.environment;
-    var user = envVars['USER'];
-    logger.i("User:$user");
   }
 }
 
