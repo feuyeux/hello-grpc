@@ -1,16 +1,14 @@
-import 'package:grpc/grpc.dart' as grpc;
-import 'common/common.dart';
-import 'common/landing.pbgrpc.dart';
-import 'package:logger/logger.dart';
+import 'dart:io';
 import 'dart:io' as io show Platform;
 
-var logger = Logger(
-  printer: PrettyPrinter(
-    lineLength: 120,
-    colors: true,
-  ),
-  output: LogOutput(),
-);
+import 'package:grpc/grpc.dart' as grpc;
+import 'package:logger/logger.dart';
+
+import 'common/common.dart';
+import 'common/landing.pbgrpc.dart';
+import 'common/log.dart';
+
+late Logger logger;
 
 const hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"];
 
@@ -28,6 +26,8 @@ Map<String, String> envVars = io.Platform.environment;
 
 class Server {
   Future<void> main(List<String> args) async {
+    var file = File('./hello.log');
+    logger = HelloLog(file).buildLogger();
     var user = envVars['USER'];
     logger.i("User:$user");
     final server = grpc.Server.create(services: [LandingService()]);
