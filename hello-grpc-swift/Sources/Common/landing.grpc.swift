@@ -11,35 +11,35 @@ import NIOConcurrencyHelpers
 import SwiftProtobuf
 
 
-/// Usage: instantiate `Org_Feuyeux_Grpc_LandingServiceClient`, then call methods of this protocol to make API calls.
-public protocol Org_Feuyeux_Grpc_LandingServiceClientProtocol: GRPCClient {
+/// Usage: instantiate `Hello_LandingServiceClient`, then call methods of this protocol to make API calls.
+public protocol Hello_LandingServiceClientProtocol: GRPCClient {
   var serviceName: String { get }
-  var interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? { get }
+  var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? { get }
 
   func talk(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions?
-  ) -> UnaryCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+  ) -> UnaryCall<Hello_TalkRequest, Hello_TalkResponse>
 
   func talkOneAnswerMore(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions?,
-    handler: @escaping (Org_Feuyeux_Grpc_TalkResponse) -> Void
-  ) -> ServerStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+    handler: @escaping (Hello_TalkResponse) -> Void
+  ) -> ServerStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 
   func talkMoreAnswerOne(
     callOptions: CallOptions?
-  ) -> ClientStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+  ) -> ClientStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 
   func talkBidirectional(
     callOptions: CallOptions?,
-    handler: @escaping (Org_Feuyeux_Grpc_TalkResponse) -> Void
-  ) -> BidirectionalStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+    handler: @escaping (Hello_TalkResponse) -> Void
+  ) -> BidirectionalStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 }
 
-extension Org_Feuyeux_Grpc_LandingServiceClientProtocol {
+extension Hello_LandingServiceClientProtocol {
   public var serviceName: String {
-    return "org.feuyeux.grpc.LandingService"
+    return "hello.LandingService"
   }
 
   ///Unary RPC
@@ -49,11 +49,11 @@ extension Org_Feuyeux_Grpc_LandingServiceClientProtocol {
   ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func talk(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions? = nil
-  ) -> UnaryCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> UnaryCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeUnaryCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talk.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talk.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkInterceptors() ?? []
@@ -68,12 +68,12 @@ extension Org_Feuyeux_Grpc_LandingServiceClientProtocol {
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
   public func talkOneAnswerMore(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions? = nil,
-    handler: @escaping (Org_Feuyeux_Grpc_TalkResponse) -> Void
-  ) -> ServerStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+    handler: @escaping (Hello_TalkResponse) -> Void
+  ) -> ServerStreamingCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeServerStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkOneAnswerMore.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkOneAnswerMore.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkOneAnswerMoreInterceptors() ?? [],
@@ -91,9 +91,9 @@ extension Org_Feuyeux_Grpc_LandingServiceClientProtocol {
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
   public func talkMoreAnswerOne(
     callOptions: CallOptions? = nil
-  ) -> ClientStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> ClientStreamingCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeClientStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkMoreAnswerOneInterceptors() ?? []
     )
@@ -110,10 +110,10 @@ extension Org_Feuyeux_Grpc_LandingServiceClientProtocol {
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func talkBidirectional(
     callOptions: CallOptions? = nil,
-    handler: @escaping (Org_Feuyeux_Grpc_TalkResponse) -> Void
-  ) -> BidirectionalStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+    handler: @escaping (Hello_TalkResponse) -> Void
+  ) -> BidirectionalStreamingCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeBidirectionalStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkBidirectional.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkBidirectional.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkBidirectionalInterceptors() ?? [],
       handler: handler
@@ -122,24 +122,24 @@ extension Org_Feuyeux_Grpc_LandingServiceClientProtocol {
 }
 
 @available(*, deprecated)
-extension Org_Feuyeux_Grpc_LandingServiceClient: @unchecked Sendable {}
+extension Hello_LandingServiceClient: @unchecked Sendable {}
 
-@available(*, deprecated, renamed: "Org_Feuyeux_Grpc_LandingServiceNIOClient")
-public final class Org_Feuyeux_Grpc_LandingServiceClient: Org_Feuyeux_Grpc_LandingServiceClientProtocol {
+@available(*, deprecated, renamed: "Hello_LandingServiceNIOClient")
+public final class Hello_LandingServiceClient: Hello_LandingServiceClientProtocol {
   private let lock = Lock()
   private var _defaultCallOptions: CallOptions
-  private var _interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol?
+  private var _interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol?
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions {
     get { self.lock.withLock { return self._defaultCallOptions } }
     set { self.lock.withLockVoid { self._defaultCallOptions = newValue } }
   }
-  public var interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? {
+  public var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? {
     get { self.lock.withLock { return self._interceptors } }
     set { self.lock.withLockVoid { self._interceptors = newValue } }
   }
 
-  /// Creates a client for the org.feuyeux.grpc.LandingService service.
+  /// Creates a client for the hello.LandingService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
@@ -148,7 +148,7 @@ public final class Org_Feuyeux_Grpc_LandingServiceClient: Org_Feuyeux_Grpc_Landi
   public init(
     channel: GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? = nil
+    interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? = nil
   ) {
     self.channel = channel
     self._defaultCallOptions = defaultCallOptions
@@ -156,12 +156,12 @@ public final class Org_Feuyeux_Grpc_LandingServiceClient: Org_Feuyeux_Grpc_Landi
   }
 }
 
-public struct Org_Feuyeux_Grpc_LandingServiceNIOClient: Org_Feuyeux_Grpc_LandingServiceClientProtocol {
+public struct Hello_LandingServiceNIOClient: Hello_LandingServiceClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
-  public var interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol?
+  public var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol?
 
-  /// Creates a client for the org.feuyeux.grpc.LandingService service.
+  /// Creates a client for the hello.LandingService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
@@ -170,7 +170,7 @@ public struct Org_Feuyeux_Grpc_LandingServiceNIOClient: Org_Feuyeux_Grpc_Landing
   public init(
     channel: GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? = nil
+    interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -179,45 +179,45 @@ public struct Org_Feuyeux_Grpc_LandingServiceNIOClient: Org_Feuyeux_Grpc_Landing
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol: GRPCClient {
+public protocol Hello_LandingServiceAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
-  var interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? { get }
+  var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? { get }
 
   func makeTalkCall(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions?
-  ) -> GRPCAsyncUnaryCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+  ) -> GRPCAsyncUnaryCall<Hello_TalkRequest, Hello_TalkResponse>
 
   func makeTalkOneAnswerMoreCall(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions?
-  ) -> GRPCAsyncServerStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+  ) -> GRPCAsyncServerStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 
   func makeTalkMoreAnswerOneCall(
     callOptions: CallOptions?
-  ) -> GRPCAsyncClientStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+  ) -> GRPCAsyncClientStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 
   func makeTalkBidirectionalCall(
     callOptions: CallOptions?
-  ) -> GRPCAsyncBidirectionalStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>
+  ) -> GRPCAsyncBidirectionalStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
+extension Hello_LandingServiceAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
-    return Org_Feuyeux_Grpc_LandingServiceClientMetadata.serviceDescriptor
+    return Hello_LandingServiceClientMetadata.serviceDescriptor
   }
 
-  public var interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? {
+  public var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? {
     return nil
   }
 
   public func makeTalkCall(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncUnaryCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> GRPCAsyncUnaryCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeAsyncUnaryCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talk.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talk.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkInterceptors() ?? []
@@ -225,11 +225,11 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
   }
 
   public func makeTalkOneAnswerMoreCall(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncServerStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> GRPCAsyncServerStreamingCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeAsyncServerStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkOneAnswerMore.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkOneAnswerMore.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkOneAnswerMoreInterceptors() ?? []
@@ -238,9 +238,9 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
 
   public func makeTalkMoreAnswerOneCall(
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncClientStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> GRPCAsyncClientStreamingCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeAsyncClientStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkMoreAnswerOneInterceptors() ?? []
     )
@@ -248,9 +248,9 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
 
   public func makeTalkBidirectionalCall(
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncBidirectionalStreamingCall<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> GRPCAsyncBidirectionalStreamingCall<Hello_TalkRequest, Hello_TalkResponse> {
     return self.makeAsyncBidirectionalStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkBidirectional.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkBidirectional.path,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkBidirectionalInterceptors() ?? []
     )
@@ -258,13 +258,13 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
+extension Hello_LandingServiceAsyncClientProtocol {
   public func talk(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions? = nil
-  ) async throws -> Org_Feuyeux_Grpc_TalkResponse {
+  ) async throws -> Hello_TalkResponse {
     return try await self.performAsyncUnaryCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talk.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talk.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkInterceptors() ?? []
@@ -272,11 +272,11 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
   }
 
   public func talkOneAnswerMore(
-    _ request: Org_Feuyeux_Grpc_TalkRequest,
+    _ request: Hello_TalkRequest,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Org_Feuyeux_Grpc_TalkResponse> {
+  ) -> GRPCAsyncResponseStream<Hello_TalkResponse> {
     return self.performAsyncServerStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkOneAnswerMore.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkOneAnswerMore.path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkOneAnswerMoreInterceptors() ?? []
@@ -286,9 +286,9 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
   public func talkMoreAnswerOne<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Org_Feuyeux_Grpc_TalkResponse where RequestStream: Sequence, RequestStream.Element == Org_Feuyeux_Grpc_TalkRequest {
+  ) async throws -> Hello_TalkResponse where RequestStream: Sequence, RequestStream.Element == Hello_TalkRequest {
     return try await self.performAsyncClientStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkMoreAnswerOneInterceptors() ?? []
@@ -298,9 +298,9 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
   public func talkMoreAnswerOne<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) async throws -> Org_Feuyeux_Grpc_TalkResponse where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Org_Feuyeux_Grpc_TalkRequest {
+  ) async throws -> Hello_TalkResponse where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Hello_TalkRequest {
     return try await self.performAsyncClientStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkMoreAnswerOne.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkMoreAnswerOneInterceptors() ?? []
@@ -310,9 +310,9 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
   public func talkBidirectional<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Org_Feuyeux_Grpc_TalkResponse> where RequestStream: Sequence, RequestStream.Element == Org_Feuyeux_Grpc_TalkRequest {
+  ) -> GRPCAsyncResponseStream<Hello_TalkResponse> where RequestStream: Sequence, RequestStream.Element == Hello_TalkRequest {
     return self.performAsyncBidirectionalStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkBidirectional.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkBidirectional.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkBidirectionalInterceptors() ?? []
@@ -322,9 +322,9 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
   public func talkBidirectional<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
-  ) -> GRPCAsyncResponseStream<Org_Feuyeux_Grpc_TalkResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Org_Feuyeux_Grpc_TalkRequest {
+  ) -> GRPCAsyncResponseStream<Hello_TalkResponse> where RequestStream: AsyncSequence & Sendable, RequestStream.Element == Hello_TalkRequest {
     return self.performAsyncBidirectionalStreamingCall(
-      path: Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkBidirectional.path,
+      path: Hello_LandingServiceClientMetadata.Methods.talkBidirectional.path,
       requests: requests,
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: self.interceptors?.makeTalkBidirectionalInterceptors() ?? []
@@ -333,15 +333,15 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public struct Org_Feuyeux_Grpc_LandingServiceAsyncClient: Org_Feuyeux_Grpc_LandingServiceAsyncClientProtocol {
+public struct Hello_LandingServiceAsyncClient: Hello_LandingServiceAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
-  public var interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol?
+  public var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol?
 
   public init(
     channel: GRPCChannel,
     defaultCallOptions: CallOptions = CallOptions(),
-    interceptors: Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol? = nil
+    interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? = nil
   ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
@@ -349,80 +349,80 @@ public struct Org_Feuyeux_Grpc_LandingServiceAsyncClient: Org_Feuyeux_Grpc_Landi
   }
 }
 
-public protocol Org_Feuyeux_Grpc_LandingServiceClientInterceptorFactoryProtocol: Sendable {
+public protocol Hello_LandingServiceClientInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when invoking 'talk'.
-  func makeTalkInterceptors() -> [ClientInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkInterceptors() -> [ClientInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 
   /// - Returns: Interceptors to use when invoking 'talkOneAnswerMore'.
-  func makeTalkOneAnswerMoreInterceptors() -> [ClientInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkOneAnswerMoreInterceptors() -> [ClientInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 
   /// - Returns: Interceptors to use when invoking 'talkMoreAnswerOne'.
-  func makeTalkMoreAnswerOneInterceptors() -> [ClientInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkMoreAnswerOneInterceptors() -> [ClientInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 
   /// - Returns: Interceptors to use when invoking 'talkBidirectional'.
-  func makeTalkBidirectionalInterceptors() -> [ClientInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkBidirectionalInterceptors() -> [ClientInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 }
 
-public enum Org_Feuyeux_Grpc_LandingServiceClientMetadata {
+public enum Hello_LandingServiceClientMetadata {
   public static let serviceDescriptor = GRPCServiceDescriptor(
     name: "LandingService",
-    fullName: "org.feuyeux.grpc.LandingService",
+    fullName: "hello.LandingService",
     methods: [
-      Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talk,
-      Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkOneAnswerMore,
-      Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkMoreAnswerOne,
-      Org_Feuyeux_Grpc_LandingServiceClientMetadata.Methods.talkBidirectional,
+      Hello_LandingServiceClientMetadata.Methods.talk,
+      Hello_LandingServiceClientMetadata.Methods.talkOneAnswerMore,
+      Hello_LandingServiceClientMetadata.Methods.talkMoreAnswerOne,
+      Hello_LandingServiceClientMetadata.Methods.talkBidirectional,
     ]
   )
 
   public enum Methods {
     public static let talk = GRPCMethodDescriptor(
       name: "Talk",
-      path: "/org.feuyeux.grpc.LandingService/Talk",
+      path: "/hello.LandingService/Talk",
       type: GRPCCallType.unary
     )
 
     public static let talkOneAnswerMore = GRPCMethodDescriptor(
       name: "TalkOneAnswerMore",
-      path: "/org.feuyeux.grpc.LandingService/TalkOneAnswerMore",
+      path: "/hello.LandingService/TalkOneAnswerMore",
       type: GRPCCallType.serverStreaming
     )
 
     public static let talkMoreAnswerOne = GRPCMethodDescriptor(
       name: "TalkMoreAnswerOne",
-      path: "/org.feuyeux.grpc.LandingService/TalkMoreAnswerOne",
+      path: "/hello.LandingService/TalkMoreAnswerOne",
       type: GRPCCallType.clientStreaming
     )
 
     public static let talkBidirectional = GRPCMethodDescriptor(
       name: "TalkBidirectional",
-      path: "/org.feuyeux.grpc.LandingService/TalkBidirectional",
+      path: "/hello.LandingService/TalkBidirectional",
       type: GRPCCallType.bidirectionalStreaming
     )
   }
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Org_Feuyeux_Grpc_LandingServiceProvider: CallHandlerProvider {
-  var interceptors: Org_Feuyeux_Grpc_LandingServiceServerInterceptorFactoryProtocol? { get }
+public protocol Hello_LandingServiceProvider: CallHandlerProvider {
+  var interceptors: Hello_LandingServiceServerInterceptorFactoryProtocol? { get }
 
   ///Unary RPC
-  func talk(request: Org_Feuyeux_Grpc_TalkRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Org_Feuyeux_Grpc_TalkResponse>
+  func talk(request: Hello_TalkRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Hello_TalkResponse>
 
   ///Server streaming RPC
-  func talkOneAnswerMore(request: Org_Feuyeux_Grpc_TalkRequest, context: StreamingResponseCallContext<Org_Feuyeux_Grpc_TalkResponse>) -> EventLoopFuture<GRPCStatus>
+  func talkOneAnswerMore(request: Hello_TalkRequest, context: StreamingResponseCallContext<Hello_TalkResponse>) -> EventLoopFuture<GRPCStatus>
 
   ///Client streaming RPC with random & sleep
-  func talkMoreAnswerOne(context: UnaryResponseCallContext<Org_Feuyeux_Grpc_TalkResponse>) -> EventLoopFuture<(StreamEvent<Org_Feuyeux_Grpc_TalkRequest>) -> Void>
+  func talkMoreAnswerOne(context: UnaryResponseCallContext<Hello_TalkResponse>) -> EventLoopFuture<(StreamEvent<Hello_TalkRequest>) -> Void>
 
   ///Bidirectional streaming RPC
-  func talkBidirectional(context: StreamingResponseCallContext<Org_Feuyeux_Grpc_TalkResponse>) -> EventLoopFuture<(StreamEvent<Org_Feuyeux_Grpc_TalkRequest>) -> Void>
+  func talkBidirectional(context: StreamingResponseCallContext<Hello_TalkResponse>) -> EventLoopFuture<(StreamEvent<Hello_TalkRequest>) -> Void>
 }
 
-extension Org_Feuyeux_Grpc_LandingServiceProvider {
+extension Hello_LandingServiceProvider {
   public var serviceName: Substring {
-    return Org_Feuyeux_Grpc_LandingServiceServerMetadata.serviceDescriptor.fullName[...]
+    return Hello_LandingServiceServerMetadata.serviceDescriptor.fullName[...]
   }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
@@ -435,8 +435,8 @@ extension Org_Feuyeux_Grpc_LandingServiceProvider {
     case "Talk":
       return UnaryServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkInterceptors() ?? [],
         userFunction: self.talk(request:context:)
       )
@@ -444,8 +444,8 @@ extension Org_Feuyeux_Grpc_LandingServiceProvider {
     case "TalkOneAnswerMore":
       return ServerStreamingServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkOneAnswerMoreInterceptors() ?? [],
         userFunction: self.talkOneAnswerMore(request:context:)
       )
@@ -453,8 +453,8 @@ extension Org_Feuyeux_Grpc_LandingServiceProvider {
     case "TalkMoreAnswerOne":
       return ClientStreamingServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkMoreAnswerOneInterceptors() ?? [],
         observerFactory: self.talkMoreAnswerOne(context:)
       )
@@ -462,8 +462,8 @@ extension Org_Feuyeux_Grpc_LandingServiceProvider {
     case "TalkBidirectional":
       return BidirectionalStreamingServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkBidirectionalInterceptors() ?? [],
         observerFactory: self.talkBidirectional(context:)
       )
@@ -476,48 +476,48 @@ extension Org_Feuyeux_Grpc_LandingServiceProvider {
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-public protocol Org_Feuyeux_Grpc_LandingServiceAsyncProvider: CallHandlerProvider, Sendable {
+public protocol Hello_LandingServiceAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
-  var interceptors: Org_Feuyeux_Grpc_LandingServiceServerInterceptorFactoryProtocol? { get }
+  var interceptors: Hello_LandingServiceServerInterceptorFactoryProtocol? { get }
 
   ///Unary RPC
   func talk(
-    request: Org_Feuyeux_Grpc_TalkRequest,
+    request: Hello_TalkRequest,
     context: GRPCAsyncServerCallContext
-  ) async throws -> Org_Feuyeux_Grpc_TalkResponse
+  ) async throws -> Hello_TalkResponse
 
   ///Server streaming RPC
   func talkOneAnswerMore(
-    request: Org_Feuyeux_Grpc_TalkRequest,
-    responseStream: GRPCAsyncResponseStreamWriter<Org_Feuyeux_Grpc_TalkResponse>,
+    request: Hello_TalkRequest,
+    responseStream: GRPCAsyncResponseStreamWriter<Hello_TalkResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws
 
   ///Client streaming RPC with random & sleep
   func talkMoreAnswerOne(
-    requestStream: GRPCAsyncRequestStream<Org_Feuyeux_Grpc_TalkRequest>,
+    requestStream: GRPCAsyncRequestStream<Hello_TalkRequest>,
     context: GRPCAsyncServerCallContext
-  ) async throws -> Org_Feuyeux_Grpc_TalkResponse
+  ) async throws -> Hello_TalkResponse
 
   ///Bidirectional streaming RPC
   func talkBidirectional(
-    requestStream: GRPCAsyncRequestStream<Org_Feuyeux_Grpc_TalkRequest>,
-    responseStream: GRPCAsyncResponseStreamWriter<Org_Feuyeux_Grpc_TalkResponse>,
+    requestStream: GRPCAsyncRequestStream<Hello_TalkRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Hello_TalkResponse>,
     context: GRPCAsyncServerCallContext
   ) async throws
 }
 
 @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-extension Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
+extension Hello_LandingServiceAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
-    return Org_Feuyeux_Grpc_LandingServiceServerMetadata.serviceDescriptor
+    return Hello_LandingServiceServerMetadata.serviceDescriptor
   }
 
   public var serviceName: Substring {
-    return Org_Feuyeux_Grpc_LandingServiceServerMetadata.serviceDescriptor.fullName[...]
+    return Hello_LandingServiceServerMetadata.serviceDescriptor.fullName[...]
   }
 
-  public var interceptors: Org_Feuyeux_Grpc_LandingServiceServerInterceptorFactoryProtocol? {
+  public var interceptors: Hello_LandingServiceServerInterceptorFactoryProtocol? {
     return nil
   }
 
@@ -529,8 +529,8 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
     case "Talk":
       return GRPCAsyncServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkInterceptors() ?? [],
         wrapping: { try await self.talk(request: $0, context: $1) }
       )
@@ -538,8 +538,8 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
     case "TalkOneAnswerMore":
       return GRPCAsyncServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkOneAnswerMoreInterceptors() ?? [],
         wrapping: { try await self.talkOneAnswerMore(request: $0, responseStream: $1, context: $2) }
       )
@@ -547,8 +547,8 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
     case "TalkMoreAnswerOne":
       return GRPCAsyncServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkMoreAnswerOneInterceptors() ?? [],
         wrapping: { try await self.talkMoreAnswerOne(requestStream: $0, context: $1) }
       )
@@ -556,8 +556,8 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
     case "TalkBidirectional":
       return GRPCAsyncServerHandler(
         context: context,
-        requestDeserializer: ProtobufDeserializer<Org_Feuyeux_Grpc_TalkRequest>(),
-        responseSerializer: ProtobufSerializer<Org_Feuyeux_Grpc_TalkResponse>(),
+        requestDeserializer: ProtobufDeserializer<Hello_TalkRequest>(),
+        responseSerializer: ProtobufSerializer<Hello_TalkResponse>(),
         interceptors: self.interceptors?.makeTalkBidirectionalInterceptors() ?? [],
         wrapping: { try await self.talkBidirectional(requestStream: $0, responseStream: $1, context: $2) }
       )
@@ -568,59 +568,59 @@ extension Org_Feuyeux_Grpc_LandingServiceAsyncProvider {
   }
 }
 
-public protocol Org_Feuyeux_Grpc_LandingServiceServerInterceptorFactoryProtocol: Sendable {
+public protocol Hello_LandingServiceServerInterceptorFactoryProtocol: Sendable {
 
   /// - Returns: Interceptors to use when handling 'talk'.
   ///   Defaults to calling `self.makeInterceptors()`.
-  func makeTalkInterceptors() -> [ServerInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkInterceptors() -> [ServerInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 
   /// - Returns: Interceptors to use when handling 'talkOneAnswerMore'.
   ///   Defaults to calling `self.makeInterceptors()`.
-  func makeTalkOneAnswerMoreInterceptors() -> [ServerInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkOneAnswerMoreInterceptors() -> [ServerInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 
   /// - Returns: Interceptors to use when handling 'talkMoreAnswerOne'.
   ///   Defaults to calling `self.makeInterceptors()`.
-  func makeTalkMoreAnswerOneInterceptors() -> [ServerInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkMoreAnswerOneInterceptors() -> [ServerInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 
   /// - Returns: Interceptors to use when handling 'talkBidirectional'.
   ///   Defaults to calling `self.makeInterceptors()`.
-  func makeTalkBidirectionalInterceptors() -> [ServerInterceptor<Org_Feuyeux_Grpc_TalkRequest, Org_Feuyeux_Grpc_TalkResponse>]
+  func makeTalkBidirectionalInterceptors() -> [ServerInterceptor<Hello_TalkRequest, Hello_TalkResponse>]
 }
 
-public enum Org_Feuyeux_Grpc_LandingServiceServerMetadata {
+public enum Hello_LandingServiceServerMetadata {
   public static let serviceDescriptor = GRPCServiceDescriptor(
     name: "LandingService",
-    fullName: "org.feuyeux.grpc.LandingService",
+    fullName: "hello.LandingService",
     methods: [
-      Org_Feuyeux_Grpc_LandingServiceServerMetadata.Methods.talk,
-      Org_Feuyeux_Grpc_LandingServiceServerMetadata.Methods.talkOneAnswerMore,
-      Org_Feuyeux_Grpc_LandingServiceServerMetadata.Methods.talkMoreAnswerOne,
-      Org_Feuyeux_Grpc_LandingServiceServerMetadata.Methods.talkBidirectional,
+      Hello_LandingServiceServerMetadata.Methods.talk,
+      Hello_LandingServiceServerMetadata.Methods.talkOneAnswerMore,
+      Hello_LandingServiceServerMetadata.Methods.talkMoreAnswerOne,
+      Hello_LandingServiceServerMetadata.Methods.talkBidirectional,
     ]
   )
 
   public enum Methods {
     public static let talk = GRPCMethodDescriptor(
       name: "Talk",
-      path: "/org.feuyeux.grpc.LandingService/Talk",
+      path: "/hello.LandingService/Talk",
       type: GRPCCallType.unary
     )
 
     public static let talkOneAnswerMore = GRPCMethodDescriptor(
       name: "TalkOneAnswerMore",
-      path: "/org.feuyeux.grpc.LandingService/TalkOneAnswerMore",
+      path: "/hello.LandingService/TalkOneAnswerMore",
       type: GRPCCallType.serverStreaming
     )
 
     public static let talkMoreAnswerOne = GRPCMethodDescriptor(
       name: "TalkMoreAnswerOne",
-      path: "/org.feuyeux.grpc.LandingService/TalkMoreAnswerOne",
+      path: "/hello.LandingService/TalkMoreAnswerOne",
       type: GRPCCallType.clientStreaming
     )
 
     public static let talkBidirectional = GRPCMethodDescriptor(
       name: "TalkBidirectional",
-      path: "/org.feuyeux.grpc.LandingService/TalkBidirectional",
+      path: "/hello.LandingService/TalkBidirectional",
       type: GRPCCallType.bidirectionalStreaming
     )
   }

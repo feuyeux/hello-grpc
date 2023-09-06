@@ -20,7 +20,7 @@ function buildLinkRequests() {
     for (var i = 0; i < 3; i++) {
         var request = new landing_pb_1.TalkRequest();
         request.setData(randomId(5));
-        request.setMeta("NODEJS");
+        request.setMeta("TypeScript");
         requests.push(request);
     }
     return requests.toArray();

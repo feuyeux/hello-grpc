@@ -1,5 +1,5 @@
 syntax = "proto3";
-package org.feuyeux.grpc;
+package hello;
 
 option java_multiple_files = true;
 option java_package = "org.feuyeux.grpc.proto";

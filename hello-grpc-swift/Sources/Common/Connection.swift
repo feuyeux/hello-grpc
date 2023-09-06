@@ -1,5 +1,6 @@
 import Foundation
 import Logging
+import os
 
 #if compiler(>=5.6)
 
@@ -12,8 +13,10 @@ import Logging
         let logger = Logger(label: "HelloConn")
 
         public var port: Int = 9996
+
         public init() {
-            logger.info("Hello World!")
+            let user = ProcessInfo.processInfo.environment["USER"]
+            logger.info("Hello \(user!)")
         }
     }
 #endif // compiler(>=5.6)

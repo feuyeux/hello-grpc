@@ -20,7 +20,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-public enum Org_Feuyeux_Grpc_ResultType: SwiftProtobuf.Enum {
+public enum Hello_ResultType: SwiftProtobuf.Enum {
   public typealias RawValue = Int
   case ok // = 0
   case fail // = 1
@@ -50,9 +50,9 @@ public enum Org_Feuyeux_Grpc_ResultType: SwiftProtobuf.Enum {
 
 #if swift(>=4.2)
 
-extension Org_Feuyeux_Grpc_ResultType: CaseIterable {
+extension Hello_ResultType: CaseIterable {
   // The compiler won't synthesize support with the UNRECOGNIZED case.
-  public static var allCases: [Org_Feuyeux_Grpc_ResultType] = [
+  public static let allCases: [Hello_ResultType] = [
     .ok,
     .fail,
   ]
@@ -60,7 +60,7 @@ extension Org_Feuyeux_Grpc_ResultType: CaseIterable {
 
 #endif  // swift(>=4.2)
 
-public struct Org_Feuyeux_Grpc_TalkRequest {
+public struct Hello_TalkRequest {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -76,21 +76,21 @@ public struct Org_Feuyeux_Grpc_TalkRequest {
   public init() {}
 }
 
-public struct Org_Feuyeux_Grpc_TalkResponse {
+public struct Hello_TalkResponse {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   public var status: Int32 = 0
 
-  public var results: [Org_Feuyeux_Grpc_TalkResult] = []
+  public var results: [Hello_TalkResult] = []
 
   public var unknownFields = SwiftProtobuf.UnknownStorage()
 
   public init() {}
 }
 
-public struct Org_Feuyeux_Grpc_TalkResult {
+public struct Hello_TalkResult {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -99,7 +99,7 @@ public struct Org_Feuyeux_Grpc_TalkResult {
   public var id: Int64 = 0
 
   ///enum
-  public var type: Org_Feuyeux_Grpc_ResultType = .ok
+  public var type: Hello_ResultType = .ok
 
   /// id:result uuid
   /// idx:language index
@@ -113,24 +113,24 @@ public struct Org_Feuyeux_Grpc_TalkResult {
 }
 
 #if swift(>=5.5) && canImport(_Concurrency)
-extension Org_Feuyeux_Grpc_ResultType: @unchecked Sendable {}
-extension Org_Feuyeux_Grpc_TalkRequest: @unchecked Sendable {}
-extension Org_Feuyeux_Grpc_TalkResponse: @unchecked Sendable {}
-extension Org_Feuyeux_Grpc_TalkResult: @unchecked Sendable {}
+extension Hello_ResultType: @unchecked Sendable {}
+extension Hello_TalkRequest: @unchecked Sendable {}
+extension Hello_TalkResponse: @unchecked Sendable {}
+extension Hello_TalkResult: @unchecked Sendable {}
 #endif  // swift(>=5.5) && canImport(_Concurrency)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
-fileprivate let _protobuf_package = "org.feuyeux.grpc"
+fileprivate let _protobuf_package = "hello"
 
-extension Org_Feuyeux_Grpc_ResultType: SwiftProtobuf._ProtoNameProviding {
+extension Hello_ResultType: SwiftProtobuf._ProtoNameProviding {
   public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     0: .same(proto: "OK"),
     1: .same(proto: "FAIL"),
   ]
 }
 
-extension Org_Feuyeux_Grpc_TalkRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Hello_TalkRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".TalkRequest"
   public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "data"),
@@ -160,7 +160,7 @@ extension Org_Feuyeux_Grpc_TalkRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Org_Feuyeux_Grpc_TalkRequest, rhs: Org_Feuyeux_Grpc_TalkRequest) -> Bool {
+  public static func ==(lhs: Hello_TalkRequest, rhs: Hello_TalkRequest) -> Bool {
     if lhs.data != rhs.data {return false}
     if lhs.meta != rhs.meta {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -168,7 +168,7 @@ extension Org_Feuyeux_Grpc_TalkRequest: SwiftProtobuf.Message, SwiftProtobuf._Me
   }
 }
 
-extension Org_Feuyeux_Grpc_TalkResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Hello_TalkResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".TalkResponse"
   public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "status"),
@@ -198,7 +198,7 @@ extension Org_Feuyeux_Grpc_TalkResponse: SwiftProtobuf.Message, SwiftProtobuf._M
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Org_Feuyeux_Grpc_TalkResponse, rhs: Org_Feuyeux_Grpc_TalkResponse) -> Bool {
+  public static func ==(lhs: Hello_TalkResponse, rhs: Hello_TalkResponse) -> Bool {
     if lhs.status != rhs.status {return false}
     if lhs.results != rhs.results {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -206,7 +206,7 @@ extension Org_Feuyeux_Grpc_TalkResponse: SwiftProtobuf.Message, SwiftProtobuf._M
   }
 }
 
-extension Org_Feuyeux_Grpc_TalkResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Hello_TalkResult: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   public static let protoMessageName: String = _protobuf_package + ".TalkResult"
   public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "id"),
@@ -241,7 +241,7 @@ extension Org_Feuyeux_Grpc_TalkResult: SwiftProtobuf.Message, SwiftProtobuf._Mes
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  public static func ==(lhs: Org_Feuyeux_Grpc_TalkResult, rhs: Org_Feuyeux_Grpc_TalkResult) -> Bool {
+  public static func ==(lhs: Hello_TalkResult, rhs: Hello_TalkResult) -> Bool {
     if lhs.id != rhs.id {return false}
     if lhs.type != rhs.type {return false}
     if lhs.kv != rhs.kv {return false}

@@ -9,18 +9,18 @@ let packageDependencies: [Package.Dependency] = [
         url: "https://github.com/apple/swift-nio.git",
         from: "2.42.0"
     ),
-    .package(
-        url: "https://github.com/apple/swift-nio-http2.git",
-        from: "1.24.1"
-    ),
-    .package(
-        url: "https://github.com/apple/swift-nio-transport-services.git",
-        from: "1.15.0"
-    ),
-    .package(
-        url: "https://github.com/apple/swift-nio-extras.git",
-        from: "1.4.0"
-    ),
+//    .package(
+//        url: "https://github.com/apple/swift-nio-http2.git",
+//        from: "1.24.1"
+//    ),
+//    .package(
+//        url: "https://github.com/apple/swift-nio-transport-services.git",
+//        from: "1.15.0"
+//    ),
+//    .package(
+//        url: "https://github.com/apple/swift-nio-extras.git",
+//        from: "1.4.0"
+//    ),
     .package(
         url: "https://github.com/apple/swift-protobuf.git",
         from: "1.20.2"

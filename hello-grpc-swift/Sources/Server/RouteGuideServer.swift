@@ -15,7 +15,7 @@
             let logger = Logger(label: "HelloServer")
 
             // Create an event loop group for the server to run on.
-            let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+            let group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
             defer {
                 try! group.syncShutdownGracefully()
             }

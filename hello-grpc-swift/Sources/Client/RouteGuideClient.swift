@@ -8,12 +8,12 @@
     import NIOPosix
 
     @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-    internal struct HelloExample {
+    struct HelloExample {
         let logger = Logger(label: "HelloClient")
 
-        private let client: Org_Feuyeux_Grpc_LandingServiceAsyncClient
+        private let client: Hello_LandingServiceAsyncClient
 
-        init(client: Org_Feuyeux_Grpc_LandingServiceAsyncClient) {
+        init(client: Hello_LandingServiceAsyncClient) {
             self.client = client
         }
 
@@ -29,7 +29,7 @@
     extension HelloExample {
         private func talk() async {
             logger.info("\n→ talk:")
-            let request: Org_Feuyeux_Grpc_TalkRequest = .with {
+            let request: Hello_TalkRequest = .with {
                 $0.data = "0"
                 $0.meta = "SWIFT"
             }
@@ -43,7 +43,7 @@
 
         private func talkOneAnswerMore() async {
             logger.info("\n→ talkOneAnswerMore:")
-            let request: Org_Feuyeux_Grpc_TalkRequest = .with {
+            let request: Hello_TalkRequest = .with {
                 $0.data = "0,1,2"
                 $0.meta = "SWIFT"
             }
@@ -61,7 +61,7 @@
         private func talkMoreAnswerOne() async {
             logger.info("\n→ talkMoreAnswerOne")
             let rid = Int.random(in: 0 ..< 6)
-            let requests: [Org_Feuyeux_Grpc_TalkRequest] = [
+            let requests: [Hello_TalkRequest] = [
                 .with {
                     $0.data = String(rid)
                     $0.meta = "SWIFT"
@@ -96,7 +96,7 @@
         private func talkBidirectional() async {
             logger.info("\n→ talkBidirectional")
 
-            let requests: [Org_Feuyeux_Grpc_TalkRequest] = [
+            let requests: [Hello_TalkRequest] = [
                 .with {
                     $0.data = "0"
                     $0.meta = "SWIFT"
@@ -163,7 +163,7 @@
                 try? channel.close().wait()
             }
 
-            let client = Org_Feuyeux_Grpc_LandingServiceAsyncClient(channel: channel)
+            let client = Hello_LandingServiceAsyncClient(channel: channel)
             let example = HelloExample(client: client)
             await example.run()
         }

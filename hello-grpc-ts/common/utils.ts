@@ -1,5 +1,5 @@
-import {TalkRequest} from "./landing_pb"
-import {LinkedList} from "fast-linked-list";
+import { TalkRequest } from "./landing_pb"
+import { LinkedList } from "fast-linked-list";
 
 export const hellos: string[] = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
 export const ans: Map<string, string> = new Map<string, string>()
@@ -20,7 +20,7 @@ export function buildLinkRequests(): TalkRequest[] {
     for (let i = 0; i < 3; i++) {
         let request = new TalkRequest()
         request.setData(randomId(5))
-        request.setMeta("NODEJS")
+        request.setMeta("TypeScript")
         requests.push(request)
     }
     return requests.toArray()

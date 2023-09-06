@@ -10,7 +10,7 @@ brew install swiftformat
 swiftformat --indent 4 --swiftversion 5.7 --exclude "**/*.grpc.swift,**/*.pb.swift" .
 ```
 
-build
+## build
 
 ```sh
 # 老 Mac 用上最新 macOS
@@ -23,10 +23,15 @@ sh proto2swift.sh
 ```
 
 ```sh
+# clean if meeting issue: "PCH was compiled with module cache path ..., but the path is currently ..."
+rm -rf ~/Library/Developer/Xcode/DerivedData
+rm -rf .build
+Clean: ⇧shift+⌘cmd+K in xcode
+# 
 swift build
 ```
 
-run
+## run
 
 ```sh
 swift run HelloServer
