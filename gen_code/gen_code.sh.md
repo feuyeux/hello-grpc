@@ -1,3 +1,4 @@
+```sh
 #!/bin/bash
 cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
@@ -90,3 +91,4 @@ protoc \
   --swift_out gen_msg/swift \
   -I protos \
   protos/landing.proto
+```
