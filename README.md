@@ -1,4 +1,5 @@
 # Hello gRPC
+![build tools](diagram/build_tools.svg)
 
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with:
 
@@ -31,7 +32,6 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | swift      | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 | dart       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 
-![build tools](diagram/build_tools.svg)
 |            | Header | TLS | Proxy | Docker | Build                | UT           | LOG             | IDE            |
 |:-----------|:-------|:----|:------|:-------|:---------------------|:-------------|:----------------|:---------------|
 | java       | 🍎      | 🍎   | 🍎     | 🍎      | [maven][1]           | [junit5][2]  | [log4j2][3]     | [IDEA][4]      |
@@ -114,7 +114,9 @@ export GRPC_TRACE=all
 
 ## :coffee: Recommend
 
-<https://github.com/grpc-ecosystem/awesome-grpc>
+- <https://github.com/grpc-ecosystem/awesome-grpc>
+- <https://github.com/grpc-ecosystem/grpc-gateway>
+- <https://github.com/grpc/grpc-web>
 
 [1]: <https://maven.apache.org/>
 [2]: <https://junit.org/junit5/>
