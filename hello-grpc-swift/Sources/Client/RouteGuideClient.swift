@@ -33,8 +33,11 @@
                 $0.data = "0"
                 $0.meta = "SWIFT"
             }
+            let callOptions = CallOptions(customMetadata: [
+                "k1": "v1",
+            ])
             do {
-                let response = try await client.talk(request)
+                let response = try await client.talk(request, callOptions: callOptions)
                 logger.info("response \(response.status) \(response.results)")
             } catch {
                 logger.info("RPC failed: \(error)")
@@ -47,9 +50,12 @@
                 $0.data = "0,1,2"
                 $0.meta = "SWIFT"
             }
+            let callOptions = CallOptions(customMetadata: [
+                "k1": "v1",
+            ])
             do {
                 var resultCount = 1
-                for try await response in client.talkOneAnswerMore(request) {
+                for try await response in client.talkOneAnswerMore(request, callOptions: callOptions) {
                     logger.info("response[\(resultCount)] \(response.status) \(response.results)")
                     resultCount += 1
                 }
@@ -75,7 +81,9 @@
                     $0.meta = "SWIFT"
                 },
             ]
-
+            let callOptions = CallOptions(customMetadata: [
+                "k1": "v1",
+            ])
             let streamingCall = client.makeTalkMoreAnswerOneCall()
             do {
                 for request in requests {
@@ -95,7 +103,6 @@
 
         private func talkBidirectional() async {
             logger.info("\n→ talkBidirectional")
-
             let requests: [Hello_TalkRequest] = [
                 .with {
                     $0.data = "0"
@@ -110,10 +117,12 @@
                     $0.meta = "SWIFT"
                 },
             ]
-
+                    let callOptions = CallOptions(customMetadata: [
+                        "k1": "v1",
+                    ])
             do {
                 try await withThrowingTaskGroup(of: Void.self) { group in
-                    let streamingCall = client.makeTalkBidirectionalCall()
+                    let streamingCall = client.makeTalkBidirectionalCall(callOptions: callOptions)
 
                     // Add a task to send each message adding a small sleep between each.
                     group.addTask {

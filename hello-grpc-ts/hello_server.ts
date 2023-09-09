@@ -39,6 +39,9 @@ class HelloServer implements ILandingServiceServer {
         logger.info("TALK REQUEST: data=%s,meta=%s", data, meta)
         let headers = call.metadata.getMap()
         let metadata = propagandaHeaders("Talk", headers)
+        if (metadata.getMap.length > 0) {
+            logger.info("TALK TRACING HEADERS: %s", metadata)
+        }
         let response = new TalkResponse()
         response.setStatus(200)
         const talkResult = buildResult(data)
@@ -50,6 +53,9 @@ class HelloServer implements ILandingServiceServer {
     talkMoreAnswerOne(call: grpc.ServerReadableStream<TalkRequest, TalkResponse>, callback: sendUnaryData<TalkResponse>): void {
         let headers = call.metadata.getMap()
         let metadata = propagandaHeaders("TalkMoreAnswerOne", headers)
+        if (metadata.getMap.length > 0) {
+            logger.info("TalkMoreAnswerOne TRACING HEADERS: %s", metadata)
+        }
         let talkResults: TalkResult[] = []
         call.on('data', function (request) {
             logger.info("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
@@ -71,6 +77,9 @@ class HelloServer implements ILandingServiceServer {
         logger.info("TalkOneAnswerMore REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
         let headers = call.metadata.getMap()
         let metadata = propagandaHeaders("TalkOneAnswerMore", headers)
+        if (metadata.getMap.length > 0) {
+            logger.info("TalkOneAnswerMore TRACING HEADERS: %s", metadata)
+        }
         let datas = request.getData().split(",")
         for (const data in datas) {
             let response = new TalkResponse()
@@ -87,6 +96,9 @@ class HelloServer implements ILandingServiceServer {
     talkBidirectional(call: grpc.ServerDuplexStream<TalkRequest, TalkResponse>): void {
         let headers = call.metadata.getMap()
         let metadata = propagandaHeaders("TalkBidirectional", headers)
+        if (metadata.getMap.length > 0) {
+            logger.info("TalkBidirectional TRACING HEADERS: %s", metadata)
+        }
         call.on('data', function (request) {
             logger.info("TalkBidirectional REQUEST: data=%s,meta=%s", request.getData(), request.getMeta())
             let response = new TalkResponse()

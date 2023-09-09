@@ -16,9 +16,12 @@ import NIOCore
         // 1
         func talk(
             request: Hello_TalkRequest,
-            context _: GRPCAsyncServerCallContext
+            context: GRPCAsyncServerCallContext
         ) async throws -> Hello_TalkResponse {
-            .with {
+            let headers = context.request.headers
+            logger.info("talk headers: \(headers)")
+
+            return .with {
                 $0.status = 200
                 $0.results = [buildResult(rid: request.data)]
             }
@@ -28,8 +31,11 @@ import NIOCore
         func talkOneAnswerMore(
             request: Hello_TalkRequest,
             responseStream: GRPCAsyncResponseStreamWriter<Hello_TalkResponse>,
-            context _: GRPCAsyncServerCallContext
+            context: GRPCAsyncServerCallContext
         ) async throws {
+            let headers = context.request.headers
+            logger.info("talkOneAnswerMore headers: \(headers)")
+
             let datas: [String] = request.data.components(separatedBy: ",")
             for d in datas {
                 try await responseStream.send(.with {
@@ -42,8 +48,11 @@ import NIOCore
         // 3
         func talkMoreAnswerOne(
             requestStream requests: GRPCAsyncRequestStream<Hello_TalkRequest>,
-            context _: GRPCAsyncServerCallContext
+            context: GRPCAsyncServerCallContext
         ) async throws -> Hello_TalkResponse {
+            let headers = context.request.headers
+            logger.info("talkMoreAnswerOne headers: \(headers)")
+
             var results: [Hello_TalkResult] = []
             for try await request in requests {
                 results.append(buildResult(rid: request.data))
@@ -58,8 +67,11 @@ import NIOCore
         func talkBidirectional(
             requestStream: GRPCAsyncRequestStream<Hello_TalkRequest>,
             responseStream: GRPCAsyncResponseStreamWriter<Hello_TalkResponse>,
-            context _: GRPCAsyncServerCallContext
+            context: GRPCAsyncServerCallContext
         ) async throws {
+            let headers = context.request.headers
+            logger.info("talkBidirectional headers: \(headers)")
+
             for try await request in requestStream {
                 logger.info("received: \(request)")
                 let result = buildResult(rid: request.data)
