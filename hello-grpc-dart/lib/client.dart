@@ -33,7 +33,10 @@ class Client {
       TalkRequest request = TalkRequest()
         ..data = Utils.randomId(5)
         ..meta = "DART";
-      await talk(request);
+      Map<String, String> metadata = Map();
+      metadata["k1"] = "v1";
+      metadata["k2"] = "v2";
+      await talk(request, metadata);
       request = TalkRequest()
         ..data = Utils.randomId(5) +
             "," +
@@ -41,9 +44,9 @@ class Client {
             "," +
             Utils.randomId(5)
         ..meta = "DART";
-      await talkOneAnswerMore(request);
-      await talkMoreAnswerOne();
-      await talkBidirectional();
+      await talkOneAnswerMore(request, metadata);
+      await talkMoreAnswerOne(metadata);
+      await talkBidirectional(metadata);
     } catch (e) {
       print('Caught error: $e');
     }
@@ -57,19 +60,25 @@ class Client {
     print('5 seconds has passed');
   }
 
-  Future<TalkResponse> talk(TalkRequest request) async {
-    final response = await stub.talk(request);
+  Future<TalkResponse> talk(
+      TalkRequest request, Map<String, String> metadata) async {
+    var callOptions = CallOptions(metadata: metadata);
+    final response = await stub.talk(request, options: callOptions);
     logger.info(response);
     return response;
   }
 
-  Future<void> talkOneAnswerMore(TalkRequest request) async {
-    await for (var response in stub.talkOneAnswerMore(request)) {
+  Future<void> talkOneAnswerMore(
+      TalkRequest request, Map<String, String> metadata) async {
+    var callOptions = CallOptions(metadata: metadata);
+    await for (var response
+        in stub.talkOneAnswerMore(request, options: callOptions)) {
       logger.info(response);
     }
   }
 
-  Future<void> talkMoreAnswerOne() async {
+  Future<void> talkMoreAnswerOne(Map<String, String> metadata) async {
+    var callOptions = CallOptions(metadata: metadata);
     Stream<TalkRequest> generateRequest(int count) async* {
       final random = Random();
       for (var i = 0; i < count; i++) {
@@ -81,11 +90,13 @@ class Client {
       }
     }
 
-    final response = await stub.talkMoreAnswerOne(generateRequest(3));
+    final response =
+        await stub.talkMoreAnswerOne(generateRequest(3), options: callOptions);
     logger.info(response);
   }
 
-  Future<void> talkBidirectional() async {
+  Future<void> talkBidirectional(Map<String, String> metadata) async {
+    var callOptions = CallOptions(metadata: metadata);
     Stream<TalkRequest> generateRequests() async* {
       for (var i = 0; i < 3; i++) {
         TalkRequest request = TalkRequest()
@@ -93,12 +104,14 @@ class Client {
           ..meta = "DART";
         // Short delay to simulate some other interaction.
         await Future.delayed(Duration(milliseconds: 10));
-        logger.info('Sending message {data:${request.data}, meta:${request.meta}}');
+        logger.info(
+            'Sending message {data:${request.data}, meta:${request.meta}}');
         yield request;
       }
     }
 
-    final call = stub.talkBidirectional(generateRequests());
+    final call =
+        stub.talkBidirectional(generateRequests(), options: callOptions);
     await for (var response in call) {
       logger.info(response);
     }

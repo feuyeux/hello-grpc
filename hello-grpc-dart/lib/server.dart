@@ -30,19 +30,26 @@ class Server {
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((LogRecord rec) {
       print('${rec.level.name}: ${rec.time}: ${rec.message}');
-      outputFile.writeAsStringSync("${rec.time} | ${rec.level} | ${rec.message}\n", mode: FileMode.append);
+      outputFile.writeAsStringSync(
+          "${rec.time} | ${rec.level} | ${rec.message}\n",
+          mode: FileMode.append);
     });
     final Logger logger = new Logger('HelloServer');
 
     var user = envVars['USER'];
     logger.info("User:$user");
-    final server = grpc.Server.create(services: [LandingService()]);
+    final server =
+        grpc.Server.create(services: [LandingService(logger: logger)]);
     await server.serve(port: Conn.port);
     logger.info("Server listening on port ${server.port}...");
   }
 }
 
 class LandingService extends LandingServiceBase {
+  final Logger logger;
+
+  LandingService({required this.logger});
+
   // {"status":200,"results":[{"id":1600402320493411000,"kv":{"data":"Hello","id":"0"}}]}
   TalkResult buildResult(String id) {
     var index = int.parse(id);
@@ -62,6 +69,9 @@ class LandingService extends LandingServiceBase {
 
   @override
   Future<TalkResponse> talk(grpc.ServiceCall call, TalkRequest request) async {
+    var header1 = call.clientMetadata!['k1']!;
+    var header2 = call.clientMetadata!['k2']!;
+    logger.info("talk headers:$header1,$header2");
     var response = TalkResponse()..status = 200;
     response.results.add(buildResult(request.data));
     return response;
@@ -70,6 +80,9 @@ class LandingService extends LandingServiceBase {
   @override
   Stream<TalkResponse> talkOneAnswerMore(
       grpc.ServiceCall call, TalkRequest request) async* {
+    var header1 = call.clientMetadata!['k1']!;
+    var header2 = call.clientMetadata!['k2']!;
+    logger.info("talkOneAnswerMore headers:$header1,$header2");
     var datas = request.data.split(",");
     for (var data in datas) {
       var response = TalkResponse()..status = 200;
@@ -81,6 +94,9 @@ class LandingService extends LandingServiceBase {
   @override
   Future<TalkResponse> talkMoreAnswerOne(
       grpc.ServiceCall call, Stream<TalkRequest> requests) async {
+    var header1 = call.clientMetadata!['k1']!;
+    var header2 = call.clientMetadata!['k2']!;
+    logger.info("talkMoreAnswerOne headers:$header1,$header2");
     final timer = Stopwatch();
     var response = TalkResponse()..status = 200;
     await for (var request in requests) {
@@ -94,6 +110,9 @@ class LandingService extends LandingServiceBase {
   @override
   Stream<TalkResponse> talkBidirectional(
       grpc.ServiceCall call, Stream<TalkRequest> requests) async* {
+    var header1 = call.clientMetadata!['k1']!;
+    var header2 = call.clientMetadata!['k2']!;
+    logger.info("talkBidirectional headers:$header1,$header2");
     await for (var request in requests) {
       var response = TalkResponse()..status = 200;
       response.results.add(buildResult(request.data));

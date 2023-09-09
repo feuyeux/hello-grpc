@@ -44,7 +44,10 @@ swift run HelloClient
 ## prod
 
 ```sh
-$ swift build -c release
-$ .build/release/HelloServer  
-$ .build/release/HelloClient
+swift build -c release
+
+swift build -c release -Xswiftc -cross-module-optimization
+
+.build/release/HelloServer  
+.build/release/HelloClient
 ```

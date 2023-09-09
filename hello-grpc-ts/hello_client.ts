@@ -1,8 +1,8 @@
 import * as grpc from '@grpc/grpc-js'
-import {LandingServiceClient} from "./common/landing_grpc_pb"
-import {TalkRequest, TalkResponse} from "./common/landing_pb"
-import {logger, port} from "./common/conn";
-import {buildLinkRequests} from "./common/utils";
+import { LandingServiceClient } from "./common/landing_grpc_pb"
+import { TalkRequest, TalkResponse } from "./common/landing_pb"
+import { logger, port } from "./common/conn";
+import { buildLinkRequests } from "./common/utils";
 
 let client: LandingServiceClient
 
@@ -88,7 +88,7 @@ function printResponse(methodName: string, response: TalkResponse) {
     if (response !== undefined) {
         let resultsList = response.getResultsList()
         if (resultsList !== undefined) {
-            resultsList.forEach(result => {
+            resultsList.forEach((result: { getKvMap: () => any; getId: () => any; getType: () => any; }) => {
                 let kv = result.getKvMap()
                 logger.info("%s[%d] %d [%s %s %s,%s:%s]", methodName,
                     response.getStatus(), result.getId(), kv.get("meta"), result.getType(), kv.get("id"),
