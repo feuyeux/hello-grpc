@@ -52,3 +52,12 @@ gradlew*
 .swiftpm
 *.drawio.bkp
 .dart_tool
+#
+android
+ios
+web
+linux
+macos
+windows
+test
+.metadata

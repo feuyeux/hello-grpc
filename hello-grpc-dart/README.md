@@ -1,19 +1,20 @@
 
 # build
+
 ```sh
-$ pub get
+dart pub get
 ```
 
 ## run the server
 
 ```sh
-$ dart server.dart
+dart server.dart
 ```
 
 ## run the client
 
 ```sh
-$ dart client.dart
+dart client.dart
 ```
 
 ```sh
@@ -40,4 +41,4 @@ export NO_PROXY=localhost,127.0.0.1
 
 
 The Dart DevTools debugger and profiler is available at: http://127.0.0.1:52426/6IXUiMzaUlk=/devtools?uri=ws://127.0.0.1:52426/6IXUiMzaUlk=/ws
-``````
+```
