@@ -22,7 +22,6 @@ pb
 *.gz
 */go.sum
 node_modules
-landing_pb*
 *.pyc
 package-lock.json
 *.lock
