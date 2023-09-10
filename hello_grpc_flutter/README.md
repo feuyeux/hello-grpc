@@ -78,9 +78,11 @@ Doctor summary (to see all details, run flutter doctor -v):
 flutter create .
 flutter run
 #
+./clean.bat
 flutter create . --platforms windows
 flutter run -d windows
 #
+./clean.sh
 flutter create . --platforms macos
 flutter run -d macos
 ```

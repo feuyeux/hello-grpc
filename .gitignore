@@ -51,7 +51,7 @@ gradlew*
 .swiftpm
 *.drawio.bkp
 .dart_tool
-#
+# flutter
 android
 ios
 web
@@ -60,3 +60,4 @@ macos
 windows
 test
 .metadata
+nul

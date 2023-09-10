@@ -50,12 +50,12 @@ class HelloAppState extends ChangeNotifier {
     try {
       TalkRequest request = TalkRequest()
         ..data = Utils.randomId(5)
-        ..meta = "DART";
+        ..meta = "FLUTTER";
       await talk(request);
       request = TalkRequest()
         ..data =
             "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
-        ..meta = "DART";
+        ..meta = "FLUTTER";
       await talkOneAnswerMore(request);
       await talkMoreAnswerOne();
       await talkBidirectional();
@@ -88,7 +88,7 @@ class HelloAppState extends ChangeNotifier {
       for (var i = 0; i < count; i++) {
         TalkRequest request = TalkRequest()
           ..data = Utils.randomId(5)
-          ..meta = "DART";
+          ..meta = "FLUTTER";
         yield request;
         await Future.delayed(Duration(milliseconds: 100 + random.nextInt(100)));
       }
@@ -104,7 +104,7 @@ class HelloAppState extends ChangeNotifier {
       for (var i = 0; i < 3; i++) {
         TalkRequest request = TalkRequest()
           ..data = Utils.randomId(5)
-          ..meta = "DART";
+          ..meta = "FLUTTER";
         // Short delay to simulate some other interaction.
         await Future.delayed(const Duration(milliseconds: 10));
         yield request;
