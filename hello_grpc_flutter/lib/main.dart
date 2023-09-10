@@ -40,7 +40,7 @@ class HelloAppState extends ChangeNotifier {
     // list.add(position == null
     //     ? 'Unknown'
     //     : '${position.latitude.toString()}, ${position.longitude.toString()}');
-    final channel = ClientChannel('127.0.0.1',
+    final channel = ClientChannel(Conn.host,
         port: Conn.port,
         options:
             const ChannelOptions(credentials: ChannelCredentials.insecure()));
@@ -144,12 +144,10 @@ class AsksPage extends StatelessWidget {
           ),
           const Padding(padding: EdgeInsets.all(20)),
           for (var response in appState.list)
-            Column(
-              children: [
-                ListTile(
-                  title: Text(response.toString()),
-                ),
-              ],
+            Card(
+              child: ListTile(
+                title: Text(response.toString()),
+              ),
             ),
         ],
       ),

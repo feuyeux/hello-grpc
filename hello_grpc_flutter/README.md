@@ -81,6 +81,7 @@ flutter run
 flutter create . --platforms windows
 flutter run -d windows
 #
+flutter create . --platforms macos
 flutter run -d macos
 ```
 
