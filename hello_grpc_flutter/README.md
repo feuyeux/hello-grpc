@@ -74,15 +74,19 @@ Doctor summary (to see all details, run flutter doctor -v):
 ### Run
 
 ```sh
+flutter pub get
+
 #  [ios (default), android (default), windows (default), linux (default), macos (default), web (default)]
 flutter create .
 flutter run
 #
-./clean.bat
+# ./clean.bat
+flutter clean
 flutter create . --platforms windows
 flutter run -d windows
 #
-./clean.sh
+# ./clean.sh
+flutter clean
 flutter create . --platforms macos
 flutter run -d macos
 ```

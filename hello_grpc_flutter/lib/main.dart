@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'conn/conn.dart';
 import 'package:grpc/grpc.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart';
 
 void main() {
   runApp(const HelloApp());
@@ -36,10 +36,29 @@ class HelloAppState extends ChangeNotifier {
   Future<void> askRPC() async {
     list.clear();
     list.add("====BEGIN====");
-    // Position? position = await Geolocator.getLastKnownPosition();
-    // list.add(position == null
-    //     ? 'Unknown'
-    //     : '${position.latitude.toString()}, ${position.longitude.toString()}');
+
+    Location location = Location();
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+    LocationData locationData;
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (serviceEnabled) {
+        permissionGranted = await location.hasPermission();
+        if (permissionGranted == PermissionStatus.denied) {
+          permissionGranted = await location.requestPermission();
+          if (permissionGranted == PermissionStatus.granted) {
+            locationData = await location.getLocation();
+            list.add(locationData.toString());
+          }
+        } else {
+          locationData = await location.getLocation();
+          list.add(locationData.toString());
+        }
+      }
+    }
+
     final channel = ClientChannel(Conn.host,
         port: Conn.port,
         options:
