@@ -55,6 +55,7 @@ gradlew*
 # flutter
 android
 !android/build.gradle
+!android/app/src/profile/AndroidManifest.xml
 ios
 web
 linux
@@ -63,6 +64,5 @@ windows
 test
 .metadata
 nul
-!AndroidManifest.xml
 .flutter-plugins
 .flutter-plugins-dependencies

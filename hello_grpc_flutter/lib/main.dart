@@ -34,8 +34,10 @@ class HelloApp extends StatelessWidget {
 class HelloAppState extends ChangeNotifier {
   var list = <String>[];
   Future<void> askRPC() async {
+    DateTime dateTime = DateTime.now();
     list.clear();
-    list.add("====BEGIN====");
+    list.add("host:${Conn.host},port:${Conn.port}");
+    list.add("==BEGIN(${dateTime.toString().substring(2, 19)})==");
 
     Location location = Location();
     bool serviceEnabled;
