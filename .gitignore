@@ -51,8 +51,10 @@ gradlew*
 .swiftpm
 *.drawio.bkp
 .dart_tool
+#
 # flutter
 android
+!android/build.gradle
 ios
 web
 linux
@@ -61,3 +63,6 @@ windows
 test
 .metadata
 nul
+!AndroidManifest.xml
+.flutter-plugins
+.flutter-plugins-dependencies

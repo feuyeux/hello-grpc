@@ -78,7 +78,7 @@ flutter pub get
 
 #  [ios (default), android (default), windows (default), linux (default), macos (default), web (default)]
 flutter create .
-flutter run
+flutter run -v
 #
 # ./clean.bat
 flutter clean
