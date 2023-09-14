@@ -4,25 +4,25 @@ use std::error::Error;
 use std::pin::Pin;
 
 use chrono::prelude::*;
-use futures::{Stream, StreamExt};
 use futures::stream;
+use futures::{Stream, StreamExt};
 use log::{debug, error, info};
 use tokio::sync::mpsc;
 use tonic::{
     metadata::{Ascii, KeyAndValueRef, MetadataKey, MetadataMap},
-    Request,
-    Response, Status, Streaming, transport::{
-        Channel, Identity, Server, ServerTlsConfig,
-    },
+    transport::{Channel, Identity, Server, ServerTlsConfig},
+    Request, Response, Status, Streaming,
 };
 use uuid::Uuid;
 
-use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH, grpc_backend_host, has_backend};
-use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
+use hello_grpc_rust::common::conn::{build_client, grpc_backend_host, has_backend, CONFIG_PATH};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
-use hello_grpc_rust::common::landing::landing_service_server::{LandingService, LandingServiceServer};
+use hello_grpc_rust::common::landing::landing_service_server::{
+    LandingService, LandingServiceServer,
+};
+use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
 use hello_grpc_rust::common::trans::{CERT_CHAIN, CERT_KEY, TRACING_KEYS};
-use hello_grpc_rust::common::utils::{HELLOS, thanks};
+use hello_grpc_rust::common::utils::{thanks, HELLOS};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let address = format!("[::0]:{}", get_server_port()).parse().unwrap();
     let is_tls = match env::var("GRPC_HELLO_SECURE") {
         Ok(val) => val,
-        Err(_e) => String::default()
+        Err(_e) => String::default(),
     };
 
     let mut server = if is_tls.eq("Y") {
@@ -47,9 +47,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let service = if has_backend() {
         let client = build_client().await;
-        LandingServiceServer::new(ProtoServer { backend: grpc_backend_host(), client: Some(client) })
+        LandingServiceServer::new(ProtoServer {
+            backend: grpc_backend_host(),
+            client: Some(client),
+        })
     } else {
-        LandingServiceServer::new(ProtoServer { backend: "".parse().unwrap(), client: None })
+        LandingServiceServer::new(ProtoServer {
+            backend: "".parse().unwrap(),
+            client: None,
+        })
     };
 
     server.add_service(service).serve(address).await?;
@@ -63,8 +69,10 @@ pub struct ProtoServer {
 
 #[tonic::async_trait]
 impl LandingService for ProtoServer {
-    async fn talk(&self, mut request: Request<TalkRequest>)
-                  -> Result<Response<TalkResponse>, Status> {
+    async fn talk(
+        &self,
+        mut request: Request<TalkRequest>,
+    ) -> Result<Response<TalkResponse>, Status> {
         let talk_request: &TalkRequest = request.get_ref();
         let data: &String = &talk_request.data;
         let meta: &String = &talk_request.meta;
@@ -96,17 +104,20 @@ impl LandingService for ProtoServer {
             Ok(Response::new(response))
         }
     }
-    type TalkOneAnswerMoreStream = Pin<Box<dyn Stream<Item=Result<TalkResponse, Status>> + Send + Sync + 'static>>;
+    type TalkOneAnswerMoreStream =
+        Pin<Box<dyn Stream<Item = Result<TalkResponse, Status>> + Send + Sync + 'static>>;
 
     async fn talk_one_answer_more(
-        &self, request: Request<TalkRequest>)
-        -> Result<Response<Self::TalkOneAnswerMoreStream>, Status> {
+        &self,
+        request: Request<TalkRequest>,
+    ) -> Result<Response<Self::TalkOneAnswerMoreStream>, Status> {
         let (tx, rx) = mpsc::channel(4);
         if !self.backend.is_empty() {
             match &self.client {
                 Some(client) => {
                     let mut c = client.clone();
-                    let stream = &mut c.talk_one_answer_more(request).await?.into_inner();
+                    let stream: &mut Streaming<TalkResponse> =
+                        &mut c.talk_one_answer_more(request).await?.into_inner();
                     while let Some(talk_response) = stream.message().await? {
                         let talk_response = talk_response.clone();
                         tx.send(Ok(talk_response)).await.unwrap();
@@ -140,8 +151,9 @@ impl LandingService for ProtoServer {
     }
 
     async fn talk_more_answer_one(
-        &self, request: Request<tonic::Streaming<TalkRequest>>)
-        -> Result<Response<TalkResponse>, Status> {
+        &self,
+        request: Request<Streaming<TalkRequest>>,
+    ) -> Result<Response<TalkResponse>, Status> {
         info!("TalkMoreAnswerOne REQUEST: ");
         print_metadata(request.metadata());
         let mut inbound_streaming = request.into_inner();
@@ -185,11 +197,13 @@ impl LandingService for ProtoServer {
         }
     }
 
-    type TalkBidirectionalStream = Pin<Box<dyn Stream<Item=Result<TalkResponse, Status>> + Send + 'static>>;
+    type TalkBidirectionalStream =
+        Pin<Box<dyn Stream<Item = Result<TalkResponse, Status>> + Send + 'static>>;
 
     async fn talk_bidirectional(
-        &self, request: Request<Streaming<TalkRequest>>)
-        -> Result<Response<Self::TalkBidirectionalStream>, Status> {
+        &self,
+        request: Request<Streaming<TalkRequest>>,
+    ) -> Result<Response<Self::TalkBidirectionalStream>, Status> {
         info!("TalkBidirectional REQUEST:");
         print_metadata(request.metadata());
         let mut stream = request.into_inner();
@@ -297,6 +311,6 @@ fn propaganda_headers(request: &mut Request<TalkRequest>) -> MetadataMap {
 fn get_server_port() -> String {
     return match env::var("GRPC_SERVER_PORT") {
         Ok(val) => val,
-        Err(_e) => "9996".to_string()
+        Err(_e) => "9996".to_string(),
     };
 }

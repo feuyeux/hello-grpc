@@ -8,30 +8,38 @@ use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity};
 
 use crate::common::landing::landing_service_client::LandingServiceClient;
 
-//https://myssl.com/create_test_cert.html
-const CERT: &str = "/var/hello_grpc/client_certs/cert.pem";
-const CERT_KEY: &str = "/var/hello_grpc/client_certs/private.key";
-const CERT_CHAIN: &str = "/var/hello_grpc/client_certs/full_chain.pem";
-const ROOT_CERT: &str = "/var/hello_grpc/client_certs/myssl_root.cer";
 const DOMAIN_NAME: &str = "hello.grpc.io";
 pub const CONFIG_PATH: &str = "config/log4rs.yml";
 
 pub async fn build_client() -> LandingServiceClient<Channel> {
     let is_tls = match env::var("GRPC_HELLO_SECURE") {
         Ok(val) => val,
-        Err(_e) => String::default()
+        Err(_e) => String::default(),
     };
+
+    if cfg!(windows) {
+        println!("this is windows");
+    }
 
     if is_tls.eq("Y") {
         let address = format!("http://{}:{}", grpc_backend_host(), grpc_backend_port());
-        let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
-        let key = include_str!("/var/hello_grpc/client_certs/private.key");
-        let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+
+        //https://myssl.com/create_test_cert.html
+        let cert = include_str!("D:\\ssh\\client_certs\\full_chain.pem");
+        let key = include_str!("D:\\ssh\\client_certs\\private.key");
+        let ca = include_str!("D:\\ssh\\client_certs\\full_chain.pem");
+        // let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+        // let key = include_str!("/var/hello_grpc/client_certs/private.key");
+        // let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+
         // creating identify from key and certificate
         let id = Identity::from_pem(cert.as_bytes(), key.as_bytes());
         let ca = Certificate::from_pem(ca.as_bytes());
         // telling our client what is the identity of our server
-        let tls = ClientTlsConfig::new().domain_name(DOMAIN_NAME).identity(id).ca_certificate(ca);
+        let tls = ClientTlsConfig::new()
+            .domain_name(DOMAIN_NAME)
+            .identity(id)
+            .ca_certificate(ca);
         let s: &'static str = Box::leak(address.into_boxed_str());
         let result = Channel::from_static(s).tls_config(tls);
         match result.unwrap().connect().await {
@@ -40,7 +48,7 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
                 return LandingServiceClient::new(channel);
             }
             Err(error) => {
-                error!("Fail to build TLS Client {:?}",error)
+                error!("Fail to build TLS Client {:?}", error)
             }
         }
     }
@@ -65,14 +73,14 @@ fn grpc_server() -> String {
 pub fn has_backend() -> bool {
     match env::var("GRPC_HELLO_BACKEND") {
         Ok(val) => val.is_empty(),
-        Err(_e) => false
+        Err(_e) => false,
     }
 }
 
 pub fn grpc_backend_host() -> String {
     match env::var("GRPC_HELLO_BACKEND") {
         Ok(val) => val,
-        Err(_e) => grpc_server()
+        Err(_e) => grpc_server(),
     }
 }
 
@@ -82,6 +90,6 @@ fn grpc_backend_port() -> String {
         Err(_e) => match env::var("GRPC_SERVER_PORT") {
             Ok(val) => val,
             Err(_e) => "9996".to_string(),
-        }
+        },
     }
 }

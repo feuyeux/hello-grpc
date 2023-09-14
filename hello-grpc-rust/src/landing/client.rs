@@ -4,12 +4,12 @@ use std::time::Duration;
 use futures::stream;
 use log::{debug, error, info};
 use tokio::time;
-use tonic::Request;
 use tonic::transport::Channel;
+use tonic::Request;
 
 use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH};
-use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
+use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
 use hello_grpc_rust::common::utils::{build_link_requests, random_id};
 
 #[tokio::main]
@@ -42,7 +42,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn talk_bidirectional(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn std::error::Error>> {
+async fn talk_bidirectional(
+    client: &mut LandingServiceClient<Channel>,
+) -> Result<(), Box<dyn Error>> {
     info!("TalkBidirectional");
     let mut interval = time::interval(Duration::from_secs(1));
     let mut times = 3;
@@ -66,7 +68,9 @@ async fn talk_bidirectional(client: &mut LandingServiceClient<Channel>) -> Resul
     Ok(())
 }
 
-async fn talk_more_answer_one(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn std::error::Error>> {
+async fn talk_more_answer_one(
+    client: &mut LandingServiceClient<Channel>,
+) -> Result<(), Box<dyn Error>> {
     info!("TalkMoreAnswerOne");
     let requests = build_link_requests();
 
@@ -80,7 +84,9 @@ async fn talk_more_answer_one(client: &mut LandingServiceClient<Channel>) -> Res
     Ok(())
 }
 
-async fn talk_one_answer_more(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn std::error::Error>> {
+async fn talk_one_answer_more(
+    client: &mut LandingServiceClient<Channel>,
+) -> Result<(), Box<dyn Error>> {
     info!("TalkOneAnswerMore");
     let mut request = Request::new(TalkRequest {
         data: "0,1,2".to_string(),
@@ -88,10 +94,7 @@ async fn talk_one_answer_more(client: &mut LandingServiceClient<Channel>) -> Res
     });
     request.metadata_mut().insert("k1", "v1".parse().unwrap());
     request.metadata_mut().insert("k2", "v2".parse().unwrap());
-    let mut stream = client
-        .talk_one_answer_more(request)
-        .await?
-        .into_inner();
+    let mut stream = client.talk_one_answer_more(request).await?.into_inner();
 
     while let Some(response) = stream.message().await? {
         print_response(&response);
@@ -99,7 +102,7 @@ async fn talk_one_answer_more(client: &mut LandingServiceClient<Channel>) -> Res
     Ok(())
 }
 
-async fn talk(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn std::error::Error>> {
+async fn talk(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn Error>> {
     info!("Talk");
 
     let message = TalkRequest {
@@ -135,6 +138,9 @@ fn print_response(response: &TalkResponse) {
             Some(_data) => data = _data.to_string(),
             None => data = "".to_string(),
         }
-        info!("[{:?}] {:?} [{:?} {:?} {:?},{:?}:{:?}]", response.status, result.id, meta, result.r#type, id, idx, data);
+        info!(
+            "[{:?}] {:?} [{:?} {:?} {:?},{:?}:{:?}]",
+            response.status, result.id, meta, result.r#type, id, idx, data
+        );
     }
 }
