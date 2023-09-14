@@ -1,18 +1,19 @@
 # Hello gRPC
+
 ![build tools](diagram/build_tools.svg)
 
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with:
 
-1. [C++](hello-grpc-cpp) grpc
-2. [Rust](hello-grpc-rust) tonic
-3. [Java](hello-grpc-java) grpc-java
-4. [Go](hello-grpc-go) grpc-go
-5. [C#](hello-grpc-csharp) grpc-dotnet
-6. [Python](hello-grpc-python) grpcio
-7. [Node.js](hello-grpc-nodejs) | [TypeScript](hello-grpc-ts)  grpc-js
-8. [Dart](hello-grpc-dart) grpc-dart
-9. [Kotlin](hello-grpc-kotlin) grpc-kotlin
-10. [Swift](hello-grpc-swift) /grpc-swift
+1. [C++](hello-grpc-cpp) **grpc**
+2. [Rust](hello-grpc-rust) **tonic**
+3. [Java](hello-grpc-java) **grpc-java**
+4. [Go](hello-grpc-go) **grpc-go**
+5. [C#](hello-grpc-csharp) **grpc-dotnet**
+6. [Python](hello-grpc-python) **grpcio**
+7. [Node.js](hello-grpc-nodejs) | [TypeScript](hello-grpc-ts)  **grpc-js**
+8. [Dart](hello-grpc-dart) **grpc-dart**
+9. [Kotlin](hello-grpc-kotlin) **grpc-kotlin**
+10. [Swift](hello-grpc-swift) **grpc-swift**
 
 ## :coffee: What is ...
 
