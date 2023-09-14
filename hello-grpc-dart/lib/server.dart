@@ -69,9 +69,7 @@ class LandingService extends LandingServiceBase {
 
   @override
   Future<TalkResponse> talk(grpc.ServiceCall call, TalkRequest request) async {
-    var header1 = call.clientMetadata!['k1']!;
-    var header2 = call.clientMetadata!['k2']!;
-    logger.info("talk headers:$header1,$header2");
+    readHeaders("talk", call);
     var response = TalkResponse()..status = 200;
     response.results.add(buildResult(request.data));
     return response;
@@ -80,9 +78,7 @@ class LandingService extends LandingServiceBase {
   @override
   Stream<TalkResponse> talkOneAnswerMore(
       grpc.ServiceCall call, TalkRequest request) async* {
-    var header1 = call.clientMetadata!['k1']!;
-    var header2 = call.clientMetadata!['k2']!;
-    logger.info("talkOneAnswerMore headers:$header1,$header2");
+    readHeaders("talkOneAnswerMore", call);
     var datas = request.data.split(",");
     for (var data in datas) {
       var response = TalkResponse()..status = 200;
@@ -94,9 +90,7 @@ class LandingService extends LandingServiceBase {
   @override
   Future<TalkResponse> talkMoreAnswerOne(
       grpc.ServiceCall call, Stream<TalkRequest> requests) async {
-    var header1 = call.clientMetadata!['k1']!;
-    var header2 = call.clientMetadata!['k2']!;
-    logger.info("talkMoreAnswerOne headers:$header1,$header2");
+    readHeaders("talkMoreAnswerOne", call);
     final timer = Stopwatch();
     var response = TalkResponse()..status = 200;
     await for (var request in requests) {
@@ -110,13 +104,20 @@ class LandingService extends LandingServiceBase {
   @override
   Stream<TalkResponse> talkBidirectional(
       grpc.ServiceCall call, Stream<TalkRequest> requests) async* {
-    var header1 = call.clientMetadata!['k1']!;
-    var header2 = call.clientMetadata!['k2']!;
-    logger.info("talkBidirectional headers:$header1,$header2");
+    readHeaders("talkBidirectional", call);
     await for (var request in requests) {
       var response = TalkResponse()..status = 200;
       response.results.add(buildResult(request.data));
       yield response;
+    }
+  }
+
+  void readHeaders(String methodName, grpc.ServiceCall call) {
+    var clientMetadata = call.clientMetadata;
+    if (clientMetadata != null) {
+      var header1 = clientMetadata['k1'];
+      var header2 = clientMetadata['k2'];
+      logger.info("$methodName headers: k1=$header1,k2=$header2");
     }
   }
 }
