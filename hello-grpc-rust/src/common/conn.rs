@@ -25,12 +25,14 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
         let address = format!("http://{}:{}", grpc_backend_host(), grpc_backend_port());
 
         //https://myssl.com/create_test_cert.html
-        let cert = include_str!("D:\\ssh\\client_certs\\full_chain.pem");
-        let key = include_str!("D:\\ssh\\client_certs\\private.key");
-        let ca = include_str!("D:\\ssh\\client_certs\\full_chain.pem");
-        // let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
-        // let key = include_str!("/var/hello_grpc/client_certs/private.key");
-        // let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+
+        // let cert = include_str!("D:\\ssh\\client_certs\\full_chain.pem");
+        // let key = include_str!("D:\\ssh\\client_certs\\private.key");
+        // let ca = include_str!("D:\\ssh\\client_certs\\full_chain.pem");
+
+        let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+        let key = include_str!("/var/hello_grpc/client_certs/private.key");
+        let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
 
         // creating identify from key and certificate
         let id = Identity::from_pem(cert.as_bytes(), key.as_bytes());
