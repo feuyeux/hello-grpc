@@ -5,7 +5,7 @@
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with:
 
 | No. | Lang                                                       | Lib             | IDE             |
-| --- | ---------------------------------------------------------- | --------------- | --------------- |
+| :-- | :--------------------------------------------------------- | :-------------- | :-------------- |
 | 1   | [C++](hello-grpc-cpp)                                      | **grpc**        | [CLion][15]     |
 | 2   | [Rust](hello-grpc-rust)                                    | **tonic**       | [RustRover][31] |
 | 3   | [Java](hello-grpc-java)                                    | **grpc-java**   | [IDEA][4]       |
