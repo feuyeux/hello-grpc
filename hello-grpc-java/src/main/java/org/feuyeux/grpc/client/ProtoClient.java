@@ -16,15 +16,15 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
-import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class ProtoClient {
-
+  private static final Logger log = LoggerFactory.getLogger("ProtoClient");
   private final ManagedChannel channel;
   private final LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
   private final LandingServiceGrpc.LandingServiceStub asyncStub;

@@ -12,10 +12,11 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class HeaderClientInterceptor implements ClientInterceptor {
+  private static final Logger log = LoggerFactory.getLogger("LandingServiceImpl");
 
   @Override
   public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(

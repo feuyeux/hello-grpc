@@ -19,11 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLException;
-import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.etcd.EtcdNameResolverProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class Connection {
+  private static final Logger log = LoggerFactory.getLogger("Connection");
+
   public static String version = "grpc.version=1.56.1,protoc.version=3.21.1";
 
   public static final String GRPC_HELLO_SECURE = "GRPC_HELLO_SECURE";

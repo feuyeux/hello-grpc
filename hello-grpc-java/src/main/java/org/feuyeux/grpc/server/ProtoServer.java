@@ -14,12 +14,12 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
-import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.client.HeaderClientInterceptor;
 import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class ProtoServer {
 
   // https://myssl.com/create_test_cert.html
@@ -30,6 +30,8 @@ public class ProtoServer {
   private static ManagedChannel channel;
   private final Server server;
   private Client etcd;
+
+  private static final Logger log = LoggerFactory.getLogger("ProtoServer");
 
   public ProtoServer(LandingServiceImpl landingService)
       throws IOException, ExecutionException, InterruptedException {

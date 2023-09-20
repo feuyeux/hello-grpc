@@ -1,11 +1,12 @@
 package org.feuyeux.grpc;
 
-import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.common.HelloUtils;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class RandomTest {
+  private static final Logger log = LoggerFactory.getLogger("RandomTest");
 
   @Test
   public void test() {

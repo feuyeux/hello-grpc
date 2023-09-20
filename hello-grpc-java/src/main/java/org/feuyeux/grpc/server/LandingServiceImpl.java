@@ -10,16 +10,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.feuyeux.grpc.proto.ResultType;
 import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
 import org.feuyeux.grpc.proto.TalkResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBase {
-
+  private static final Logger log = LoggerFactory.getLogger("LandingServiceImpl");
   private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
   private LandingServiceGrpc.LandingServiceStub asyncStub;
 

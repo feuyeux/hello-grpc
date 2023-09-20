@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	// https://github.com/google/uuid/tags
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 
 	// Golang gRPC Middlewares: interceptor chaining, auth, logging, retries and more.
 	// https://github.com/grpc-ecosystem/go-grpc-middleware/tags
@@ -18,9 +18,9 @@ require (
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
 	go.uber.org/ratelimit v0.3.0
 	// https://pkg.go.dev/golang.org/x/net
-	golang.org/x/net v0.14.0
+	golang.org/x/net v0.15.0
 	// https://github.com/grpc/grpc-go/tags
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.58.1
 	// https://github.com/protocolbuffers/protobuf-go/tags
 	google.golang.org/protobuf v1.31.0
 )
@@ -38,10 +38,10 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
-	google.golang.org/genproto v0.0.0-20230526161137-0005af68ea54 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230525234035-dd9d682886f9 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
+	google.golang.org/genproto v0.0.0-20230711160842-782d3b101e98 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

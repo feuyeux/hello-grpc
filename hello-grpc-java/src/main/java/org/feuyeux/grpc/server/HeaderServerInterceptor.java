@@ -9,10 +9,11 @@ import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class HeaderServerInterceptor implements ServerInterceptor {
+  private static final Logger log = LoggerFactory.getLogger("HeaderServerInterceptor");
 
   @Override
   public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(

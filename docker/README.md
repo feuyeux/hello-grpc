@@ -17,7 +17,7 @@ sh push.sh
 ### clean all containers
 
 ```bash
-sh clean_world.sh
+sh tools/clean_world.sh
 ```
 
 ### 1 java

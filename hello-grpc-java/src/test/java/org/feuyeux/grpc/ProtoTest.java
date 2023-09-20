@@ -9,7 +9,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.concurrent.ExecutionException;
-import lombok.extern.slf4j.Slf4j;
 import org.feuyeux.grpc.client.ProtoClient;
 import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
@@ -18,10 +17,11 @@ import org.feuyeux.grpc.server.ProtoServer;
 import org.junit.Rule;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Created by erichan feuyeux on 16/8/22 */
-@Slf4j
 public class ProtoTest {
+  private static final Logger log = LoggerFactory.getLogger("ProtoTest");
 
   @Rule public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 

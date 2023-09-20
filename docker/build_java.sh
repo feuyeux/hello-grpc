@@ -15,7 +15,11 @@ then
 elif
   [ "$(expr substr $(uname -s) 1 7)" = "MSYS_NT" ]
 then
-  export JAVA_HOME=C:/jdk-20.0.2
+  export JAVA_HOME=D:/zoo/jdk-21
+elif
+  [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ]
+then
+  export JAVA_HOME=D:/zoo/jdk-21
 else
   echo "Oops"
 fi
