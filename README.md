@@ -1,11 +1,11 @@
 # Hello gRPC
 
-![build tools](diagram/build_tools.svg)
+![build tools](diagram/build_tools.png)
 
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with:
 
 | No. | Lang                                                       | Lib             | IDE             |
-| :-- | :--------------------------------------------------------- | :-------------- | :-------------- |
+|:----|:-----------------------------------------------------------|:----------------|:----------------|
 | 1   | [C++](hello-grpc-cpp)                                      | **grpc**        | [CLion][15]     |
 | 2   | [Rust](hello-grpc-rust)                                    | **tonic**       | [RustRover][31] |
 | 3   | [Java](hello-grpc-java)                                    | **grpc-java**   | [IDEA][4]       |
@@ -16,38 +16,41 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | 8   | [Dart](hello-grpc-dart)                                    | **grpc-dart**   | [PyCharm][12]   |
 | 9   | [Kotlin](hello-grpc-kotlin)                                | **grpc-kotlin** | [IDEA][4]       |
 | 10  | [Swift](hello-grpc-swift)                                  | **grpc-swift**  | [Xcode][32]     |
+| 11  | [PHP](hello-grpc-php)                                      | **grpc-php**    | [PhpStorm][33]  |
 
 ## :coffee: What is ...
 
 ![grpc_diagram](diagram/hello-grpc.svg)
 
-|            | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env  |
-| :--------- | :------- | :--------- | :---- | :----- | :-------- | :--- | :--- |
-| java       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| go         | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| nodejs     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| typescript | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| python     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| rust       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| c++        | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| c#         | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| kotlin     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| swift      | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
-| dart       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎    |
+|            | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env |
+|:-----------|:---------|:-----------|:------|:-------|:----------|:-----|:----|
+| java       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| go         | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| nodejs     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| typescript | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| python     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| rust       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| c++        | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| c#         | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| kotlin     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| swift      | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| dart       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
+| php        | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍏   |
 
-|            | Header | TLS  | Proxy | Docker | Build                | UT           | LOG             |
-| :--------- | :----- | :--- | :---- | :----- | :------------------- | :----------- | :-------------- |
-| java       | 🍎      | 🍎    | 🍎     | 🍎      | [maven][1]           | [junit5][2]  | [log4j2][3]     |
-| go         | 🍎      | 🍎    | 🍎     | 🍎      | (mod)                | (testing)    | [logrus][5]     |
-| nodejs     | 🍎      | 🥑    | 🍎     | 🍎      | [npm][7]             | [mocha][8]   | [winston][9]    |
-| typescript | 🍎      | 🍏    | 🍏     | 🍏      | [yarn][28]&[tsc][29] |              | [winston][9]    |
-| python     | 🍎      | 🍎    | 🍎     | 🍎      | [pip][11]            | (unittest)   | (logging)       |
-| rust       | 🍎      | 🍎    | 🍎     | 🍎      | [cargo][13]          | (test)       | [log4rs][14]    |
-| c++        | 🍎      | 🍎    | 🍎     | 🍎      | [cmake][16]          | [Catch2][24] | [glog][17]      |
-| c#         | 🍎      | 🍎    | 🍎     | 🍎      | [nuget][18]          | [NUnit][30]  | [log4net][19]   |
-| kotlin     | 🍎      | 🍎    | 🍎     | 🍎      | [gradle][21]         | [junit5][2]  | [log4j2][3]     |
-| swift      | 🍎      | 🍏    | 🍏     | 🍏      | [spm][22]            | (XCTest)     | [swift-log][23] |
-| dart       | 🍎      | 🍏    | 🍏     | 🍏      | [pub][25]            | [test][27]   | [logger][26]    |
+|            | Header | TLS | Proxy | Docker | Build                | UT           | LOG             |
+|:-----------|:-------|:----|:------|:-------|:---------------------|:-------------|:----------------|
+| java       | 🍎      | 🍎   | 🍎     | 🍎      | [maven][1]           | [junit5][2]  | [log4j2][3]     |
+| go         | 🍎      | 🍎   | 🍎     | 🍎      | (mod)                | (testing)    | [logrus][5]     |
+| nodejs     | 🍎      | 🥑   | 🍎     | 🍎      | [npm][7]             | [mocha][8]   | [winston][9]    |
+| typescript | 🍎      | 🍏   | 🍏     | 🍏      | [yarn][28]&[tsc][29] |              | [winston][9]    |
+| python     | 🍎      | 🍎   | 🍎     | 🍎      | [pip][11]            | (unittest)   | (logging)       |
+| rust       | 🍎      | 🍎   | 🍎     | 🍎      | [cargo][13]          | (test)       | [log4rs][14]    |
+| c++        | 🍎      | 🍎   | 🍎     | 🍎      | [cmake][16]          | [Catch2][24] | [glog][17]      |
+| c#         | 🍎      | 🍎   | 🍎     | 🍎      | [nuget][18]          | [NUnit][30]  | [log4net][19]   |
+| kotlin     | 🍎      | 🍎   | 🍎     | 🍎      | [gradle][21]         | [junit5][2]  | [log4j2][3]     |
+| swift      | 🍎      | 🍏   | 🍏     | 🍏      | [spm][22]            | (XCTest)     | [swift-log][23] |
+| dart       | 🍎      | 🍏   | 🍏     | 🍏      | [pub][25]            | [test][27]   | [logger][26]    |
+| php        | 🍏      | 🍏   | 🍏     | 🍏      | [composer][34]       | 🍏            | 🍏               |
 
 > 🍎 `:apple:` done 
 > 🍏 `:green_apple:` unimplemented
@@ -153,3 +156,5 @@ export GRPC_TRACE=all
 [30]: <https://nunit.org/>
 [31]: <https://www.jetbrains.com/rustrover/>
 [32]: <https://xcodereleases.com/>
+[33]: <https://www.jetbrains.com/phpstorm/>
+[34]: <https://getcomposer.org/>
