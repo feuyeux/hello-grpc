@@ -15,8 +15,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+const retries = 1
+const loops = 3
+
 func main() {
-	for retry := 1; retry <= 3; retry++ {
+	for retry := 1; retry <= retries; retry++ {
 		err := startTalking(*conn.Connect(), 200*time.Millisecond)
 		if err != nil {
 			log.Infof("retry %d", retry)
@@ -25,7 +28,7 @@ func main() {
 }
 
 func startTalking(c pb.LandingServiceClient, tt time.Duration) error {
-	for round := 1; round <= 100; round++ {
+	for round := 1; round <= loops; round++ {
 		log.Infof("round %d", round)
 		//
 		log.Infof("Unary RPC")

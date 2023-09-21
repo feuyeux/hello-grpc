@@ -41,8 +41,12 @@ func Connect() *pb.LandingServiceClient {
 		}
 		address = fmt.Sprintf("%s:%s", backend, port)
 	} else {
+		host := GrpcServerHost()
 		port = GrpcServerPort()
-		address = fmt.Sprintf("%s:%s", GrpcServerHost(), port)
+		if len(host) == 0 {
+			host = "localhost"
+		}
+		address = fmt.Sprintf("%s:%s", host, port)
 	}
 	discovery := os.Getenv("GRPC_HELLO_DISCOVERY")
 	var client pb.LandingServiceClient
@@ -170,16 +174,12 @@ func getBackend() string {
 }
 
 func GrpcServerHost() string {
-	server := os.Getenv("GRPC_SERVER")
-	if len(server) == 0 {
-		return "localhost"
-		//return "0.0.0.0"
-	} else {
-		return server
-	}
+	return os.Getenv("GRPC_SERVER")
 }
+
+var port = 9996
+
 func GrpcServerPort() string {
-	port := 9996
 	currentPort := os.Getenv("GRPC_SERVER_PORT")
 	if len(currentPort) == 0 {
 		return fmt.Sprintf("%d", port)

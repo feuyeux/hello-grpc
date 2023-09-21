@@ -5,4 +5,5 @@ cd "$(
 )/" || exit
 export GO111MODULE="on"
 export GOPATH=$GOPATH:${PWD}
+export GRPC_SERVER=$(ipconfig getifaddr en0)
 go run client/proto_client.go

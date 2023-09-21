@@ -44,7 +44,7 @@ func main() {
 		log.Infof("Start GRPC TLS Server[%s]", port)
 	} else {
 		var opts []grpc.ServerOption
-
+		// keepalive policy opts
 		kep := keepalive.EnforcementPolicy{
 			// If a client pings more than once every 5 seconds, terminate the connection
 			MinTime: 5 * time.Second,
@@ -52,7 +52,7 @@ func main() {
 			PermitWithoutStream: true,
 		}
 		opts = append(opts, grpc.KeepaliveEnforcementPolicy(kep))
-
+		// keepalive opts
 		kp := keepalive.ServerParameters{
 			// If a client is idle for 15 seconds, send a GOAWAY
 			MaxConnectionIdle: 15 * time.Second,
@@ -66,13 +66,12 @@ func main() {
 			Timeout: 1 * time.Second,
 		}
 		opts = append(opts, grpc.KeepaliveParams(kp))
-
+		// limits opts
 		limits := 200
 		rlInterceptor := common.UnaryServerInterceptor(common.NewLimiter(limits))
 		opts = append(opts, grpc.UnaryInterceptor(rlInterceptor))
-
+		// builder
 		s = grpc.NewServer(opts...)
-
 		log.Infof("Start GRPC Server[%s]", port)
 	}
 
