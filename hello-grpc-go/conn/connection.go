@@ -173,6 +173,7 @@ func GrpcServerHost() string {
 	server := os.Getenv("GRPC_SERVER")
 	if len(server) == 0 {
 		return "localhost"
+		//return "0.0.0.0"
 	} else {
 		return server
 	}
