@@ -58,3 +58,9 @@ sh init.sh
 ```sh
 composer install
 ```
+
+```sh
+php -d extension=grpc.so hello_server.php
+
+php -d extension=grpc.so hello_client.php
+```
