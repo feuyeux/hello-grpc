@@ -20,7 +20,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 
 ## :coffee: What is ...
 
-![grpc_diagram](diagram/hello-grpc.drawio.svg)
+![grpc_diagram](diagram/hello-grpc.svg)
 
 |            | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env |
 |:-----------|:---------|:-----------|:------|:-------|:----------|:-----|:----|
