@@ -49,7 +49,7 @@ gradlew*
 .next
 .build
 .swiftpm
-*.drawio.bkp
+*.drawio.*
 .dart_tool
 #
 # flutter

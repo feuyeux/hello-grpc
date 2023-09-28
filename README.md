@@ -1,6 +1,6 @@
 # Hello gRPC
 
-![build tools](diagram/build_tools.png)
+<img src="diagram/build_tools.png" alt="build tools" style="width:500px" />
 
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with:
 
@@ -20,7 +20,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 
 ## :coffee: What is ...
 
-![grpc_diagram](diagram/hello-grpc.svg)
+![grpc_diagram](diagram/hello-grpc.drawio.svg)
 
 |            | 4 MODELS | Collection | Sleep | Random | Timestamp | UUID | Env |
 |:-----------|:---------|:-----------|:------|:-------|:----------|:-----|:----|
