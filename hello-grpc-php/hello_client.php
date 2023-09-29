@@ -9,11 +9,13 @@ use Hello\TalkResult;
 require dirname(__FILE__) . '/vendor/autoload.php';
 
 $host = getenv('GRPC_SERVER');
-if(empty($host)){
-    $host= 'localhost';
-} 
-echo sprintf("========host:%s\n", $host);
-$client = new LandingServiceClient($host.':9666', [
+if (empty($host)) {
+    $host = 'localhost:9666';
+} else {
+    $host = $host . ':9666';
+}
+echo sprintf("Connect to:%s\n", $host);
+$client = new LandingServiceClient($host, [
     'credentials' => ChannelCredentials::createInsecure(),
 ]);
 
@@ -35,8 +37,9 @@ function talk(TalkRequest $request): void
 {
     global $client;
     printRequest("[Unary RPC] Talk->", $request);
-    list($response, $status) = $client->Talk($request)->wait();   if (!is_null($response)){
-    printResponse("Talk<-", $response);
+    list($response, $status) = $client->Talk($request)->wait();
+    if (!is_null($response)) {
+        printResponse("Talk<-", $response);
     }
 }
 
@@ -47,9 +50,10 @@ function talkOneAnswerMore(TalkRequest $request): void
     $call = $client->TalkOneAnswerMore($request);
     // an iterator over the server streaming responses
     $responses = $call->responses();
-    foreach ($responses as $response) {   if (!is_null($response)){
-        printResponse("TalkOneAnswerMore<-", $response);
-    }
+    foreach ($responses as $response) {
+        if (!is_null($response)) {
+            printResponse("TalkOneAnswerMore<-", $response);
+        }
     }
 }
 
@@ -64,8 +68,10 @@ function talkMoreAnswerOne(array $talkRequests): void
         printRequest("TalkMoreAnswerOne->", $talkRequests[$i]);
         $call->write($talkRequests[$i]);
     }
-    list($response, $status) = $call->wait();   if (!is_null($response)){
-    printResponse("TalkMoreAnswerOne<-", $response);}
+    list($response, $status) = $call->wait();
+    if (!is_null($response)) {
+        printResponse("TalkMoreAnswerOne<-", $response);
+    }
 }
 
 function talkBidirectional(array $talkRequests): void
@@ -80,9 +86,11 @@ function talkBidirectional(array $talkRequests): void
         $call->write($talkRequests[$i]);
     }
     $call->writesDone();
-    while ($response = $call->read()) {   if (!is_null($response)){
-        printResponse("TalkBidirectional<-", $response);
-    }}
+    while ($response = $call->read()) {
+        if (!is_null($response)) {
+            printResponse("TalkBidirectional<-", $response);
+        }
+    }
 }
 
 

@@ -25,6 +25,6 @@ echo "~~~ build grpc client php ~~~"
 cp ../hello-grpc-php/hello_client.php hello-grpc-php
 cp ../hello-grpc-php/client_start.sh hello-grpc-php
 docker build -f grpc-client-php.dockerfile -t feuyeux/grpc_client_php:1.0.0 .
-# rm -rf hello-grpc-php
+rm -rf hello-grpc-php
 echo "done\n"
 docker run -ti --rm feuyeux/grpc_server_php:1.0.0 cat /etc/os-release

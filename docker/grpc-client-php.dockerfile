@@ -3,4 +3,4 @@ COPY hello-grpc-php /hello-grpc
 WORKDIR /hello-grpc
 RUN composer install
 COPY tls/client_certs /var/hello_grpc/client_certs
-ENTRYPOINT ["sh","client_start.sh"]
+CMD ["sh","client_start.sh"]

@@ -155,4 +155,6 @@ docker run --rm --name grpc_server_php -p 9996:9996 feuyeux/grpc_server_php:1.0.
 
 ```bash
 docker run --rm --name grpc_client_php -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_php:1.0.0
+
+docker run --rm --name grpc_client_php -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_php:1.0.0
 ```
