@@ -5,6 +5,9 @@ cd "$(
 )/" || exit
 set -e
 
+# export PROTOC=protoc
+# export PLUGIN=protoc-gen-grpc=grpc_php_plugin
+
 export PROTOC=$HOME/.local/bin/protoc
 export PLUGIN=protoc-gen-grpc=$HOME/.local/bin/grpc_php_plugin
 

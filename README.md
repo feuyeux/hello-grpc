@@ -35,7 +35,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | kotlin     | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 | swift      | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 | dart       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
-| php        | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍏   |
+| php        | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 
 |            | Header | TLS | Proxy | Docker | Build                | UT           | LOG             |
 |:-----------|:-------|:----|:------|:-------|:---------------------|:-------------|:----------------|

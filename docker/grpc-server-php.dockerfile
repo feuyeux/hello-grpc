@@ -1,7 +1,6 @@
-# https://hub.docker.com/r/grpc/php
-FROM grpc/php:0.11-onbuild
+FROM feuyeux/grpc_php_base:1.0.0
+COPY hello-grpc-php /hello-grpc
+WORKDIR /hello-grpc
+RUN composer install
 COPY tls/server_certs /var/hello_grpc/server_certs
-COPY hello-grpc-php .
-sh init.sh
-composer install
 ENTRYPOINT ["sh","server_start.sh"]
