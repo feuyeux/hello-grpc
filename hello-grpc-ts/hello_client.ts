@@ -1,8 +1,8 @@
 import * as grpc from '@grpc/grpc-js'
-import { LandingServiceClient } from "./common/landing_grpc_pb"
-import { TalkRequest, TalkResponse } from "./common/landing_pb"
-import { logger, port } from "./common/conn";
-import { buildLinkRequests } from "./common/utils";
+import {LandingServiceClient} from "./common/landing_grpc_pb"
+import {TalkRequest, TalkResponse} from "./common/landing_pb"
+import {logger, port} from "./common/conn";
+import {buildLinkRequests} from "./common/utils";
 
 let client: LandingServiceClient
 
@@ -39,7 +39,7 @@ function talkOneAnswerMore(request: TalkRequest): Promise<void> {
 }
 
 // Client streaming
-async function talkMoreAnswerOne(requests: TalkRequest[]) {
+async function talkMoreAnswerOne(requests: TalkRequest[]): Promise<void> {
     logger.info("Client streaming RPC")
     const metadata = new grpc.Metadata()
     metadata.add("k1", "v1")
@@ -63,7 +63,7 @@ async function talkMoreAnswerOne(requests: TalkRequest[]) {
 }
 
 // Bidirectional streaming
-async function talkBidirectional(requests: TalkRequest[]) {
+async function talkBidirectional(requests: TalkRequest[]): Promise<void> {
     logger.info("Bidirectional streaming RPC")
     const metadata = new grpc.Metadata()
     metadata.add("k1", "v1")
@@ -83,7 +83,6 @@ async function talkBidirectional(requests: TalkRequest[]) {
     call.end()
 }
 
-
 function printResponse(methodName: string, response: TalkResponse) {
     if (response !== undefined) {
         let resultsList = response.getResultsList()
@@ -98,11 +97,16 @@ function printResponse(methodName: string, response: TalkResponse) {
     }
 }
 
-async function startClient() {
-    client = new LandingServiceClient(
-        `localhost:${port}`,
-        grpc.credentials.createInsecure(),
-    )
+function grpcServerHost(): string {
+    let server = process.env.GRPC_SERVER
+    // @ts-ignore
+    return typeof server !== "undefined" && server !== null ? server : "localhost";
+}
+
+async function startClient(): Promise<void> {
+    let connectTo = grpcServerHost() + ":" + port
+    logger.info("connectTo:%s", connectTo)
+    client = new LandingServiceClient(connectTo, grpc.credentials.createInsecure())
 
     let request = new TalkRequest()
     request.setData("0")

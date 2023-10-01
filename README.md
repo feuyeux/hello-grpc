@@ -42,7 +42,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | java       | 🍎      | 🍎   | 🍎     | 🍎      | [maven][1]           | [junit5][2]  | [log4j2][3]     |
 | go         | 🍎      | 🍎   | 🍎     | 🍎      | (mod)                | (testing)    | [logrus][5]     |
 | nodejs     | 🍎      | 🥑   | 🍎     | 🍎      | [npm][7]             | [mocha][8]   | [winston][9]    |
-| typescript | 🍎      | 🍏   | 🍏     | 🍏      | [yarn][28]&[tsc][29] |              | [winston][9]    |
+| typescript | 🍎      | 🍏   | 🍏     | 🍎      | [yarn][28]&[tsc][29] |              | [winston][9]    |
 | python     | 🍎      | 🍎   | 🍎     | 🍎      | [pip][11]            | (unittest)   | (logging)       |
 | rust       | 🍎      | 🍎   | 🍎     | 🍎      | [cargo][13]          | (test)       | [log4rs][14]    |
 | c++        | 🍎      | 🍎   | 🍎     | 🍎      | [cmake][16]          | [Catch2][24] | [glog][17]      |

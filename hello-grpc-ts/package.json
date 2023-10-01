@@ -12,5 +12,6 @@
     "grpc_tools_node_protoc_ts": "^5.3.3",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
-  }
+  },
+  "license": "Apache-2.0"
 }
