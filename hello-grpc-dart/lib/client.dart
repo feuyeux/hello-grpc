@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:io' as io show Platform;
 import 'dart:math';
 import 'package:grpc/grpc.dart';
 import 'common/common.dart';
@@ -8,6 +9,8 @@ import 'package:logging/logging.dart';
 import 'conn/conn.dart';
 
 var outputFile = new File('hello_client.log');
+
+Map<String, String> envVars = io.Platform.environment;
 
 class Client {
   late LandingServiceClient stub;
@@ -22,7 +25,10 @@ class Client {
           mode: FileMode.append);
     });
     logger = new Logger('HelloClient');
-    final channel = ClientChannel('127.0.0.1',
+    String? GRPC_SERVER = envVars['GRPC_SERVER'];
+    String connectTo = GRPC_SERVER ?? "127.0.0.1";
+    logger.info("GRPC_SERVER:${connectTo}");
+    final channel = ClientChannel(connectTo,
         port: Conn.port,
         options:
             const ChannelOptions(credentials: ChannelCredentials.insecure()));
