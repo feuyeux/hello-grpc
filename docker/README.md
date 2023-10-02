@@ -2,13 +2,13 @@
 
 ## build all images
 
-```bash
+```sh
 sh build.sh
 ```
 
 ## push all images
 
-```bash
+```sh
 sh push.sh
 ```
 
@@ -16,7 +16,7 @@ sh push.sh
 
 ### clean all containers
 
-```bash
+```sh
 sh tools/clean_world.sh
 ```
 
@@ -24,11 +24,11 @@ sh tools/clean_world.sh
 
 #### INSECURE
 
-```bash
+```sh
 docker run --rm --name grpc_server_java -p 9996:9996 feuyeux/grpc_server_java:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_java -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_java:1.0.0
 
 docker run --rm --name grpc_client_java -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_java:1.0.0
@@ -36,13 +36,13 @@ docker run --rm --name grpc_client_java -e GRPC_SERVER=host.docker.internal feuy
 
 #### TLS
 
-```bash
+```sh
 docker run --rm --name grpc_server_java -p 9996:9996 \
 -e GRPC_HELLO_SECURE=Y \
 feuyeux/grpc_server_java:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_java \
 -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 -e GRPC_HELLO_SECURE=Y \
@@ -56,11 +56,11 @@ feuyeux/grpc_client_java:1.0.0
 
 ### 2 go
 
-```bash
+```sh
 docker run --rm --name grpc_server_go -p 9996:9996 feuyeux/grpc_server_go:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_go -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_go:1.0.0
 
 docker run --rm --name grpc_client_go -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_go:1.0.0
@@ -68,55 +68,55 @@ docker run --rm --name grpc_client_go -e GRPC_SERVER=host.docker.internal feuyeu
 
 ### 3 node
 
-```bash
+```sh
 docker run --rm --name grpc_server_node -p 9996:9996 \
 feuyeux/grpc_server_node:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_node -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 feuyeux/grpc_client_node:1.0.0
 ```
 
 ### 4 python
 
-```bash
+```sh
 docker run --rm --name grpc_server_python -p 9996:9996 \
 feuyeux/grpc_server_python:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_python -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 feuyeux/grpc_client_python:1.0.0
 ```
 
 ### 5 rust
 
-```bash
+```sh
 docker run --rm --name grpc_server_rust -p 9996:9996 \
 feuyeux/grpc_server_rust:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_rust -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 feuyeux/grpc_client_rust:1.0.0
 ```
 
 ### 6 kotlin
 
-```bash
+```sh
 docker run --rm --name grpc_server_kotlin -p 9996:9996 \
 feuyeux/grpc_server_kotlin:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_kotlin -e GRPC_SERVER=$(ipconfig getifaddr en0) \
 feuyeux/grpc_client_kotlin:1.0.0
 ```
 
 ### 7 csharp
 
-```bash
+```sh
 docker run --rm --name grpc_server_csharp -p 9996:9996 \
 feuyeux/grpc_server_csharp:1.0.0
 
@@ -125,7 +125,7 @@ docker run --rm --name grpc_server_csharp -p 9996:9996 \
 feuyeux/grpc_server_csharp:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_csharp -e GRPC_SERVER=host.docker.internal \
 feuyeux/grpc_client_csharp:1.0.0
 
@@ -136,11 +136,11 @@ feuyeux/grpc_client_csharp:1.0.0
 
 ### 8 cpp
 
-```bash
+```sh
 docker run --rm --name grpc_server_cpp -p 9996:9996 feuyeux/grpc_server_cpp:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_cpp -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_cpp:1.0.0
 
 docker run --rm --name grpc_client_cpp -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_cpp:1.0.0
@@ -149,11 +149,11 @@ docker run --rm --name grpc_client_cpp -e GRPC_SERVER=host.docker.internal feuye
 ### 9 php
 
 
-```bash
+```sh
 docker run --rm --name grpc_server_php -p 9996:9996 feuyeux/grpc_server_php:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_php -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_php:1.0.0
 
 docker run --rm --name grpc_client_php -e GRPC_SERVER=host.docker.internal feuyeux/grpc_client_php:1.0.0
@@ -161,21 +161,31 @@ docker run --rm --name grpc_client_php -e GRPC_SERVER=host.docker.internal feuye
 
 ### 10 typescript
 
-```bash
+```sh
 docker run --rm --name grpc_server_ts -p 9996:9996 feuyeux/grpc_server_ts:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_ts -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_ts:1.0.0
 ```
 
 
 ### 11 dart
 
-```bash
+```sh
 docker run --rm --name grpc_server_dart -p 9996:9996 feuyeux/grpc_server_dart:1.0.0
 ```
 
-```bash
+```sh
 docker run --rm --name grpc_client_dart -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_dart:1.0.0
+```
+
+### 12 swift
+
+```sh
+docker run --rm --name grpc_server_swift -p 9996:9996 feuyeux/grpc_server_swift:1.0.0
+```
+
+```sh
+docker run --rm --name grpc_client_swift -e GRPC_SERVER=$(ipconfig getifaddr en0) feuyeux/grpc_client_swift:1.0.0
 ```

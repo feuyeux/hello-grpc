@@ -15,7 +15,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | 7   | [Node.js](hello-grpc-nodejs) / [TypeScript](hello-grpc-ts) | **grpc-js**     | [WebStorm][10]  |
 | 8   | [Dart](hello-grpc-dart)                                    | **grpc-dart**   | [PyCharm][12]   |
 | 9   | [Kotlin](hello-grpc-kotlin)                                | **grpc-kotlin** | [IDEA][4]       |
-| 10  | [Swift](hello-grpc-swift)                                  | **grpc-swift**  | [Xcode][32]     |
+| 10  | [Swift](hello-grpc-swift)                                  | **grpc-swift**  | [AppCode][32]   |
 | 11  | [PHP](hello-grpc-php)                                      | **grpc-php**    | [PhpStorm][33]  |
 
 ## :coffee: What is ...
@@ -155,6 +155,7 @@ export GRPC_TRACE=all
 [29]: <https://www.typescriptlang.org/docs/handbook/compiler-options.html>
 [30]: <https://nunit.org/>
 [31]: <https://www.jetbrains.com/rustrover/>
-[32]: <https://xcodereleases.com/>
+<!-- [32]: <https://xcodereleases.com/> -->
+[32]: <https://www.jetbrains.com/objc/>
 [33]: <https://www.jetbrains.com/phpstorm/>
 [34]: <https://getcomposer.org/>

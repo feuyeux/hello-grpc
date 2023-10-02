@@ -13,7 +13,7 @@ cd "$(
 # cp grpc-swift/.build/debug/protoc-gen-swift .
 #PATH=$(pwd):$PATH
 #export PATH
-
+cd Common
 ## proto2swift ##
 protoc landing.proto \
     --proto_path=. \
