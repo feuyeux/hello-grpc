@@ -48,8 +48,8 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | c++        | 🍎      | 🍎   | 🍎     | 🍎      | [cmake][16]          | [Catch2][24] | [glog][17]      |
 | c#         | 🍎      | 🍎   | 🍎     | 🍎      | [nuget][18]          | [NUnit][30]  | [log4net][19]   |
 | kotlin     | 🍎      | 🍎   | 🍎     | 🍎      | [gradle][21]         | [junit5][2]  | [log4j2][3]     |
-| swift      | 🍎      | 🍏   | 🍏     | 🍏      | [spm][22]            | (XCTest)     | [swift-log][23] |
-| dart       | 🍎      | 🍏   | 🍏     | 🍏      | [pub][25]            | [test][27]   | [logger][26]    |
+| swift      | 🍎      | 🍏   | 🍏     | 🍎      | [spm][22]            | (XCTest)     | [swift-log][23] |
+| dart       | 🍎      | 🍏   | 🍏     | 🍎      | [pub][25]            | [test][27]   | [logger][26]    |
 | php        | 🍏      | 🍏   | 🍏     | 🍏      | [composer][34]       | 🍏            | 🍏               |
 
 > 🍎 `:apple:` done 
