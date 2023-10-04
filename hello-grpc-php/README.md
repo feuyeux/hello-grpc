@@ -15,6 +15,7 @@ Zend Engine v4.2.10, Copyright (c) Zend Technologies
 Technologies
 
 # PECL(The PHP Extension Community Library)
+# PEAR(PHP Extension and Application Repository)
 
 $ composer --version
 Composer version 2.6.3 2023-09-15 09:38:21

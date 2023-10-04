@@ -8,6 +8,8 @@ use Hello\TalkResponse;
 use Hello\TalkResult;
 use Ramsey\Uuid\Uuid;
 
+require __DIR__ . '/vendor/autoload.php';
+
 $ans = [
     "你好" => "非常感谢",
     "Hello" => "Thank you very much",
@@ -20,6 +22,9 @@ $ans = [
 
 $hellos = array("Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요");
 
+$log = Logger::getLogger("HelloTest");
+Logger::configure("log4php_config.xml");
+
 class LandingService extends Hello\LandingServiceStub
 {
     /**
@@ -31,9 +36,11 @@ class LandingService extends Hello\LandingServiceStub
      */
     public function Talk(TalkRequest $request, ServerContext $context): ?TalkResponse
     {
+        global $log;
         $data = $request->getData();
         $meta = $request->getMeta();
         echo sprintf("TALK REQUEST: data=%s,meta=%s\n", $data, $meta);
+        $log->info("TALK REQUEST: data=$data,meta=$meta");
         $clientMetadata = $context->clientMetadata();
         $response = new TalkResponse();
         $response->setStatus(200);
@@ -51,9 +58,11 @@ class LandingService extends Hello\LandingServiceStub
      */
     public function TalkOneAnswerMore(TalkRequest $request, ServerCallWriter $writer, ServerContext $context): void
     {
+        global $log;
         $data = $request->getData();
         $meta = $request->getMeta();
         echo sprintf("TalkOneAnswerMore REQUEST: data=%s,meta=%s\n", $data, $meta);
+        $log->info("TalkOneAnswerMore REQUEST: data=$data,meta=$meta");
         $datas = explode(",", $data);
         for ($i = 0; $i < count($datas); $i++) {
             $response = new TalkResponse();
@@ -74,6 +83,7 @@ class LandingService extends Hello\LandingServiceStub
      */
     public function TalkMoreAnswerOne(ServerCallReader $reader, ServerContext $context): ?TalkResponse
     {
+        global $log;
         $response = new TalkResponse();
         $response->setStatus(200);
         $talkResults = array();
@@ -82,6 +92,7 @@ class LandingService extends Hello\LandingServiceStub
             $data = $request->getData();
             $meta = $request->getMeta();
             echo sprintf("TalkMoreAnswerOne REQUEST: data=%s,meta=%s\n", $data, $meta);
+            $log->info("TalkMoreAnswerOne REQUEST: data=$data,meta=$meta");
             $talkResult = $this->buildResult($data);
             $talkResults[$i++] = $talkResult;
         }
@@ -98,10 +109,12 @@ class LandingService extends Hello\LandingServiceStub
      */
     public function TalkBidirectional(ServerCallReader $reader, ServerCallWriter $writer, ServerContext $context): void
     {
+        global $log;
         while ($request = $reader->read()) {
             $data = $request->getData();
             $meta = $request->getMeta();
             echo sprintf("TalkBidirectional REQUEST: data=%s,meta=%s\n", $data, $meta);
+            $log->info("TalkBidirectional REQUEST: data=$data,meta=$meta");
             $response = new TalkResponse();
             $response->setStatus(200);
             $talkResult = $this->buildResult($data);

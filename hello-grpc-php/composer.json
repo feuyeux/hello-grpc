@@ -3,8 +3,9 @@
     "description": "Hello gRPC for PHP",
     "require": {
         "grpc/grpc": "^v1.57.0",
-        "google/protobuf": "^v3.24.3",
-        "ramsey/uuid": "^4.7"
+        "google/protobuf": "^v3.24.2",
+        "ramsey/uuid": "^4.7",
+        "apache/log4php": "2.3.0"
     },
     "autoload": {
         "psr-4": {
@@ -13,6 +14,15 @@
                 "common/msg/Hello/"
             ],
             "GPBMetadata\\": "common/msg/GPBMetadata/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "10.3.5"
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://mirrors.aliyun.com/composer/"
         }
     }
 }

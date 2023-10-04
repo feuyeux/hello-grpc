@@ -37,20 +37,20 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | dart       | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 | php        | 🍎        | 🍎          | 🍎     | 🍎      | 🍎         | 🍎    | 🍎   |
 
-|            | Header | TLS | Proxy | Docker | Build                | UT           | LOG             |
-|:-----------|:-------|:----|:------|:-------|:---------------------|:-------------|:----------------|
-| java       | 🍎      | 🍎   | 🍎     | 🍎      | [maven][1]           | [junit5][2]  | [log4j2][3]     |
-| go         | 🍎      | 🍎   | 🍎     | 🍎      | (mod)                | (testing)    | [logrus][5]     |
-| nodejs     | 🍎      | 🥑   | 🍎     | 🍎      | [npm][7]             | [mocha][8]   | [winston][9]    |
-| typescript | 🍎      | 🍏   | 🍏     | 🍎      | [yarn][28]&[tsc][29] |              | [winston][9]    |
-| python     | 🍎      | 🍎   | 🍎     | 🍎      | [pip][11]            | (unittest)   | (logging)       |
-| rust       | 🍎      | 🍎   | 🍎     | 🍎      | [cargo][13]          | (test)       | [log4rs][14]    |
-| c++        | 🍎      | 🍎   | 🍎     | 🍎      | [cmake][16]          | [Catch2][24] | [glog][17]      |
-| c#         | 🍎      | 🍎   | 🍎     | 🍎      | [nuget][18]          | [NUnit][30]  | [log4net][19]   |
-| kotlin     | 🍎      | 🍎   | 🍎     | 🍎      | [gradle][21]         | [junit5][2]  | [log4j2][3]     |
-| swift      | 🍎      | 🍏   | 🍏     | 🍎      | [spm][22]            | (XCTest)     | [swift-log][23] |
-| dart       | 🍎      | 🍏   | 🍏     | 🍎      | [pub][25]            | [test][27]   | [logger][26]    |
-| php        | 🍎      | 🍏   | 🍏     | 🍏      | [composer][34]       | 🍏            | 🍏               |
+|            | Header | TLS | Proxy | Docker | Build                | UT            | LOG             |
+|:-----------|:-------|:----|:------|:-------|:---------------------|:--------------|:----------------|
+| java       | 🍎      | 🍎   | 🍎     | 🍎      | [maven][1]           | [junit5][2]   | [log4j2][3]     |
+| go         | 🍎      | 🍎   | 🍎     | 🍎      | (mod)                | (testing)     | [logrus][5]     |
+| nodejs     | 🍎      | 🥑   | 🍎     | 🍎      | [npm][7]             | [mocha][8]    | [winston][9]    |
+| typescript | 🍎      | 🍏   | 🍏     | 🍎      | [yarn][28]&[tsc][29] |               | [winston][9]    |
+| python     | 🍎      | 🍎   | 🍎     | 🍎      | [pip][11]            | (unittest)    | (logging)       |
+| rust       | 🍎      | 🍎   | 🍎     | 🍎      | [cargo][13]          | (test)        | [log4rs][14]    |
+| c++        | 🍎      | 🍎   | 🍎     | 🍎      | [cmake][16]          | [Catch2][24]  | [glog][17]      |
+| c#         | 🍎      | 🍎   | 🍎     | 🍎      | [nuget][18]          | [NUnit][30]   | [log4net][19]   |
+| kotlin     | 🍎      | 🍎   | 🍎     | 🍎      | [gradle][21]         | [junit5][2]   | [log4j2][3]     |
+| swift      | 🍎      | 🍏   | 🍏     | 🍎      | [spm][22]            | (XCTest)      | [swift-log][23] |
+| dart       | 🍎      | 🍏   | 🍏     | 🍎      | [pub][25]            | [test][27]    | [logger][26]    |
+| php        | 🍎      | 🍏   | 🍏     | 🍏      | [composer][34]       | [phpunit][35] | [log4php][36]   |
 
 > 🍎 `:apple:` done 
 > 🍏 `:green_apple:` unimplemented
@@ -159,3 +159,5 @@ export GRPC_TRACE=all
 [32]: <https://www.jetbrains.com/objc/>
 [33]: <https://www.jetbrains.com/phpstorm/>
 [34]: <https://getcomposer.org/>
+[35]: <https://phpunit.de/>
+[36]: <https://logging.apache.org/log4php>
