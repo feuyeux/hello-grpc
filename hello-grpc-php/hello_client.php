@@ -10,9 +10,9 @@ require dirname(__FILE__) . '/vendor/autoload.php';
 
 $host = getenv('GRPC_SERVER');
 if (empty($host)) {
-    $host = 'localhost:9666';
+    $host = 'localhost:9996';
 } else {
-    $host = $host . ':9666';
+    $host = $host . ':9996';
 }
 echo sprintf("Connect to:%s\n", $host);
 $client = new LandingServiceClient($host, [

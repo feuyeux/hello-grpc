@@ -13,20 +13,21 @@ import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import org.feuyeux.grpc.etcd.EtcdNameResolverProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLException;
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import javax.net.ssl.SSLException;
-import org.feuyeux.grpc.etcd.EtcdNameResolverProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Connection {
   private static final Logger log = LoggerFactory.getLogger("Connection");
 
-  public static String version = "grpc.version=1.56.1,protoc.version=3.21.1";
+  public static String version = "grpc.version=1.58.0,protoc.version=3.24.3";
 
   public static final String GRPC_HELLO_SECURE = "GRPC_HELLO_SECURE";
   public static final String GRPC_SERVER = "GRPC_SERVER";

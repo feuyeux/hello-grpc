@@ -5,7 +5,7 @@ use Grpc\RpcServer;
 require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/LandingService.php';
 
-$port = 9666;
+$port = 9996;
 $server = new RpcServer();
 $server->addHttp2Port('0.0.0.0'.':' . $port);
 $server->handle(new LandingService());
