@@ -26,7 +26,7 @@
             // Start the server and print its address once it has started.
             let server = try await Server.insecure(group: group)
                 .withServiceProviders([provider])
-                .bind(host: "localhost", port: conn.port)
+                .bind(host: "0.0.0.0", port: conn.port)
                 .get()
 
             logger.info("server started on port \(server.channel.localAddress!.port!)")

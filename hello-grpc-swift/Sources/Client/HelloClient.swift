@@ -13,13 +13,6 @@
 
         private let client: Hello_LandingServiceAsyncClient
 
-        private let callOptions = CallOptions(
-            customMetadata: [
-                "k1": "v1",
-            ],
-            timeLimit: .deadline(.now() + .seconds(1))
-        )
-
         init(client: Hello_LandingServiceAsyncClient) {
             self.client = client
         }
@@ -40,10 +33,15 @@
                 $0.data = "0"
                 $0.meta = "SWIFT"
             }
-
+            let callOptions = CallOptions(
+                customMetadata: [
+                    "k1": "v1",
+                ],
+                timeLimit: .deadline(.now() + .seconds(1))
+            )
             do {
                 let response = try await client.talk(request, callOptions: callOptions)
-                logger.info("response \(response.status) \(response.results)")
+                logger.info("Talk Response \(response.status) \(response.results)")
             } catch {
                 logger.info("RPC failed: \(error)")
             }
@@ -58,8 +56,14 @@
 
             do {
                 var resultCount = 1
+                let callOptions = CallOptions(
+                    customMetadata: [
+                        "k1": "v1",
+                    ],
+                    timeLimit: .deadline(.now() + .seconds(1))
+                )
                 for try await response in client.talkOneAnswerMore(request, callOptions: callOptions) {
-                    logger.info("response[\(resultCount)] \(response.status) \(response.results)")
+                    logger.info("TalkOneAnswerMore Response[\(resultCount)] \(response.status) \(response.results)")
                     resultCount += 1
                 }
             } catch {
@@ -84,7 +88,12 @@
                     $0.meta = "SWIFT"
                 },
             ]
-
+            let callOptions = CallOptions(
+                customMetadata: [
+                    "k1": "v1",
+                ],
+                timeLimit: .deadline(.now() + .seconds(2))
+            )
             let streamingCall = client.makeTalkMoreAnswerOneCall(callOptions: callOptions)
             do {
                 for request in requests {
@@ -96,9 +105,9 @@
 
                 streamingCall.requestStream.finish()
                 let response = try await streamingCall.response
-                logger.info("response \(response.status) \(response.results)")
+                logger.info("TalkMoreAnswerOne Response \(response.status) \(response.results)")
             } catch {
-                logger.info("talkMoreAnswerOne Failed: \(error)")
+                logger.info("TalkMoreAnswerOne Failed: \(error)")
             }
         }
 
@@ -118,7 +127,12 @@
                     $0.meta = "SWIFT"
                 },
             ]
-
+            let callOptions = CallOptions(
+                customMetadata: [
+                    "k1": "v1",
+                ],
+                timeLimit: .deadline(.now() + .seconds(3))
+            )
             do {
                 try await withThrowingTaskGroup(of: Void.self) { group in
                     let streamingCall = client.makeTalkBidirectionalCall(callOptions: callOptions)
@@ -137,17 +151,17 @@
                     group.addTask {
                         do {
                             for try await response in streamingCall.responseStream {
-                                logger.info("response \(response.status) \(response.results)")
+                                logger.info("TalkBidirectional Response \(response.status) \(response.results)")
                             }
                         } catch {
-                            logger.info("talkBidirectional Failed: \(error)")
+                            logger.info("TalkBidirectional Failed: \(error)")
                         }
                     }
 
                     try await group.waitForAll()
                 }
             } catch {
-                logger.info("talkBidirectional Failed: \(error)")
+                logger.info("TalkBidirectional Failed: \(error)")
             }
         }
     }
