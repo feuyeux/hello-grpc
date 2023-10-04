@@ -37,7 +37,7 @@ InstalledDir: /Applications/Xcode.14.2.app/Contents/Developer/Toolchains/XcodeDe
 ```sh
 https://github.com/nicklockwood/SwiftFormat
 brew install swiftformat
-swiftformat --indent 4 --swiftversion 5.7 --exclude "**/*.grpc.swift,**/*.pb.swift" .
+swiftformat --indent 4 --swiftversion 5.8 --exclude "**/*.grpc.swift,**/*.pb.swift" .
 ```
 
 ## build

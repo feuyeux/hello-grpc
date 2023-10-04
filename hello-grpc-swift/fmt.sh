@@ -5,6 +5,4 @@ cd "$(
 )/" || exit
 set -e
 
-git pull
-git submodule update --remote
-git add -A && git commit -m "up" && git push
+swiftformat --indent 4 --swiftversion 5.8 --exclude "**/*.grpc.swift,**/*.pb.swift" .
