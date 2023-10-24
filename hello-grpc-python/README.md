@@ -1,11 +1,15 @@
 ## grpc python demo
+
 ### 1 Setup
+
 ```bash
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple
 ```
-python2
+
+#### python2
+
 ```bash
 python -m pip install --upgrade pip
 pip install virtualenv
@@ -13,7 +17,9 @@ pip install virtualenv
 which virtualenv
 /Library/Frameworks/Python.framework/Versions/2.7/bin/virtualenv
 ```
-python3
+
+#### python3
+
 ```bash
 python3 -m pip install --upgrade pip
 export PATH="/Users/han/Library/Python/3.8/bin:$PATH"
@@ -47,11 +53,13 @@ pip install -r requirements.txt
 ```
 
 ### 2 Generate
+
 ```bash
 sh proto2py.sh
 ```
 
 ### 3 Run
+
 ```bash
 sh server_start.sh
 ```
@@ -63,6 +71,7 @@ sh client_start.sh
 ```
 
 #### UT
+
 ```sh
-python -m unittest tests/test_utils.py
+python3 -m unittest tests/test_utils.py
 ```

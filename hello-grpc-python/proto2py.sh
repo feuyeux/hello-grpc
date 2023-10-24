@@ -4,6 +4,9 @@ cd "$(
   pwd -P
 )/" || exit
 
+alias python=python3
+python -V
+
 rm -rf landing && mkdir landing
 py_proto_path=$(pwd)/landing
 

@@ -10,7 +10,7 @@ cp ../hello-grpc-python/requirements.txt hello-grpc-python
 cp -R ../hello-grpc-python/conn hello-grpc-python
 cp -R ../hello-grpc-python/server hello-grpc-python
 cp ../hello-grpc-python/server_start.sh hello-grpc-python
-cp -R ../proto hello-grpc-python
+cp -R ../hello-grpc-python/proto hello-grpc-python
 cp ../hello-grpc-python/proto2py.sh hello-grpc-python
 docker build -f grpc-server-python.dockerfile -t feuyeux/grpc_server_python:1.0.0 .
 rm -rf hello-grpc-python/server
