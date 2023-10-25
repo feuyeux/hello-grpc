@@ -10,6 +10,10 @@ rustup show
 ```
 
 ```bash
+# brew install protobuf
+# brew link --overwrite protobuf
+# protoc --version
+sh ../docker/tls/copy_certs.sh
 cargo build
 ```
 
