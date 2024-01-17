@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "description": "hello grpc",
   "dependencies": {
-    "@grpc/grpc-js": "^1.9.0",
-    "@grpc/proto-loader": "^0.7.8",
-    "async": "^3.2.4",
+    "@grpc/grpc-js": "^1.9.14",
+    "@grpc/proto-loader": "^0.7.10",
+    "async": "^3.2.5",
     "google-protobuf": "^3.21.2",
     "grpc-node-server-reflection": "^1.0.2",
     "grpc-tools": "^1.12.4",

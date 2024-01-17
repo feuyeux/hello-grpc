@@ -2,9 +2,12 @@
 
 ## 1 Setup
 
-```bash
-brew install yarn
-npm config set registry http://registry.npm.taobao.org/
+```sh
+npm config set registry https://registry.npmmirror.com
+npm config get registry
+```
+
+```sh
 npm install -g grpc-tools
 # https://www.npmjs.com/package/protoc-gen-grpc
 # https://www.npmjs.com/package/@grpc/grpc-js
@@ -69,6 +72,8 @@ kill $(lsof -ti:9996)
 - <https://github.com/grpc/grpc-node/tree/master/packages/proto-loader>|<https://www.npmjs.com/package/@grpc/proto-loader>
 - <https://github.com/caolan/async>|<https://www.npmjs.com/package/async>
 - <https://github.com/protocolbuffers/protobuf/tree/master/js>|<https://www.npmjs.com/package/google-protobuf>
+- <https://github.com/papajuanito/grpc-node-server-reflection>|<https://www.npmjs.com/package/grpc-node-server-reflection>
+- <https://github.com/grpc/grpc-node>|<https://www.npmjs.com/package/grpc-tools>
 - <https://github.com/lodash/lodash>|<https://www.npmjs.com/package/lodash>
 - <https://github.com/substack/minimist>|<https://www.npmjs.com/package/minimist>
 - <https://github.com/winstonjs/winston>|<https://www.npmjs.com/package/winston>
