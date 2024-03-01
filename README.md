@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD033 MD045 -->
+
 # Hello gRPC
 
 <img src="diagram/build_tools.png" alt="build tools" style="width:500px" />
@@ -18,7 +20,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | 10  | [Swift](hello-grpc-swift)                                  | **grpc-swift**  | [AppCode][32]   |
 | 11  | [PHP](hello-grpc-php)                                      | **grpc-php**    | [PhpStorm][33]  |
 
-## :coffee: What is ...
+## :coffee: What is
 
 ![grpc_diagram](diagram/hello-grpc.svg)
 
@@ -52,7 +54,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | dart       | 🍎      | 🍏   | 🍏     | 🍎      | [pub][25]            | [test][27]    | [logger][26]    |
 | php        | 🍎      | 🍏   | 🍏     | 🍏      | [composer][34]       | [phpunit][35] | [log4php][36]   |
 
-> 🍎 `:apple:` done 
+> 🍎 `:apple:` done
 > 🍏 `:green_apple:` unimplemented
 > 🥑 `:avocado:` known issues
 
@@ -64,7 +66,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 - [support open tracing](k8s/tracing)
 - [transcoder(Http2gRPC)](k8s/transcoder)
 
-## :coffee: How to use ...
+## :coffee: How to use
 
 ### 1 Envs
 

@@ -20,16 +20,16 @@ sh client_start.sh
 
 grpc generated files:
 
-- Common/obj/Debug/net7.0/Landing.cs
+- Common/obj/Debug/net8.0/Landing.cs
 
 ## RUN
 
 ```bash
-dotnet HelloServer/bin/Debug/net7.0/HelloServer.dll
+dotnet HelloServer/bin/Debug/net8.0/HelloServer.dll
 ```
 
 ```bash
-dotnet HelloClient/bin/Debug/net7.0/HelloClient.dll
+dotnet HelloClient/bin/Debug/net8.0/HelloClient.dll
 ```
 
 > ## docker

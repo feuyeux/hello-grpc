@@ -19,11 +19,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 # 
 ENV GRPC_SOURCE https://gitee.com/feuyeux/grpc
-ENV GRPC_RELEASE_TAG v1.48.1
 ENV C_ARES_SOURCE https://gitee.com/feuyeux/c-ares
 ENV GLOG_SOURCE https://gitee.com/feuyeux/glog
 ENV GFLAGS_SOURCE https://gitee.com/feuyeux/gflags
-
+ENV GRPC_RELEASE_TAG v1.62.0
 # 
 ENV HELLO_BUILD_PATH /source/build
 ENV GRPC_SRC_PATH /var/grpc/src

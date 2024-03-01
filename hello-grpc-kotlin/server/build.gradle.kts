@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     application
     kotlin("jvm")
-    val shadowVersion = "7.0.0"
+    val shadowVersion = "8.1.1"
     id("com.github.johnrengelman.shadow") version shadowVersion
 }
 

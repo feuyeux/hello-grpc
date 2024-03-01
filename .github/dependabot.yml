@@ -1,0 +1,55 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "hello-grpc-java"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "gomod"
+    directory: "hello-grpc-go"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "cargo"
+    directory: "hello-grpc-rust"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pip"
+    directory: "hello-grpc-python"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "npm"
+    directory: "hello-grpc-nodejs"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "nuget"
+    directory: "hello-grpc-csharp"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pub"
+    directory: "hello-grpc-dart"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "composer"
+    directory: "hello-grpc-php"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "gradle"
+    directory: "hello-grpc-kotlin"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "swift"
+    directory: "hello-grpc-swift"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "npm"
+    directory: "hello-grpc-ts"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pub"
+    directory: "hello_grpc_flutter"
+    schedule:
+      interval: "monthly"

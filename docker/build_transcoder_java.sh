@@ -6,13 +6,34 @@ cd "$(
   pwd -P
 )/" || exit
 
-export JAVA_HOME=$JAVA_17_HOME
+os_name=""
+os_name="$(uname -s)"
+if [ "$(uname)" = "Darwin" ]; then
+  export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+elif
+  [ "$(expr substr "${os_name}" 1 5)" = "Linux" ]
+then
+  echo "Linux"
+elif
+  [ "$(expr substr "${os_name}" 1 7)" = "MSYS_NT" ]
+then
+  export JAVA_HOME=D:/zoo/jdk-21
+elif
+  [ "$(expr substr "${os_name}" 1 10)" = "MINGW64_NT" ]
+then
+  export JAVA_HOME=D:/zoo/jdk-21
+else
+  echo "Oops"
+fi
+
+echo "JAVA_HOME=${JAVA_HOME}"
+mvn -v
 
 echo "build grpc server java"
 cd ../hello-grpc-java
 rm -f src/main/proto/landing.proto
 cd ..
-ln -s "$PWD"/proto/landing2.proto hello-grpc-java/src/main/proto/landing.proto
+ln -s "$PWD"/hello-grpc-java/src/main/proto_bk/landing2.proto hello-grpc-java/src/main/proto/landing.proto
 cd hello-grpc-java
 
 mvn clean install -DskipTests -f server_pom.xml
@@ -34,6 +55,6 @@ echo
 cd ../hello-grpc-java
 rm -f src/main/proto/landing.proto
 cd ..
-ln -s "$PWD"/proto/landing.proto hello-grpc-java/src/main/proto/landing.proto
+ln -s "$PWD"/hello-grpc-java/src/main/proto_bk/landing.proto hello-grpc-java/src/main/proto/landing.proto
 
 docker images | grep grpc_with_api

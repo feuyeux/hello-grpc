@@ -4,6 +4,12 @@ cd "$(
   pwd -P
 )/" || exit
 
+export GOROOT
+GOROOT="$(brew --prefix golang)/libexec"
+export GOPATH=$HOME/gopath
+export PATH="$PATH:$GOPATH/bin"
+#
+export GOPROXY=https://mirrors.aliyun.com/goproxy/
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 echo "generate the messages"

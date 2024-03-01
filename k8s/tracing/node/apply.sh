@@ -10,7 +10,7 @@ alias k="kubectl --kubeconfig $USER_CONFIG"
 MESH_CONFIG=~/shop_config/asm_bj
 alias m="kubectl --kubeconfig $MESH_CONFIG"
 
-sh ../../docker/build_node.sh
+sh ../docker/build_node.sh
 docker push feuyeux/grpc_server_node:1.0.0
 
 echo "Start to apply crd to grpc-tracing ..."
