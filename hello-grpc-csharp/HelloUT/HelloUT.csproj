@@ -16,7 +16,7 @@
         <!-- https://www.nuget.org/packages/NUnit3TestAdapter -->
         <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
         <!-- https://www.nuget.org/packages/NUnit.Analyzers -->
-        <PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
+        <PackageReference Include="NUnit.Analyzers" Version="4.0.1" />
         <!-- https://www.nuget.org/packages/coverlet.collector -->
         <PackageReference Include="coverlet.collector" Version="6.0.1" />
         <ProjectReference Include="..\Common\Common.csproj" />
