@@ -17,7 +17,7 @@ dependencies {
     api("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
     api("com.google.protobuf:protobuf-java-util:3.25.3")
     api("io.grpc:grpc-kotlin-stub:1.4.1")
-    api("org.apache.logging.log4j:log4j-api-kotlin:1.0.0")
+    api("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
     api("org.apache.logging.log4j:log4j-api:${rootProject.ext["log4jVersion"]}")
     api("org.apache.logging.log4j:log4j-core:${rootProject.ext["log4jVersion"]}")
     api("com.fasterxml.jackson.core:jackson-databind:${rootProject.ext["jacksonVersion"]}")
