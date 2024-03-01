@@ -21,7 +21,7 @@ dependencies:
   logging: ^1.2.0
   #
   # https://pub.dev/packages/uuid
-  uuid: ^3.0.7
+  uuid: ^4.3.3
   # https://pub.dev/packages/test
   test: ^1.24.6
 dev_dependencies:
