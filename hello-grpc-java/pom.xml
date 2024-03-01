@@ -14,7 +14,7 @@
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
-        <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
+        <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <annotations-api.version>6.0.53</annotations-api.version>
         <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
         <junit.version>5.10.0</junit.version>
