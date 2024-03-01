@@ -16,6 +16,10 @@
     "fast-linked-list": "^3.2.3",
     "mocha": "^10.2.0"
   },
+  "engines": {
+    "npm": ">=10.0.0",
+    "node": ">=21.0.0"
+  },
   "scripts": {
     "test": "mocha"
   },

@@ -1,7 +1,8 @@
-FROM dart:stable AS build
+FROM dart:3.3.0 AS build
 
 COPY hello-grpc-dart /hello-grpc
 WORKDIR /hello-grpc
+ENV PUB_HOSTED_URL "https://pub.flutter-io.cn"
 RUN dart pub get
 RUN dart compile exe server.dart -o bin/server
 RUN dart compile exe client.dart -o bin/client

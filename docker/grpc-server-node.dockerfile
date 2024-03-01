@@ -1,10 +1,11 @@
-FROM node:16-alpine
+FROM node:21-alpine
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update \
   python3 \
   make \
   g++ \
   && rm -rf /var/cache/apk/*
-RUN npm config set registry https://registry.npm.taobao.org && npm install -g node-pre-gyp grpc-tools --unsafe-perm
+RUN npm config set registry https://registry.npmmirror.com && npm install -g node-pre-gyp grpc-tools --unsafe-perm
 COPY tls/server_certs /var/hello_grpc/server_certs
 COPY tls/client_certs /var/hello_grpc/client_certs
 COPY hello-grpc-nodejs/package.json .

@@ -2,8 +2,11 @@ name: hello_grpc_dart
 description: Dart gRPC sample client and server.
 publish_to: none
 
+# https://dart.dev/
+# brew search dart
+# dart --version
 environment:
-  sdk: '>=3.0.0'
+  sdk: '>=3.3.0'
 
 dependencies:
   #  https://pub.dev/packages/async
@@ -21,9 +24,9 @@ dependencies:
   logging: ^1.2.0
   #
   # https://pub.dev/packages/uuid
-  uuid: ^3.0.7
+  uuid: ^4.3.3
   # https://pub.dev/packages/test
   test: ^1.24.6
 dev_dependencies:
   # https://pub.dev/packages/lints
-  lints: ^2.1.1
+  lints: ^3.0.0

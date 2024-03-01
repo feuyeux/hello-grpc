@@ -9,7 +9,6 @@ mkdir -p hello-grpc-nodejs
 cp ../hello-grpc-nodejs/proto_server.js hello-grpc-nodejs
 cp ../hello-grpc-nodejs/package.json hello-grpc-nodejs
 cp -R ../hello-grpc-nodejs/common hello-grpc-nodejs
-cp -R ../proto hello-grpc-nodejs
 docker build -f grpc-server-node.dockerfile -t feuyeux/grpc_server_node:1.0.0 .
 rm -rf hello-grpc-nodejs/proto_server.js
 echo

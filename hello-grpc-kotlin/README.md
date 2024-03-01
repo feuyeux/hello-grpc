@@ -1,7 +1,7 @@
-## grpc kotlin demo
+# grpc kotlin demo
 
 ```bash
-export JAVA_HOME=${JAVA_19_HOME}
+# brew install gradle
 gradle clean installDist --warning-mode all
 gradle :server:ProtoServer
 gradle :client:ProtoClient
@@ -12,6 +12,7 @@ rm -rf ~/.gradle
 vi ~/.m2/settings.xml
 ```
 
-### References
-- https://grpc.io/docs/languages/kotlin/basics/
-- https://github.com/grpc/grpc-kotlin
+## References
+
+- <https://grpc.io/docs/languages/kotlin/basics/>
+- <https://github.com/grpc/grpc-kotlin>

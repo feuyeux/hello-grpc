@@ -5,12 +5,8 @@ cd "$(
 )/" || exit
 set -e
 
-sh build_java.sh
-sh build_transcoder_java.sh
-sh build_go.sh
-sh build_node.sh
-sh build_python.sh
-sh build_rust.sh
-sh build_kotlin.sh
-sh build_csharp.sh
-sh build_cpp.sh
+langs=(cpp rust java go csharp python nodejs dart kotlin swift php ts)
+langs=(swift php ts cpp)
+for lang in "${langs[@]}"; do
+  sh "build_$lang.sh"
+done

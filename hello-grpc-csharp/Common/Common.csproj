@@ -8,11 +8,11 @@
 
   <ItemGroup>
     <!-- https://www.nuget.org/packages/Google.Protobuf -->
-    <PackageReference Include="Google.Protobuf" Version="3.22.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.3" />
     <!-- https://www.nuget.org/packages/Grpc -->
     <PackageReference Include="Grpc" Version="2.46.6" />
     <!-- https://www.nuget.org/packages/Grpc.Tools -->
-    <PackageReference Include="Grpc.Tools" Version="2.53.0" PrivateAssets="All" />
+    <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
     <!-- https://www.nuget.org/packages/log4net -->
     <PackageReference Include="log4net" Version="2.0.15" />
     <!-- https://www.nuget.org/packages/Newtonsoft.Json -->

@@ -5,8 +5,9 @@ cd "$(
 )/" || exit
 set -e
 echo "~~~ build grpc server dart ~~~"
-mkdir -p hello-grpc-dart
+mkdir -p hello-grpc-dart/bin
 cp -R ../hello-grpc-dart/* hello-grpc-dart
+ls -htl hello-grpc-dart
 docker build -f grpc-dart.dockerfile --target server -t feuyeux/grpc_server_dart:1.0.0 .
 echo
 
