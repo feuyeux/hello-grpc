@@ -4,6 +4,9 @@ cd "$(
   pwd -P
 )/" || exit
 set -e
+
+sh build_alpine_grpc_php.sh
+
 echo "~~~ build grpc server php ~~~"
 mkdir -p hello-grpc-php
 #
@@ -20,7 +23,7 @@ rm -rf hello-grpc-php/hello_server.php
 rm -rf hello-grpc-php/LandingService.php
 rm -rf hello-grpc-php/server_start.sh
 echo
-
+#
 echo "~~~ build grpc client php ~~~"
 cp ../hello-grpc-php/hello_client.php hello-grpc-php
 cp ../hello-grpc-php/client_start.sh hello-grpc-php

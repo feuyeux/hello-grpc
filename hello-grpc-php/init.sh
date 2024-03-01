@@ -5,14 +5,17 @@ cd "$(
 )/" || exit
 set -e
 
-# export PROTOC=protoc
-# export PLUGIN=protoc-gen-grpc=grpc_php_plugin
+# make
+# export BASEDIR=$HOME/.local/bin/
 
-export PROTOC=$HOME/.local/bin/protoc
-export PLUGIN=protoc-gen-grpc=$HOME/.local/bin/grpc_php_plugin
+# brew install protobuf
+export BASEDIR=/usr/local/bin/
+
+export PROTOC=$BASEDIR/protoc
+export PLUGIN=protoc-gen-grpc=$BASEDIR/grpc_php_plugin
 
 mkdir -p common/msg common/svc
 $PROTOC --proto_path=proto \
-       --php_out=common/msg \
-       --grpc_out=generate_server:common/svc \
-       --plugin=$PLUGIN proto/landing.proto
+    --php_out=common/msg \
+    --grpc_out=generate_server:common/svc \
+    --plugin=$PLUGIN proto/landing.proto
