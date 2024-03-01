@@ -1,7 +1,7 @@
 plugins {
     idea
     // https://github.com/google/protobuf-gradle-plugin
-    val protobufPluginVersion = "0.9.2"
+    val protobufPluginVersion = "0.9.4"
     // https://kotlinlang.org/docs/gradle.html
     val kotlinVersion = "1.8.10"
 
