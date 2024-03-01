@@ -4,6 +4,6 @@ grpcio-tools==1.59.0
 protobuf==4.24.4
 # https://pypi.org/project/futures/
 # https://pypi.org/project/futures3/
-futures==1.0.0
+futures==3.0.5
 # https://pypi.org/project/setuptools/
 setuptools>=68.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
