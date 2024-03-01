@@ -6,18 +6,20 @@ cd "$(
   pwd -P
 )/" || exit
 
+os_name=""
+os_name="$(uname -s)"
 if [ "$(uname)" = "Darwin" ]; then
   export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 elif
-  [ "$(expr substr $(uname -s) 1 5)" = "Linux" ]
+  [ "$(expr substr "${os_name}" 1 5)" = "Linux" ]
 then
   echo "Linux"
 elif
-  [ "$(expr substr $(uname -s) 1 7)" = "MSYS_NT" ]
+  [ "$(expr substr "${os_name}" 1 7)" = "MSYS_NT" ]
 then
   export JAVA_HOME=D:/zoo/jdk-21
 elif
-  [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ]
+  [ "$(expr substr "${os_name}" 1 10)" = "MINGW64_NT" ]
 then
   export JAVA_HOME=D:/zoo/jdk-21
 else

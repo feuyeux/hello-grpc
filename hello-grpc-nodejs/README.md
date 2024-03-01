@@ -2,6 +2,8 @@
 
 ## 1 Setup
 
+<https://github.com/nodejs/release#release-schedule>
+
 ```sh
 npm config set registry https://registry.npmmirror.com
 npm config get registry
