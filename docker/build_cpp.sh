@@ -13,15 +13,15 @@ rm -rf docker/hello-grpc-cpp
 cp -r hello-grpc-cpp docker/
 rm -rf docker/hello-grpc-cpp/build
 cd docker
-echo "build builder:"
+echo "1 build builder"
 docker build -f grpc-cpp.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
-echo "build server:"
+echo "2 build server"
 docker build -f grpc-cpp.dockerfile --target server -t feuyeux/grpc_server_cpp:1.0.0 .
-echo "build client:"
+echo "3 build client"
 docker build -f grpc-cpp.dockerfile --target client -t feuyeux/grpc_client_cpp:1.0.0 .
 
 rm -rf hello-grpc-cpp
-echo
+echo "DONE"
 
 # [+] Building 839.6s (19/19) FINISHED
 #  => [internal] load build definition from grpc-cpp.dockerfile                                                                                                            0.0s
