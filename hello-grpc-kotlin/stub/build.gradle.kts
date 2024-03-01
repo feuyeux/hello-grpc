@@ -12,7 +12,7 @@ dependencies {
     protobuf(project(":protos"))
     implementation("io.grpc:grpc-stub:${rootProject.ext["grpcVersion"]}")
     api(kotlin("stdlib"))
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3-native-mt")
     api("io.grpc:grpc-protobuf:${rootProject.ext["grpcVersion"]}")
     api("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
     api("com.google.protobuf:protobuf-java-util:3.19.1")
