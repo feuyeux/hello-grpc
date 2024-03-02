@@ -13,8 +13,13 @@ rm -rf docker/hello-grpc-cpp
 cp -r hello-grpc-cpp docker/
 rm -rf docker/hello-grpc-cpp/build
 cd docker
+
+sh sync_cpp_src.sh
+
+echo "PWD:$(PWD)"
+# export DOCKER_BUILDKIT=0
 echo "1 build builder"
-docker build -f grpc-cpp.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
+docker build --progress=plain -f grpc-cpp.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
 echo "2 build server"
 docker build -f grpc-cpp.dockerfile --target server -t feuyeux/grpc_server_cpp:1.0.0 .
 echo "3 build client"

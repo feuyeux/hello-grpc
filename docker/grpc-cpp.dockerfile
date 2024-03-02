@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     git \
     libtool \
     make \
+    cmake \
     pkg-config \
     unzip \
     wget \
@@ -21,36 +22,29 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && apt-get clean
 # 
-ENV GRPC_SOURCE https://gitee.com/feuyeux/grpc
-ENV C_ARES_SOURCE https://gitee.com/feuyeux/c-ares
-ENV GLOG_SOURCE https://gitee.com/feuyeux/glog
-ENV GFLAGS_SOURCE https://gitee.com/feuyeux/gflags
-ENV GRPC_RELEASE_TAG v1.62.0
-# 
 ENV HELLO_BUILD_PATH /source/build
-ENV GRPC_SRC_PATH /var/grpc/src
 ENV GRPC_INSTALL_PATH /var/grpc/install
 ENV PATH "$GRPC_INSTALL_PATH/bin:$PATH"
 
-# clone grpc src
-RUN echo "clone grpc" && git clone -b ${GRPC_RELEASE_TAG} ${GRPC_SOURCE} ${GRPC_SRC_PATH}
-# RUN cd $GRPC_SRC_PATH && git submodule update --init --recursive
-RUN echo "clone grpc submodules" && cd ${GRPC_SRC_PATH} && git submodule update --init
+# # build cmake to GRPC_INSTALL_PATH
+# # https://github.com/Kitware/CMake/releases/download/v3.19.6/cmake-3.19.6-Linux-x86_64.sh
+# COPY cmake-3.19.6-Linux-x86_64.sh cmake-linux.sh
+# RUN echo "build cmake" && mkdir -p ${GRPC_INSTALL_PATH} && \
+#     sh cmake-linux.sh -- --skip-license --prefix=${GRPC_INSTALL_PATH}  && \
+#     rm cmake-linux.sh
+ENV GRPC_SRC_PATH /source/grpc_src
+COPY grpc_src $GRPC_SRC_PATH
+COPY hello-grpc-cpp /source/hello-grpc-cpp
+WORKDIR /source
+# build c-ares
+RUN cd ${GRPC_SRC_PATH}/third_party/c-cares
+RUN ls
+RUN ./buildconf 
+RUN autoconf configure.ac
+RUN ./configure --prefix=${GRPC_INSTALL_PATH} && make -j$(nproc) && make install
 
-# build cmake to GRPC_INSTALL_PATH
-# https://github.com/Kitware/CMake/releases/download/v3.19.6/cmake-3.19.6-Linux-x86_64.sh
-COPY cmake-3.19.6-Linux-x86_64.sh cmake-linux.sh
-RUN echo "build cmake" && mkdir -p ${GRPC_INSTALL_PATH} && \
-    sh cmake-linux.sh -- --skip-license --prefix=${GRPC_INSTALL_PATH}  && \
-    rm cmake-linux.sh
-
-# build c-ares to GRPC_INSTALL_PATH
-RUN echo "build c-ares" && git clone ${C_ARES_SOURCE} && \
-    cd c-ares && ./buildconf && autoconf configure.ac && \
-    ./configure --prefix=${GRPC_INSTALL_PATH} && make -j$(nproc) && make install
-
-# build grpc to GRPC_INSTALL_PATH
-RUN echo "build grpc" && cd ${GRPC_SRC_PATH} && \
+# build grpc
+RUN cd ${GRPC_SRC_PATH} && \
     mkdir -p cmake/build && \
     cd cmake/build && \
     cmake -DgRPC_INSTALL=ON \
@@ -64,7 +58,7 @@ RUN echo "build grpc" && cd ${GRPC_SRC_PATH} && \
     make install
 
 # build abseil to GRPC_INSTALL_PATH
-RUN echo "build abseil" && cd ${GRPC_SRC_PATH}/third_party/ && \
+RUN cd ${GRPC_SRC_PATH}/third_party/ && \
     mkdir -p abseil-cpp/cmake/build && \
     cd abseil-cpp/cmake/build && \
     cmake -DCMAKE_INSTALL_PREFIX=${GRPC_INSTALL_PATH} \
@@ -98,7 +92,7 @@ RUN echo "build hello-grpc-cpp" && cd /source && echo "cmake:" && mkdir build &&
 
 FROM debian:11-slim AS server
 ENV PATH "/var/grpc/install/bin:$PATH"
-COPY --from=build /var/grpc/install /var/grpc/install 
+COPY --from=build /var/grpc/install /var/grpc/install
 WORKDIR /opt/hello-grpc/
 COPY --from=build /source/glog/build/libglog.so.1 /usr/local/lib/
 COPY --from=build /source/build/lib* .
@@ -111,7 +105,7 @@ CMD ["./proto_server"]
 FROM debian:11-slim AS client
 ENV PATH "/var/grpc/install/bin:$PATH"
 COPY --from=build /source/glog/build/libglog.so.1 /usr/local/lib/
-COPY --from=build /var/grpc/install /var/grpc/install 
+COPY --from=build /var/grpc/install /var/grpc/install
 WORKDIR /opt/hello-grpc/
 COPY --from=build /source/build/lib* .
 COPY --from=build /source/build/proto_client .
