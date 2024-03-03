@@ -67,8 +67,13 @@ nul
 .flutter-plugins
 .flutter-plugins-dependencies
 
-#php
+# php
 vendor
 hello-grpc-php/common/msg
 hello-grpc-php/common/svc
-docker/grpc_src
+
+# cpp dependencies
+docker/grpc
+docker/glog
+docker/gflags
+docker/Catch2

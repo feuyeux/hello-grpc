@@ -1,13 +1,12 @@
-FROM debian:11-slim AS build
+# https://hub.docker.com/_/debian
+FROM debian:12-slim AS build
 
-RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-RUN sed -i 's|security.debian.org/debian-security|mirrors.tuna.tsinghua.edu.cn/debian-security|g' /etc/apt/sources.list
+RUN sed -i 's@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     build-essential \
-    cmake \
     curl \
     g++ \
     git \
@@ -21,27 +20,24 @@ RUN apt-get update && apt-get install -y \
     protobuf-compiler  \
     libssl-dev \
     && apt-get clean
-# 
+
+ENV GRPC_SRC_PATH /source/grpc
 ENV HELLO_BUILD_PATH /source/build
 ENV GRPC_INSTALL_PATH /var/grpc/install
 ENV PATH "$GRPC_INSTALL_PATH/bin:$PATH"
 
-# # build cmake to GRPC_INSTALL_PATH
-# # https://github.com/Kitware/CMake/releases/download/v3.19.6/cmake-3.19.6-Linux-x86_64.sh
-# COPY cmake-3.19.6-Linux-x86_64.sh cmake-linux.sh
-# RUN echo "build cmake" && mkdir -p ${GRPC_INSTALL_PATH} && \
-#     sh cmake-linux.sh -- --skip-license --prefix=${GRPC_INSTALL_PATH}  && \
-#     rm cmake-linux.sh
-ENV GRPC_SRC_PATH /source/grpc_src
-COPY grpc_src $GRPC_SRC_PATH
+# To solve the issue: CMake 3.22 or higher is required
+# https://cmake.org/download/
+ENV CMAKE_LATEST_SH=cmake-3.29.0-rc2-linux-x86_64.sh
+COPY $CMAKE_LATEST_SH cmake-linux.sh
+RUN mkdir -p ${GRPC_INSTALL_PATH} && \
+    sh cmake-linux.sh -- --skip-license --prefix=${GRPC_INSTALL_PATH}  && \
+    rm cmake-linux.sh
+
+COPY grpc $GRPC_SRC_PATH
 COPY hello-grpc-cpp /source/hello-grpc-cpp
+
 WORKDIR /source
-# build c-ares
-RUN cd ${GRPC_SRC_PATH}/third_party/c-cares
-RUN ls
-RUN ./buildconf 
-RUN autoconf configure.ac
-RUN ./configure --prefix=${GRPC_INSTALL_PATH} && make -j$(nproc) && make install
 
 # build grpc
 RUN cd ${GRPC_SRC_PATH} && \
@@ -57,40 +53,40 @@ RUN cd ${GRPC_SRC_PATH} && \
     make -j$(nproc) && \
     make install
 
-# build abseil to GRPC_INSTALL_PATH
-RUN cd ${GRPC_SRC_PATH}/third_party/ && \
-    mkdir -p abseil-cpp/cmake/build && \
-    cd abseil-cpp/cmake/build && \
-    cmake -DCMAKE_INSTALL_PREFIX=${GRPC_INSTALL_PATH} \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
-    ../.. && \
-    make -j$(nproc) && \
-    make install
+## build hello-grpc-cpp denpendencies ##
 
-WORKDIR /source
-# clone dependencies
-RUN echo "clone gflags" && git clone ${GFLAGS_SOURCE}
-RUN echo "clone glog" && git clone ${GLOG_SOURCE}
-# build dependencies
+ENV GLOG_SRC_PATH /source/glog
+ENV GFLAGS_SRC_PATH /source/gflags
+ENV CACHE2_SRC_PATH /source/Cache2
 
-RUN echo "build glog" && cd /source && mkdir -p glog/cmake/build && cd glog && git checkout v0.6.0 && \
+COPY glog $GLOG_SRC_PATH
+COPY gflags $GFLAGS_SRC_PATH
+COPY Catch2 $CACHE2_SRC_PATH
+
+# build glog
+RUN cd /source && mkdir -p glog/cmake/build && cd glog && \
     cmake -S . -B build -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=${GRPC_INSTALL_PATH} && \
     cmake --build build --target install
-
-RUN echo "build gflags" && cd /source && mkdir -p gflags/cmake/build && cd gflags && \
+# build gflags
+RUN cd /source && mkdir -p gflags/cmake/build && cd gflags && \
     cmake -S . -B build -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=${GRPC_INSTALL_PATH} && \
     cmake --build build --target install
+# build Cache2
+RUN cd $CACHE2_SRC_PATH && \
+    cmake -Bbuild -H. -DBUILD_TESTING=OFF && \
+    cmake --build build/ --target install
 
 # build hello-grpc-cpp
-COPY hello-grpc-cpp .
-RUN echo "build hello-grpc-cpp" && cd /source && echo "cmake:" && mkdir build && cd build && \
+RUN cd /source/hello-grpc-cpp && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=${GRPC_INSTALL_PATH} \
     .. && \
-    echo "make:" && make -j$(nproc)
-#docker run --rm -it feuyeux/grpc_cpp:1.0.0 bash
+    make -j$(nproc)
 
-FROM debian:11-slim AS server
+# check /source/hello-grpc-cpp/build
+# docker run --rm -it feuyeux/grpc_cpp:1.0.0 bash
+
+FROM debian:12-slim AS server
 ENV PATH "/var/grpc/install/bin:$PATH"
 COPY --from=build /var/grpc/install /var/grpc/install
 WORKDIR /opt/hello-grpc/
@@ -102,7 +98,7 @@ COPY tls/client_certs /var/hello_grpc/client_certs
 RUN /sbin/ldconfig -v
 CMD ["./proto_server"]
 
-FROM debian:11-slim AS client
+FROM debian:12-slim AS client
 ENV PATH "/var/grpc/install/bin:$PATH"
 COPY --from=build /source/glog/build/libglog.so.1 /usr/local/lib/
 COPY --from=build /var/grpc/install /var/grpc/install
