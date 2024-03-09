@@ -12,7 +12,7 @@ require (
 	// https://github.com/sirupsen/logrus/tags
 	github.com/sirupsen/logrus v1.9.3
 	// https://github.com/stretchr/testify/tags
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
 	go.etcd.io/etcd/client/v3 v3.5.12
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
@@ -42,6 +42,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	// https://github.com/protocolbuffers/protobuf-go/tags
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
