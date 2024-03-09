@@ -30,7 +30,6 @@ dependency-reduced-pom.xml
 go.sum
 *.pb.cc
 *.pb.h
-build
 cmake-build-debug
 .gradle
 gradle
@@ -77,3 +76,5 @@ docker/grpc
 docker/glog
 docker/gflags
 docker/Catch2
+bazel-*
+hello_grpc_flutter/build/*

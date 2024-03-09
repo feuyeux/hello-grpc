@@ -1,0 +1,51 @@
+syntax = "proto3";
+package org.feuyeux.grpc;
+
+option java_multiple_files = true;
+option java_package = "org.feuyeux.grpc.proto";
+option java_outer_classname = "Landing";
+option go_package = "common/pb";
+
+service LandingService {
+  //Unary RPC
+  rpc Talk (TalkRequest) returns (TalkResponse) {
+  }
+  //Server streaming RPC
+  rpc TalkOneAnswerMore (TalkRequest) returns (stream TalkResponse) {
+  }
+  //Client streaming RPC with random & sleep
+  rpc TalkMoreAnswerOne (stream TalkRequest) returns (TalkResponse) {
+  }
+  //Bidirectional streaming RPC
+  rpc TalkBidirectional (stream TalkRequest) returns (stream TalkResponse) {
+  }
+}
+
+message TalkRequest {
+  //language index
+  string data = 1;
+  //clientside language
+  string meta = 2;
+}
+
+message TalkResponse {
+  int32 status = 1;
+  repeated TalkResult results = 2;
+}
+
+message TalkResult {
+  //timestamp
+  int64 id = 1;
+  //enum
+  ResultType type = 2;
+  // id:result uuid
+  // idx:language index
+  // data: hello
+  // meta: serverside language
+  map<string, string> kv = 3;
+}
+
+enum ResultType {
+  OK = 0;
+  FAIL = 1;
+}
