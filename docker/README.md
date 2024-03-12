@@ -40,7 +40,7 @@ sh tools/clean_world.sh
 ```sh
 langs=(cpp rust java go csharp python nodejs dart kotlin swift php ts)
 lang=$langs[2]
-lang=cpp
+lang=php
 SERVER_NAME=grpc_server_$lang
 SERVER_IMG=feuyeux/$SERVER_NAME:1.0.0
 CLIENT_NAME=grpc_client_$lang

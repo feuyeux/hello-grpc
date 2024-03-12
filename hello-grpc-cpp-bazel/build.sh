@@ -16,4 +16,9 @@ sleep 5
 echo "CHECK GCC"
 gcc -v
 sleep 5
-bazel build --compiler=gcc-13 --sandbox_debug //:hello_server //:hello_client
+ncpu=$(sysctl hw.ncpu)
+physicalcpu=$(sysctl hw.physicalcpu)
+logicalcpu=$(sysctl hw.logicalcpu)
+echo "hw.ncpu: $ncpu,hw.physicalcpu: $physicalcpu,hw.logicalcpu: $logicalcpu"
+job_number=$ncpu+2
+bazel build --compiler=gcc-13 --jobs="$job_number" --sandbox_debug //:hello_server //:hello_client

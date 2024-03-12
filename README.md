@@ -53,7 +53,7 @@ Simple server and client examples showcasing gRPC features(including proxy and p
 | 9   | kotlin     | 🍎     | 🍎  | 🍎    | 🍎     | [gradle][21]            | [junit5][2]   | [log4j2][3]     |
 | 10  | swift      | 🍎     | 🍏  | 🍏    | 🍎     | [spm][22]               | (XCTest)      | [swift-log][23] |
 | 11  | dart       | 🍎     | 🍏  | 🍏    | 🍎     | [pub][25]               | [test][27]    | [logger][26]    |
-| 12  | php        | 🍎     | 🍏  | 🍏    | 🍏     | [composer][34]          | [phpunit][35] | [log4php][36]   |
+| 12  | php        | 🍎     | 🍏  | 🍏    | 🍎     | [composer][34]          | [phpunit][35] | [log4php][36]   |
 
 > 🍎 `:apple:` done
 > 🍏 `:green_apple:` unimplemented

@@ -5,6 +5,7 @@ cd "$(
 )/" || exit
 set -e
 
+echo "~~~ build grpc base php ~~~"
 sh build_alpine_grpc_php.sh
 
 echo "~~~ build grpc server php ~~~"
