@@ -42,7 +42,7 @@ packages
 docker/hello-grpc-*
 Package.resolved
 *.sln.DotSettings.user
-hello-grpc-cpp/grpc/*
+hello-grpc-cpp-cmake/grpc/*
 default.etcd
 gradlew*
 .next

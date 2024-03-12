@@ -9,6 +9,9 @@ set -e
 
 cd ..
 rm -rf docker/hello-grpc-cpp-bazel
+cd hello-grpc-cpp-bazel
+bazel clean
+cd ..
 cp -r hello-grpc-cpp-bazel docker/
 cd docker
 echo "1 build builder"
