@@ -19,14 +19,13 @@ echo "1 build builder"
 docker build -f grpc-cpp-bazel.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
 
 # docker run --rm -it --entrypoint=bash feuyeux/grpc_cpp:1.0.0
-# docker run --rm -it --entrypoint=/source/hello-grpc-cpp-bazel/bazel-bin/hello_server feuyeux/grpc_cpp:1.0.0
-# docker run --rm -it --entrypoint=bash -e GRPC_SERVER=192.168.1.4 feuyeux/grpc_cpp:1.0.0
-# /source/hello-grpc-cpp-bazel/bazel-bin/hello_client
 
 echo "2 build server"
 docker build -f grpc-cpp-bazel.dockerfile --target server -t feuyeux/grpc_server_cpp:1.0.0 .
 echo "3 build client"
 docker build -f grpc-cpp-bazel.dockerfile --target client -t feuyeux/grpc_client_cpp:1.0.0 .
+
+docker run --rm -it --entrypoint=bash feuyeux/grpc_server_cpp:1.0.0
 
 rm -rf hello-grpc-cpp
 echo "DONE"

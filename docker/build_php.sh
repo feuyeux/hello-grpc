@@ -17,6 +17,7 @@ cp -R ../hello-grpc-php/common hello-grpc-php
 cp ../hello-grpc-php/composer.json hello-grpc-php
 cp ../hello-grpc-php/hello_server.php hello-grpc-php
 cp ../hello-grpc-php/LandingService.php hello-grpc-php
+cp ../hello-grpc-php/log4php_config.xml hello-grpc-php
 cp ../hello-grpc-php/server_start.sh hello-grpc-php
 cp -R ../hello-grpc-php/proto hello-grpc-php
 docker build -f grpc-server-php.dockerfile -t feuyeux/grpc_server_php:1.0.0 .
