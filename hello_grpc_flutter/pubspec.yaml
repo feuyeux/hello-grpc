@@ -26,7 +26,7 @@ dependencies:
   # https://pub.dev/packages/fixnum
   fixnum: ^1.1.0
   # https://pub.dev/packages/location
-  location: ^5.0.3
+  location: ^6.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
