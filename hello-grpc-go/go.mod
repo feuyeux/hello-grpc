@@ -16,7 +16,7 @@ require (
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
 	go.etcd.io/etcd/client/v3 v3.5.12
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
-	go.uber.org/ratelimit v0.3.0
+	go.uber.org/ratelimit v0.3.1
 	// https://pkg.go.dev/golang.org/x/net
 	golang.org/x/net v0.21.0
 	// https://github.com/grpc/grpc-go/tags
