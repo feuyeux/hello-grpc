@@ -98,7 +98,9 @@ func main() {
 			log.Errorln(err)
 			return
 		}
-		defer etcdRegister.Close()
+		defer func(etcdRegister *register.EtcdRegister) {
+			_ = etcdRegister.Close()
+		}(etcdRegister)
 		svcDiscName := "hello-grpc"
 		err = etcdRegister.RegisterServer("/etcd/"+svcDiscName, address, 5)
 		if err != nil {

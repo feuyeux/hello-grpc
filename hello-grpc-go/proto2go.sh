@@ -1,11 +1,11 @@
 #!/bin/bash
+# shellcheck disable=SC2155
 cd "$(
   cd "$(dirname "$0")" >/dev/null 2>&1
   pwd -P
 )/" || exit
-
-export GOROOT
-GOROOT="$(brew --prefix golang)/libexec"
+export GOROOT=$(go env GOROOT)
+echo "GOROOT=$GOROOT"
 export GOPATH=$HOME/gopath
 export PATH="$PATH:$GOPATH/bin"
 #

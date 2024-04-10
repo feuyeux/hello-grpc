@@ -3,7 +3,7 @@ package common
 import (
 	"context"
 
-	grpc_ratelimit "github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
+	grpcratelimit "github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	log "github.com/sirupsen/logrus"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc"
@@ -22,15 +22,16 @@ func (l *limiter) Limit() bool {
 }
 
 // NewLimiter return new go-grpc Limiter, specified the number of requests you want to limit as a counts per second.
-func NewLimiter(count int) grpc_ratelimit.Limiter {
+func NewLimiter(count int) grpcratelimit.Limiter {
 	return &limiter{
 		Limiter: ratelimit.New(count),
 	}
 }
 
-// server side
+/*server side*/
+
 // UnaryServerInterceptor return server unary interceptor that limit requests.
-func UnaryServerInterceptor(limiter grpc_ratelimit.Limiter) grpc.UnaryServerInterceptor {
+func UnaryServerInterceptor(limiter grpcratelimit.Limiter) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
@@ -45,7 +46,7 @@ func UnaryServerInterceptor(limiter grpc_ratelimit.Limiter) grpc.UnaryServerInte
 }
 
 // StreamServerInterceptor return server stream interceptor that limit requests.
-func StreamServerInterceptor(limiter grpc_ratelimit.Limiter) grpc.StreamServerInterceptor {
+func StreamServerInterceptor(limiter grpcratelimit.Limiter) grpc.StreamServerInterceptor {
 	return func(srv interface{},
 		stream grpc.ServerStream,
 		info *grpc.StreamServerInfo,
@@ -59,9 +60,10 @@ func StreamServerInterceptor(limiter grpc_ratelimit.Limiter) grpc.StreamServerIn
 	}
 }
 
-// client side
+/*client side*/
+
 // UnaryClientInterceptor return client unary interceptor that limit requests.
-func UnaryClientInterceptor(limiter grpc_ratelimit.Limiter) grpc.UnaryClientInterceptor {
+func UnaryClientInterceptor(limiter grpcratelimit.Limiter) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context,
 		method string,
 		req, reply interface{},
@@ -76,7 +78,7 @@ func UnaryClientInterceptor(limiter grpc_ratelimit.Limiter) grpc.UnaryClientInte
 }
 
 // StreamClientInterceptor return client stream interceptor that limit requests.
-func StreamClientInterceptor(limiter grpc_ratelimit.Limiter) grpc.StreamClientInterceptor {
+func StreamClientInterceptor(limiter grpcratelimit.Limiter) grpc.StreamClientInterceptor {
 	return func(ctx context.Context,
 		desc *grpc.StreamDesc,
 		cc *grpc.ClientConn,

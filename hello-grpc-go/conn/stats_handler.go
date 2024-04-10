@@ -10,7 +10,7 @@ import (
 type StatsHandler struct {
 }
 
-// TagConn可以将一些信息附加到给定的上下文。
+// TagConn TagConn可以将一些信息附加到给定的上下文。
 func (h *StatsHandler) TagConn(ctx context.Context, info *stats.ConnTagInfo) context.Context {
 	fmt.Println("tagConn...")
 	return ctx
@@ -37,7 +37,7 @@ func (h *StatsHandler) TagRPC(ctx context.Context, info *stats.RPCTagInfo) conte
 	return ctx
 }
 
-// 处理RPC统计信息
+// HandleRPC 处理RPC统计信息
 func (h *StatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	switch s.(type) {
 	case *stats.Begin:

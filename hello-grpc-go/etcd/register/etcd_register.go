@@ -66,7 +66,10 @@ func (r *EtcdRegister) Close() error {
 	r.cancel()
 	log.Infof("closed...\n")
 	// 撤销租约
-	r.etcdCli.Revoke(r.ctx, r.leaseId)
+	_, err := r.etcdCli.Revoke(r.ctx, r.leaseId)
+	if err != nil {
+		return err
+	}
 	return r.etcdCli.Close()
 }
 
@@ -92,27 +95,27 @@ func NewEtcdRegister() (*EtcdRegister, error) {
 
 // RegisterServer 注册服务
 // expire 过期时间
-func (svr *EtcdRegister) RegisterServer(serviceName, addr string, expire int64) (err error) {
+func (r *EtcdRegister) RegisterServer(serviceName, addr string, expire int64) (err error) {
 	// 创建租约
-	err = svr.CreateLease(expire)
+	err = r.CreateLease(expire)
 	if err != nil {
 		return err
 	}
 
 	// 绑定租约
-	err = svr.BindLease(serviceName, addr)
+	err = r.BindLease(serviceName, addr)
 	if err != nil {
 		return err
 	}
 
 	// 续租
-	keepAliveChan, err := svr.KeepAlive()
+	keepAliveChan, err := r.KeepAlive()
 	if err != nil {
 		return err
 	}
 
 	// 监听续约
-	go svr.Watcher(serviceName, keepAliveChan)
+	go r.Watcher(serviceName, keepAliveChan)
 
 	return nil
 }

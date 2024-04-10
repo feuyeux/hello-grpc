@@ -90,7 +90,10 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 					Results: rs,
 				}
 				printHeaders(ctx)
-				stream.SendAndClose(talkResponse)
+				err := stream.SendAndClose(talkResponse)
+				if err != nil {
+					return err
+				}
 				return nil
 			}
 			if err != nil {
@@ -114,7 +117,10 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 				if err != nil {
 					log.Fatalf("%v.TalkMoreAnswerOne() got error %v, want %v", stream, err, nil)
 				}
-				stream.SendAndClose(talkResponse)
+				err = stream.SendAndClose(talkResponse)
+				if err != nil {
+					return err
+				}
 				return nil
 			}
 			if err != nil {
@@ -126,7 +132,6 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 			}
 		}
 	}
-	return nil
 }
 
 func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirectionalServer) error {
@@ -190,7 +195,10 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 				log.Fatalf("Failed to send : %v", err)
 			}
 		}
-		nextStream.CloseSend()
+		err = nextStream.CloseSend()
+		if err != nil {
+			return err
+		}
 		<-waitc
 		return nil
 	}
@@ -241,7 +249,7 @@ func buildTracing(ctx context.Context) *tracing.HelloTracing {
 				"x_b3_flags=%v,"+
 				"x_ot_span_context=%v",
 				xRequestId, xB3TraceId, xB3SpanId, xB3ParentSpanId, xB3Sampled, xB3Flags, xOtSpanContext)
-			tracing := &tracing.HelloTracing{
+			t := &tracing.HelloTracing{
 				RequestId:      xRequestId[0],
 				B3TraceId:      xB3TraceId[0],
 				B3SpanId:       xB3SpanId[0],
@@ -249,12 +257,12 @@ func buildTracing(ctx context.Context) *tracing.HelloTracing {
 				B3Sampled:      xB3Sampled[0],
 			}
 			if xB3Flags != nil {
-				tracing.B3Flags = xB3Flags[0]
+				t.B3Flags = xB3Flags[0]
 			}
 			if xOtSpanContext != nil {
-				tracing.OtSpanContext = xOtSpanContext[0]
+				t.OtSpanContext = xOtSpanContext[0]
 			}
-			return tracing
+			return t
 		}
 	}
 	return nil

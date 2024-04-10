@@ -113,8 +113,8 @@ func talkMoreAnswerOne(client pb.LandingServiceClient, requests *list.List) (*pb
 	}
 	//
 	var wg sync.WaitGroup
-	len := requests.Len()
-	wg.Add(len)
+	l := requests.Len()
+	wg.Add(l)
 	i := 0
 	for e := requests.Front(); e != nil; e = e.Next() {
 		request := e.Value.(*pb.TalkRequest)
@@ -163,7 +163,10 @@ func talkBidirectional(client pb.LandingServiceClient, requests *list.List) erro
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
-	stream.CloseSend()
+	err = stream.CloseSend()
+	if err != nil {
+		return err
+	}
 	<-waits
 	return nil
 }

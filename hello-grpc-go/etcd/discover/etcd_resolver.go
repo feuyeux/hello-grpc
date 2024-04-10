@@ -55,8 +55,8 @@ func (e *etcdResolver) store(k, v []byte) {
 	e.ipPool.Store(string(k), string(v))
 }
 
-func (s *etcdResolver) del(key []byte) {
-	s.ipPool.Delete(string(key))
+func (e *etcdResolver) del(key []byte) {
+	e.ipPool.Delete(string(key))
 }
 
 func (e *etcdResolver) updateState() {
@@ -81,5 +81,8 @@ func (e *etcdResolver) updateState() {
 		i++
 		return true
 	})
-	e.cc.UpdateState(addrList)
+	err := e.cc.UpdateState(addrList)
+	if err != nil {
+		return
+	}
 }

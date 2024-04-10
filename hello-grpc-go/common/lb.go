@@ -8,13 +8,13 @@ import (
 	"sync"
 )
 
-const WEIGHT_LOAD_BALANCE = "weight_load_balance"
-const MAX_WEIGHT = 10 // 可设置的最大权重
-const MIN_WEIGHT = 1  // 可设置的最小权重
+const WeightLoadBalance = "weight_load_balance"
+const MaxWeight = 10 // 可设置的最大权重
+const MinWeight = 1  // 可设置的最小权重
 
 // newBuilder 注册自定义权重负载均衡器
 func newBuilder() balancer.Builder {
-	return base.NewBalancerBuilder(WEIGHT_LOAD_BALANCE, &weightPikerBuilder{}, base.Config{HealthCheck: true})
+	return base.NewBalancerBuilder(WeightLoadBalance, &weightPikerBuilder{}, base.Config{HealthCheck: true})
 }
 
 func init() {
@@ -37,11 +37,11 @@ func (p *weightPikerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 		v := subConnInfo.Address.BalancerAttributes.Value(WeightAttributeKey{})
 		w := v.(WeightAddrInfo).Weight
 		// 限制可以设置的最大最小权重，防止设置过大创建连接数太多
-		if w < MIN_WEIGHT {
-			w = MIN_WEIGHT
+		if w < MinWeight {
+			w = MinWeight
 		}
-		if w > MAX_WEIGHT {
-			w = MAX_WEIGHT
+		if w > MaxWeight {
+			w = MaxWeight
 		}
 		// 根据权重 创建多个重复的连接 权重越高个数越多
 		for i := 0; i < w; i++ {
