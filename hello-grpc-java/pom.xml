@@ -10,7 +10,7 @@
     <properties>
         <jdk.version>21</jdk.version>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
-        <grpc.version>1.62.2</grpc.version>
+        <grpc.version>1.63.0</grpc.version>
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
@@ -80,7 +80,7 @@
         <dependency>
             <groupId>io.etcd</groupId>
             <artifactId>jetcd-core</artifactId>
-            <version>0.7.7</version>
+            <version>0.8.0</version>
             <exclusions>
 
                 <exclusion>
@@ -127,7 +127,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver-dns-native-macos</artifactId>
-            <version>4.1.108.Final</version>
+            <version>4.1.109.Final</version>
             <classifier>osx-x86_64</classifier>
         </dependency>
     </dependencies>
