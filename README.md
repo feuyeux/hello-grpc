@@ -128,6 +128,10 @@ export GRPC_TRACE=all
 - <https://github.com/grpc-ecosystem/grpc-gateway>
 - <https://github.com/grpc/grpc-web>
 
+## :coffee: Stars
+
+[![Star History Chart](https://api.star-history.com/svg?repos=feuyeux/hello-grpc&type=Date)](https://star-history.com/#feuyeux/hello-grpc&Date)
+
 [1]: <https://maven.apache.org/>
 [2]: <https://junit.org/junit5/>
 [3]: <https://logging.apache.org/log4j>
