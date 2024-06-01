@@ -29,4 +29,4 @@ dependencies:
   test: ^1.24.6
 dev_dependencies:
   # https://pub.dev/packages/lints
-  lints: ^3.0.0
+  lints: ^4.0.0
