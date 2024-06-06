@@ -17,8 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -27,6 +26,7 @@ jobs:
 
     - name: Build
       run: |
+        apt-get install protobuf-compiler
         sh init.sh
         sh proto2go.sh
         go build -v ./...
