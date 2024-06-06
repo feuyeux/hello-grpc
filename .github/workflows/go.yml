@@ -26,7 +26,7 @@ jobs:
 
     - name: Build
       run: |
-        apt-get install protobuf-compiler
+        sudo apt-get install protobuf-compiler
         sh init.sh
         sh proto2go.sh
         go build -v ./...
