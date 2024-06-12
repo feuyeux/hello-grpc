@@ -27,8 +27,12 @@ jobs:
     - name: Build
       run: |
         sudo apt-get install protobuf-compiler
-        sh init.sh
-        sh proto2go.sh
+        go mod tidy
+        go install github.com/golang/protobuf/protoc-gen-go
+        go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+        go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+        protoc --go_out=. ./proto/landing.proto
+        protoc --go-grpc_out="$(pwd)" ./proto/landing.proto
         go build -v ./...
 
     - name: Test
