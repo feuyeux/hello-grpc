@@ -4,6 +4,10 @@
 
 ```sh
 sh build.sh
+
+langs=(cpp rust java go csharp python nodejs dart kotlin swift php ts)
+lang=$langs[2]
+sh build_$lang.sh
 ```
 
 ## push all images
