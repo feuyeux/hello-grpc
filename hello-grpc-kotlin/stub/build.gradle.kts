@@ -15,7 +15,7 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3-native-mt")
     api("io.grpc:grpc-protobuf:${rootProject.ext["grpcVersion"]}")
     api("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
-    api("com.google.protobuf:protobuf-java-util:4.27.1")
+    api("com.google.protobuf:protobuf-java-util:4.27.2")
     api("io.grpc:grpc-kotlin-stub:1.4.1")
     api("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
     api("org.apache.logging.log4j:log4j-api:${rootProject.ext["log4jVersion"]}")
