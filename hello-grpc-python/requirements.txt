@@ -1,7 +1,7 @@
 # https://pypi.org/project/grpcio-tools/
 grpcio-tools==1.64.1
 # https://pypi.org/project/protobuf/
-protobuf==5.27.1
+protobuf==5.27.2
 # https://pypi.org/project/futures/
 # https://pypi.org/project/futures3/
 futures==3.0.5
