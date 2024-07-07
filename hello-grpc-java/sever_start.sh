@@ -6,5 +6,4 @@ SCRIPT_PATH="$(
 )"
 cd "$SCRIPT_PATH" || exit
 sh build.sh
-export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.server.ProtoServer"

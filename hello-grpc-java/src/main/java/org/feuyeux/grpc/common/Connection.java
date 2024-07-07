@@ -1,12 +1,16 @@
 package org.feuyeux.grpc.common;
 
+import static org.feuyeux.grpc.common.HelloUtils.getVersion;
+
 import com.google.common.base.Charsets;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
+import io.etcd.jetcd.Lease;
 import io.etcd.jetcd.lease.LeaseKeepAliveResponse;
 import io.etcd.jetcd.options.PutOption;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.NameResolverRegistry;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -26,8 +30,6 @@ import org.slf4j.LoggerFactory;
 public class Connection {
   private static final Logger log = LoggerFactory.getLogger("Connection");
 
-  public static String version = "grpc.version=1.58.0,protoc.version=3.24.3";
-
   public static final String GRPC_HELLO_SECURE = "GRPC_HELLO_SECURE";
   public static final String GRPC_SERVER = "GRPC_SERVER";
   public static final String GRPC_SERVER_PORT = "GRPC_SERVER_PORT";
@@ -39,11 +41,11 @@ public class Connection {
   private static final int port = 9996;
 
   // https://myssl.com/create_test_cert.html
-  private static String cert = "/var/hello_grpc/client_certs/cert.pem";
-  private static String certKey = "/var/hello_grpc/client_certs/private.pkcs8.key";
-  private static String certChain = "/var/hello_grpc/client_certs/full_chain.pem";
-  private static String rootCert = "/var/hello_grpc/client_certs/myssl_root.cer";
-  private static String serverName = "hello.grpc.io";
+  private static final String cert = "/var/hello_grpc/client_certs/cert.pem";
+  private static final String certKey = "/var/hello_grpc/client_certs/private.pkcs8.key";
+  private static final String certChain = "/var/hello_grpc/client_certs/full_chain.pem";
+  private static final String rootCert = "/var/hello_grpc/client_certs/myssl_root.cer";
+  private static final String serverName = "hello.grpc.io";
 
   public static String server = System.getenv(GRPC_SERVER);
   public static String currentPort = System.getenv(GRPC_SERVER_PORT);
@@ -113,25 +115,23 @@ public class Connection {
       List<URI> endpoints = new ArrayList<>();
       endpoints.add(URI.create(getDiscoveryEndpoint()));
       EtcdNameResolverProvider nameResolver = EtcdNameResolverProvider.forEndpoints(endpoints);
-      builder =
-          ManagedChannelBuilder.forTarget(target)
-              .nameResolverFactory(nameResolver)
-              .defaultLoadBalancingPolicy(LB_ROUND_ROBIN);
+      builder = ManagedChannelBuilder.forTarget(target).defaultLoadBalancingPolicy(LB_ROUND_ROBIN);
+      NameResolverRegistry.getDefaultRegistry().register(nameResolver);
     } else {
       builder = NettyChannelBuilder.forAddress(connectTo, port);
     }
     if (secure == null || !secure.equals("Y")) {
       if (isDiscovery()) {
-        log.info("Connect with InSecure({}) [{}]", target, version);
+        log.info("Connect with InSecure({}) [{}]", target, getVersion());
       } else {
-        log.info("Connect with InSecure({}:{}) [{}]", connectTo, port, version);
+        log.info("Connect with InSecure({}:{}) [{}]", connectTo, port, getVersion());
       }
       return builder.usePlaintext().build();
     } else {
       if (isDiscovery()) {
-        log.info("Connect with TLS({}) [{}]", target, version);
+        log.info("Connect with TLS({}) [{}]", target, getVersion());
       } else {
-        log.info("Connect with TLS({}:{}) [{}]", connectTo, port, version);
+        log.info("Connect with TLS({}:{}) [{}]", connectTo, port, getVersion());
       }
       return ((NettyChannelBuilder) builder)
           .overrideAuthority(serverName) /* Only for using provided test certs. */
@@ -150,39 +150,40 @@ public class Connection {
     return endpoint;
   }
 
-  public static void register(Client etcd) throws ExecutionException, InterruptedException {
+  public static void register() throws ExecutionException, InterruptedException {
     if (isDiscovery()) {
       final URI uri = URI.create("http://" + getGrcServerHost() + ":" + getGrcServerPort());
-      etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build();
+      Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build();
       long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
       ByteSequence key =
           ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), Charsets.US_ASCII);
       ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
       PutOption option = PutOption.builder().withLeaseId(leaseId).build();
       etcd.getKVClient().put(key, value, option);
-      etcd.getLeaseClient()
-          .keepAlive(
-              leaseId,
-              new StreamObserver<>() {
-                @Override
-                public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
-                  log.debug("got renewal for lease: " + leaseKeepAliveResponse.getID());
-                }
+      try (Lease leaseClient = etcd.getLeaseClient()) {
+        leaseClient.keepAlive(
+            leaseId,
+            new StreamObserver<>() {
+              @Override
+              public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
+                log.debug("got renewal for lease: " + leaseKeepAliveResponse.getID());
+              }
 
-                @Override
-                public void onError(Throwable throwable) {
-                  log.error("", throwable);
-                }
+              @Override
+              public void onError(Throwable throwable) {
+                log.error("", throwable);
+              }
 
-                @Override
-                public void onCompleted() {
-                  log.info("lease completed");
-                }
-              });
+              @Override
+              public void onCompleted() {
+                log.info("lease completed");
+              }
+            });
+      }
     }
   }
 
   private static boolean isDiscovery() {
-    return discovery != null && "etcd".equals(discovery);
+    return "etcd".equals(discovery);
   }
 }

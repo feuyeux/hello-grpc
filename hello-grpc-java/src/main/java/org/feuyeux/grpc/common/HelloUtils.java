@@ -2,6 +2,7 @@ package org.feuyeux.grpc.common;
 
 import static java.util.stream.Collectors.toList;
 
+import io.grpc.internal.GrpcUtil;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,5 +49,13 @@ public class HelloUtils {
 
   public static String getRandomId() {
     return String.valueOf(random.nextInt(5));
+  }
+
+  public static String getVersion() {
+    try {
+      return String.format("grpc.version=%s", GrpcUtil.IMPLEMENTATION_VERSION);
+    } catch (Exception e) {
+      return "";
+    }
   }
 }

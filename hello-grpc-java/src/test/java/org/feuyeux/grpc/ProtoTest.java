@@ -9,7 +9,9 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.feuyeux.grpc.client.ProtoClient;
+import org.feuyeux.grpc.client.ProtoClientWithReconnect;
 import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
 import org.feuyeux.grpc.server.LandingServiceImpl;
@@ -25,7 +27,8 @@ public class ProtoTest {
 
   @Rule public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
-  public static String getLocalIp() {
+  @Test
+  public void testGetLocalIp() {
     try {
       Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
       InetAddress ip;
@@ -42,22 +45,23 @@ public class ProtoTest {
             String t = ip.getHostAddress();
             if (!"127.0.0.1".equals(t)) {
               // 只返回不是本地的IP
-              return t;
+              log.info("IP:{}", t);
             }
           }
         }
       }
-      return null;
     } catch (SocketException e) {
       log.error("", e);
-      return null;
     }
   }
 
   @Test()
   public void testProto() throws InterruptedException, IOException, ExecutionException {
     environmentVariables.set("GRPC_HELLO_SECURE", "Y");
+    log.info("Start server");
     ProtoServer protoServer = new ProtoServer(new LandingServiceImpl());
+    TimeUnit.SECONDS.sleep(3);
+    log.info("Start client");
     ProtoClient protoClient = new ProtoClient();
     TalkRequest talkRequest =
         TalkRequest.newBuilder().setMeta("id=" + System.nanoTime()).setData("eric").build();
@@ -69,5 +73,18 @@ public class ProtoTest {
 
     protoClient.shutdown();
     protoServer.stop();
+  }
+
+  @Test()
+  public void testReconnect() throws InterruptedException, IOException, ExecutionException {
+    ProtoServer protoServer;
+    ProtoClientWithReconnect protoClient = new ProtoClientWithReconnect(new ProtoClient());
+    protoClient.start();
+    protoServer = new ProtoServer(new LandingServiceImpl());
+    for (int i = 0; i < 3; i++) {
+      TimeUnit.SECONDS.sleep(5);
+      protoServer.stop();
+    }
+    protoClient.shutdown();
   }
 }

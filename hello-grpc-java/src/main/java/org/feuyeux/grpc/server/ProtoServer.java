@@ -1,8 +1,8 @@
 package org.feuyeux.grpc.server;
 
 import static org.feuyeux.grpc.common.Connection.*;
+import static org.feuyeux.grpc.common.HelloUtils.getVersion;
 
-import io.etcd.jetcd.Client;
 import io.grpc.*;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
@@ -23,13 +23,12 @@ import org.slf4j.LoggerFactory;
 public class ProtoServer {
 
   // https://myssl.com/create_test_cert.html
-  private static String cert = "/var/hello_grpc/server_certs/cert.pem";
-  private static String certKey = "/var/hello_grpc/server_certs/private.pkcs8.key";
-  private static String certChain = "/var/hello_grpc/server_certs/full_chain.pem";
-  private static String rootCert = "/var/hello_grpc/server_certs/myssl_root.cer";
+  private static final String cert = "/var/hello_grpc/server_certs/cert.pem";
+  private static final String certKey = "/var/hello_grpc/server_certs/private.pkcs8.key";
+  private static final String certChain = "/var/hello_grpc/server_certs/full_chain.pem";
+  private static final String rootCert = "/var/hello_grpc/server_certs/myssl_root.cer";
   private static ManagedChannel channel;
   private final Server server;
-  private Client etcd;
 
   private static final Logger log = LoggerFactory.getLogger("ProtoServer");
 
@@ -73,10 +72,10 @@ public class ProtoServer {
                   }
                 });
     if (secure == null || !secure.equals("Y")) {
-      log.info("Start GRPC Server :{} [{}]", port, version);
+      log.info("Start GRPC Server :{} [{}]", port, getVersion());
       return serverBuilder.build();
     } else {
-      log.info("Start GRPC TLS Server :{} [{}]", port, version);
+      log.info("Start GRPC TLS Server :{} [{}]", port, getVersion());
       return serverBuilder.sslContext(getSslContextBuilder().build()).build();
     }
   }
@@ -91,15 +90,18 @@ public class ProtoServer {
 
   private void start() throws IOException, ExecutionException, InterruptedException {
     server.start();
-    register(etcd);
+    register();
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   log.warn("shutting down Google RPC Server since JVM is shutting down");
                   ProtoServer.this.stop();
-                  log.warn("Google RPC Server shut down");
                 }));
+  }
+
+  public void stop() {
+    log.warn("Google RPC Server shut down");
   }
 
   public void blockUntilShutdown() throws InterruptedException {
@@ -109,12 +111,5 @@ public class ProtoServer {
     if (channel != null) {
       channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
-  }
-
-  public void stop() {
-    if (etcd != null) {
-      etcd.close();
-    }
-    server.shutdown();
   }
 }

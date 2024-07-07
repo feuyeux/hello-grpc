@@ -25,16 +25,12 @@ import org.slf4j.LoggerFactory;
 
 public class ProtoClient {
   private static final Logger log = LoggerFactory.getLogger("ProtoClient");
-  private final ManagedChannel channel;
-  private final LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
-  private final LandingServiceGrpc.LandingServiceStub asyncStub;
+  private ManagedChannel channel;
+  private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
+  private LandingServiceGrpc.LandingServiceStub asyncStub;
 
   public ProtoClient() throws SSLException {
-    channel = Connection.getChannel();
-    ClientInterceptor interceptor = new HeaderClientInterceptor();
-    Channel interceptChannel = ClientInterceptors.intercept(channel, interceptor);
-    blockingStub = LandingServiceGrpc.newBlockingStub(interceptChannel);
-    asyncStub = LandingServiceGrpc.newStub(interceptChannel);
+    connect(Connection.getChannel());
   }
 
   public static void main(String[] args) {
@@ -79,7 +75,7 @@ public class ProtoClient {
     }
   }
 
-  private static void printResponse(TalkResponse response) {
+  public static void printResponse(TalkResponse response) {
     response
         .getResultsList()
         .forEach(
@@ -95,10 +91,6 @@ public class ProtoClient {
                   kv.get("idx"),
                   kv.get("data"));
             });
-  }
-
-  public void shutdown() throws InterruptedException {
-    channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
   }
 
   public TalkResponse talk(TalkRequest talkRequest) {
@@ -188,5 +180,22 @@ public class ProtoClient {
         finishLatch.countDown();
       }
     };
+  }
+
+  public void connect(ManagedChannel channel) throws SSLException {
+    ClientInterceptor interceptor = new HeaderClientInterceptor();
+    Channel interceptChannel = ClientInterceptors.intercept(channel, interceptor);
+    blockingStub = LandingServiceGrpc.newBlockingStub(interceptChannel);
+    asyncStub = LandingServiceGrpc.newStub(interceptChannel);
+  }
+
+  public void shutdown() throws InterruptedException {
+    if (channel != null) {
+      channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    }
+  }
+
+  public ManagedChannel getChannel() {
+    return channel;
   }
 }
