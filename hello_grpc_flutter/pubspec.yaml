@@ -15,7 +15,7 @@ dependencies:
   #  https://pub.dev/packages/async
   async: ^2.2.0
   # https://pub.dev/packages/grpc
-  grpc: ^3.2.3
+  grpc: ^4.0.0
   # https://pub.dev/packages/protobuf
   protobuf: ^3.1.0
   # https://pub.dev/packages/collection
