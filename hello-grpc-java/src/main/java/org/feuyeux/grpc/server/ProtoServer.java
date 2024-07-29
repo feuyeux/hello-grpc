@@ -35,7 +35,7 @@ public class ProtoServer {
   public ProtoServer(LandingServiceImpl landingService)
       throws IOException, ExecutionException, InterruptedException {
     this.server = getServer(landingService);
-    start();
+    start(landingService);
   }
 
   public static void main(String[] args)
@@ -88,9 +88,10 @@ public class ProtoServer {
     return GrpcSslContexts.configure(sslClientContextBuilder);
   }
 
-  private void start() throws IOException, ExecutionException, InterruptedException {
+  private void start(io.grpc.BindableService bindableService)
+      throws IOException, ExecutionException, InterruptedException {
     server.start();
-    register();
+    register(bindableService);
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(

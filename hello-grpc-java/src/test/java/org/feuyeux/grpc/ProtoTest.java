@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.feuyeux.grpc.client.ProtoClient;
 import org.feuyeux.grpc.client.ProtoClientWithReconnect;
+import org.feuyeux.grpc.common.HelloUtils;
 import org.feuyeux.grpc.proto.TalkRequest;
 import org.feuyeux.grpc.proto.TalkResponse;
 import org.feuyeux.grpc.server.LandingServiceImpl;
@@ -26,34 +27,6 @@ public class ProtoTest {
   private static final Logger log = LoggerFactory.getLogger("ProtoTest");
 
   @Rule public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
-
-  @Test
-  public void testGetLocalIp() {
-    try {
-      Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-      InetAddress ip;
-      while (allNetInterfaces.hasMoreElements()) {
-        NetworkInterface netInterface = allNetInterfaces.nextElement();
-        if ("lo".equals(netInterface.getName())) {
-          // 如果是回环网卡跳过
-          continue;
-        }
-        Enumeration<InetAddress> addresses = netInterface.getInetAddresses();
-        while (addresses.hasMoreElements()) {
-          ip = addresses.nextElement();
-          if (ip instanceof Inet4Address) {
-            String t = ip.getHostAddress();
-            if (!"127.0.0.1".equals(t)) {
-              // 只返回不是本地的IP
-              log.info("IP:{}", t);
-            }
-          }
-        }
-      }
-    } catch (SocketException e) {
-      log.error("", e);
-    }
-  }
 
   @Test()
   public void testProto() throws InterruptedException, IOException, ExecutionException {
@@ -86,5 +59,40 @@ public class ProtoTest {
       protoServer.stop();
     }
     protoClient.shutdown();
+  }
+
+  @Test()
+  public void testRandom() {
+    for (int i = 0; i < 20; i++) {
+      log.info(HelloUtils.getRandomId());
+    }
+  }
+
+  @Test
+  public void testGetLocalIp() {
+    try {
+      Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
+      InetAddress ip;
+      while (allNetInterfaces.hasMoreElements()) {
+        NetworkInterface netInterface = allNetInterfaces.nextElement();
+        if ("lo".equals(netInterface.getName())) {
+          // 如果是回环网卡跳过
+          continue;
+        }
+        Enumeration<InetAddress> addresses = netInterface.getInetAddresses();
+        while (addresses.hasMoreElements()) {
+          ip = addresses.nextElement();
+          if (ip instanceof Inet4Address) {
+            String t = ip.getHostAddress();
+            if (!"127.0.0.1".equals(t)) {
+              // 只返回不是本地的IP
+              log.info("IP:{}", t);
+            }
+          }
+        }
+      }
+    } catch (SocketException e) {
+      log.error("", e);
+    }
   }
 }

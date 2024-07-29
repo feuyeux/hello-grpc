@@ -1,4 +1,4 @@
-package org.feuyeux.grpc.etcd;
+package org.feuyeux.grpc.discovery;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;

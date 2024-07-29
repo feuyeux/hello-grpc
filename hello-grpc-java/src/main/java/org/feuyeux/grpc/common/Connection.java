@@ -1,29 +1,34 @@
 package org.feuyeux.grpc.common;
 
+import static com.alibaba.nacos.api.PropertyKeyConst.SERVER_ADDR;
 import static org.feuyeux.grpc.common.HelloUtils.getVersion;
 
+import com.alibaba.nacos.api.NacosFactory;
+import com.alibaba.nacos.api.naming.NamingService;
+import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.common.base.Charsets;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
 import io.etcd.jetcd.Lease;
 import io.etcd.jetcd.lease.LeaseKeepAliveResponse;
 import io.etcd.jetcd.options.PutOption;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.NameResolverRegistry;
+import io.grpc.*;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import io.grpc.util.MutableHandlerRegistry;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import javax.net.ssl.SSLException;
-import org.feuyeux.grpc.etcd.EtcdNameResolverProvider;
+import org.feuyeux.grpc.discovery.EtcdNameResolverProvider;
+import org.feuyeux.grpc.discovery.NacosNameResolverProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +51,7 @@ public class Connection {
   private static final String certChain = "/var/hello_grpc/client_certs/full_chain.pem";
   private static final String rootCert = "/var/hello_grpc/client_certs/myssl_root.cer";
   private static final String serverName = "hello.grpc.io";
+  public static final String HELLO_LANDING_SERVICE = "hello.LandingService";
 
   public static String server = System.getenv(GRPC_SERVER);
   public static String currentPort = System.getenv(GRPC_SERVER_PORT);
@@ -57,7 +63,7 @@ public class Connection {
   /* == discovery == */
   public static String discovery = System.getenv(GRPC_HELLO_DISCOVERY);
   public static String discoveryEndpoint = System.getenv(GRPC_HELLO_DISCOVERY_ENDPOINT);
-  private static final String ENDPOINT = "http://127.0.0.1:2379";
+
   private static final long TTL = 5L;
 
   public static String SVC_DISC_NAME = "hello-grpc";
@@ -92,7 +98,7 @@ public class Connection {
     if (backEnd == null) {
       return false;
     } else {
-      return backEnd.length() > 0;
+      return !backEnd.isEmpty();
     }
   }
 
@@ -110,13 +116,20 @@ public class Connection {
       connectTo = getGrcServerHost();
     }
     ManagedChannelBuilder<?> builder;
-    String target = "etcd:///" + SVC_DISC_NAME;
-    if (isDiscovery()) {
+    String target = null;
+    if (isEtcdDiscovery()) {
+      target = "etcd:///" + SVC_DISC_NAME;
       List<URI> endpoints = new ArrayList<>();
       endpoints.add(URI.create(getDiscoveryEndpoint()));
       EtcdNameResolverProvider nameResolver = EtcdNameResolverProvider.forEndpoints(endpoints);
-      builder = ManagedChannelBuilder.forTarget(target).defaultLoadBalancingPolicy(LB_ROUND_ROBIN);
       NameResolverRegistry.getDefaultRegistry().register(nameResolver);
+      builder = ManagedChannelBuilder.forTarget(target).defaultLoadBalancingPolicy(LB_ROUND_ROBIN);
+    } else if (isNacosDiscovery()) {
+      target = "nacos://" + HELLO_LANDING_SERVICE;
+      NacosNameResolverProvider nameResolver =
+          new NacosNameResolverProvider(URI.create(getDiscoveryEndpoint()));
+      NameResolverRegistry.getDefaultRegistry().register(nameResolver);
+      builder = ManagedChannelBuilder.forTarget(target).defaultLoadBalancingPolicy(LB_ROUND_ROBIN);
     } else {
       builder = NettyChannelBuilder.forAddress(connectTo, port);
     }
@@ -141,17 +154,9 @@ public class Connection {
     }
   }
 
-  private static String getDiscoveryEndpoint() {
-    String endpoint = ENDPOINT;
-    if (discoveryEndpoint != null) {
-      endpoint = "http://" + discoveryEndpoint;
-    }
-    log.info("DiscoveryEndpoint:{}", endpoint);
-    return endpoint;
-  }
-
-  public static void register() throws ExecutionException, InterruptedException {
-    if (isDiscovery()) {
+  public static void register(io.grpc.BindableService bindableService)
+      throws ExecutionException, InterruptedException {
+    if (isEtcdDiscovery()) {
       final URI uri = URI.create("http://" + getGrcServerHost() + ":" + getGrcServerPort());
       Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build();
       long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
@@ -181,9 +186,51 @@ public class Connection {
             });
       }
     }
+    if (isNacosDiscovery()) {
+      ServerServiceDefinition serverServiceDefinition = bindableService.bindService();
+
+      try {
+        String name = serverServiceDefinition.getServiceDescriptor().getName();
+        Properties properties = new Properties();
+        properties.put(SERVER_ADDR, getDiscoveryEndpoint());
+        NamingService namingService = NacosFactory.createNamingService(properties);
+
+        Instance instance = new Instance();
+        instance.setIp(getGrcServerHost());
+        instance.setPort(getGrcServerPort());
+        namingService.registerInstance(name, instance);
+
+        MutableHandlerRegistry handlerRegistry = new MutableHandlerRegistry();
+        handlerRegistry.addService(serverServiceDefinition);
+      } catch (Exception e) {
+        log.error("Register grpc service error ", e);
+      }
+    }
+  }
+
+  private static String getDiscoveryEndpoint() {
+    String endpoint;
+    if (discoveryEndpoint != null) {
+      if (!discoveryEndpoint.startsWith("http://")) {
+        endpoint = "http://" + discoveryEndpoint;
+      } else {
+        endpoint = discoveryEndpoint;
+      }
+      log.info("DiscoveryEndpoint:{}", endpoint);
+      return endpoint;
+    }
+    return "http://127.0.0.1:2379";
   }
 
   private static boolean isDiscovery() {
+    return isEtcdDiscovery() || isNacosDiscovery();
+  }
+
+  private static boolean isEtcdDiscovery() {
     return "etcd".equals(discovery);
+  }
+
+  private static boolean isNacosDiscovery() {
+    return "nacos".equals(discovery);
   }
 }

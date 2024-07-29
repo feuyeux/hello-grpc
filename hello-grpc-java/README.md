@@ -9,11 +9,24 @@ sh build.sh
 ## 2 Run
 
 ```bash
+# Server
 mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.server.ProtoServer"
+# Client
+mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.client.ProtoClient"
 ```
 
+### with etcd
+
 ```bash
-mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.client.ProtoClient"
+export GRPC_HELLO_DISCOVERY=etcd
+export GRPC_HELLO_DISCOVERY_ENDPOINT=http://127.0.0.1:2379
+```
+
+### with nacos
+
+```bash
+export GRPC_HELLO_DISCOVERY=nacos
+export GRPC_HELLO_DISCOVERY_ENDPOINT=http://127.0.0.1:8848
 ```
 
 ## TLS

@@ -10,17 +10,23 @@
     <properties>
         <jdk.version>21</jdk.version>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
-        <grpc.version>1.65.0</grpc.version>
+        <grpc.version>1.65.1</grpc.version>
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
+        <netty-resolver-dns.version>4.1.112.Final</netty-resolver-dns.version>
+        <guava.version>33.2.1-jre</guava.version>
+        <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
+        <jetcd.version>0.8.2</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <annotations-api.version>6.0.53</annotations-api.version>
         <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
-        <junit.version>5.10.2</junit.version>
+        <junit.version>5.10.3</junit.version>
         <system-rules.version>1.19.0</system-rules.version>
         <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <log4j-slf4j-impl.version>2.23.1</log4j-slf4j-impl.version>
+        <nacos.version>2.4.0</nacos.version>
     </properties>
 
     <dependencies>
@@ -76,11 +82,10 @@
         </dependency>
 
         <!-- jetcd -->
-        <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
         <dependency>
             <groupId>io.etcd</groupId>
             <artifactId>jetcd-core</artifactId>
-            <version>0.8.2</version>
+            <version>${jetcd.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>slf4j-api</artifactId>
@@ -92,7 +97,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.2.1-jre</version>
+            <version>${guava.version}</version>
         </dependency>
 
         <!-- SLF4J Bridge slf4j to log4j2 -->
@@ -100,7 +105,7 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.23.1</version>
+            <version>${log4j-slf4j-impl.version}</version>
         </dependency>
 
         <dependency>
@@ -110,12 +115,58 @@
             <scope>provided</scope>
         </dependency>
 
-
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver-dns-native-macos</artifactId>
-            <version>4.1.111.Final</version>
+            <version>${netty-resolver-dns.version}</version>
             <classifier>osx-x86_64</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos.version}</version>
+            <classifier>pure</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-common</artifactId>
+            <version>${nacos.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-api</artifactId>
+            <version>${nacos.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>proto-google-common-protos</artifactId>
+                    <groupId>com.google.api.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>protobuf-java</artifactId>
+                    <groupId>com.google.protobuf</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-api</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-protobuf</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-core</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-stub</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-util</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- junit5 -->
@@ -195,7 +246,7 @@
                             <!-- Goal	Default Phase -->
                             <!-- format	process-sources-->
                             <!-- check	verify-->
-                            <goal>check</goal>
+                            <goal>format</goal>
                         </goals>
                     </execution>
                 </executions>
