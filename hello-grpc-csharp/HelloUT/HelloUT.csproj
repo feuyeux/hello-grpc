@@ -11,6 +11,7 @@
     <ItemGroup>
         <!-- https://www.nuget.org/packages/Microsoft.NET.Test.Sdk -->
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <!-- https://www.nuget.org/packages/NUnit -->
         <PackageReference Include="NUnit" Version="4.1.0" />
         <!-- https://www.nuget.org/packages/NUnit3TestAdapter -->
