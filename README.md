@@ -2,8 +2,6 @@
 
 # Hello gRPC
 
-<img src="diagram/build_tools.png" alt="build tools" style="width:500px" />
-
 Simple server and client examples showcasing gRPC features(including proxy and propagate, running in containers and kubernetes) with:
 
 | No. | Lang                         | Lib                                                             | IDE             |
