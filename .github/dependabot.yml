@@ -8,48 +8,48 @@ updates:
   - package-ecosystem: "maven"
     directory: "hello-grpc-java"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "gomod"
     directory: "hello-grpc-go"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "cargo"
     directory: "hello-grpc-rust"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "pip"
     directory: "hello-grpc-python"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "npm"
     directory: "hello-grpc-nodejs"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "nuget"
     directory: "hello-grpc-csharp"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "pub"
     directory: "hello-grpc-dart"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "composer"
     directory: "hello-grpc-php"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "gradle"
     directory: "hello-grpc-kotlin"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "swift"
     directory: "hello-grpc-swift"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "npm"
     directory: "hello-grpc-ts"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - package-ecosystem: "pub"
     directory: "hello_grpc_flutter"
     schedule:
-      interval: "weekly"
+      interval: "daily"
