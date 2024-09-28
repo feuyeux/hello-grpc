@@ -8,9 +8,9 @@
     <Authors>feuyeux</Authors>
     <Company />
     <Product>HelloServer</Product>
-    <LangVersion>11</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

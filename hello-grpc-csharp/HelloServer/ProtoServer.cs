@@ -27,7 +27,7 @@ namespace HelloServer
         private static void Main()
         {
             // https://logging.apache.org/log4net/release/manual/configuration.html
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly() ?? throw new InvalidOperationException());
             XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
             var port = Connection.GetGrcServerPort();
             var tls = Environment.GetEnvironmentVariable("GRPC_HELLO_SECURE");

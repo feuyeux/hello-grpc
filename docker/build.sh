@@ -7,5 +7,5 @@ set -e
 
 langs=(cpp rust java go csharp python nodejs dart kotlin swift php ts)
 for lang in "${langs[@]}"; do
-  sh "build_$lang.sh"
+  sh "${lang}_build.sh"
 done
