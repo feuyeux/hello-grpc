@@ -1,13 +1,25 @@
-Protobuf language bindings have two components. 
+<!-- markdownlint-disable MD033 MD041 -->
+# protoc
 
-The generated code (typically produced from `protoc`) and 
+## install
 
-the runtime libraries that must be included when using the generated code. 
-
-
+# <https://github.com/protocolbuffers/protobuf/releases>
 
 ```sh
-PS C:\Users\han\coding> protoc -h
+unzip -j /d/zoo/protoc-28.2-win64.zip bin/protoc.exe -d /d/zoo/bin/
+```
+
+## Usage
+
+Protobuf language bindings have two components.
+
+The generated code (typically produced from `protoc`) and
+
+the runtime libraries that must be included when using the generated code.
+
+```sh
+$protoc -h
+
 Usage: C:\Program Files\protoc-3.19.1-win64\bin\protoc.exe [OPTION] PROTO_FILES
 
 Parse PROTO_FILES and generate output based on the options given:
@@ -29,4 +41,3 @@ Parse PROTO_FILES and generate output based on the options given:
   --python_out=OUT_DIR        Generate Python source file.
   --ruby_out=OUT_DIR          Generate Ruby source file.
 ```
-

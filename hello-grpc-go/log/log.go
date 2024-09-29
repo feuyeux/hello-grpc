@@ -13,20 +13,20 @@ import (
 // DInfo dev info
 func DInfo(msg string) string {
 	id := uuid.New().String()
-	filename, line, funcname, funcname1, funcname2 := buildLogParams()
-	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcname, funcname1, funcname2, msg)
+	filename, line, funcName, funcName1, funcName2 := buildLogParams()
+	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcName, funcName1, funcName2, msg)
 	return id
 }
 
 // TInfo dev tracing info
 func TInfo(id, msg string) {
-	filename, line, funcname, funcname1, funcname2 := buildLogParams()
-	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcname, funcname1, funcname2, msg)
+	filename, line, funcName, funcName1, funcName2 := buildLogParams()
+	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcName, funcName1, funcName2, msg)
 }
 
 func DInfof(format string, args ...interface{}) {
-	filename, line, funcname, funcname1, funcname2 := buildLogParams()
-	log.Infof("%s[%d]:%s<-%s<-%s: %s\n", filename, line, funcname, funcname1, funcname2, fmt.Sprintf(format, args...))
+	filename, line, funcName, funcName1, funcName2 := buildLogParams()
+	log.Infof("%s[%d]:%s<-%s<-%s: %s\n", filename, line, funcName, funcName1, funcName2, fmt.Sprintf(format, args...))
 }
 
 func buildLogParams() (string, int, string, string, string) {
@@ -34,7 +34,7 @@ func buildLogParams() (string, int, string, string, string) {
 }
 
 func buildLogParams0(skip int) (string, int, string, string, string) {
-	funcName, funcName1, funcname2, line, filename := "???", "???", "???", 0, "???"
+	funcName, funcName1, funcName2, line, filename := "???", "???", "???", 0, "???"
 	pc, filename, line, ok := runtime.Caller(skip)
 	if ok {
 		funcName = runtime.FuncForPC(pc).Name()
@@ -50,9 +50,9 @@ func buildLogParams0(skip int) (string, int, string, string, string) {
 	}
 	pc2, _, _, ok := runtime.Caller(skip + 2)
 	if ok {
-		funcname2 = runtime.FuncForPC(pc2).Name()
-		funcname2 = filepath.Ext(funcname2)
-		funcname2 = strings.TrimPrefix(funcname2, ".")
+		funcName2 = runtime.FuncForPC(pc2).Name()
+		funcName2 = filepath.Ext(funcName2)
+		funcName2 = strings.TrimPrefix(funcName2, ".")
 	}
-	return filename, line, funcName, funcName1, funcname2
+	return filename, line, funcName, funcName1, funcName2
 }

@@ -7,11 +7,13 @@ cd "$(
 export GO111MODULE="on"
 
 if [ "$(uname)" == "Darwin" ] || [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-    # Do something under Mac OS X or Linux platform
-    export GOPATH=$GOPATH:${PWD}
+  export GOPATH=$GOPATH:${PWD}
+  echo "[Mac OS X or Linux] GOPATH=$GOPATH"
 elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
-    # Do something under Windows NT platform
-    export GOPATH=$GOPATH;$PWD
+  windows_path=$GOPATH
+  linux_path=$(echo "$windows_path" | sed 's/^\([a-zA-Z]\):/\/\1/' | sed 's/\\/\//g')
+  export GOPATH=$linux_path:${PWD}
+  echo "[Windows] GOPATH=$GOPATH"
 fi
 
 go run server/proto_server.go

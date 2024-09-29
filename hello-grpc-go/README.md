@@ -15,12 +15,7 @@ sh proto2go.sh
 ## 3 Build
 
 ```bash
-go mod tidy
-go fmt hello-grpc/...
-go fmt server/proto_server.go
-go fmt client/proto_client.go
-go install server/proto_server.go
-go install client/proto_client.go
+sh build.sh
 ```
 
 ## 4 Run

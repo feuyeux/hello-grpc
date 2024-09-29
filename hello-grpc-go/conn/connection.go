@@ -74,7 +74,7 @@ func buildConnByDisc() *grpc.ClientConn {
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      GetCertPool(rootCert),
 		}
-		conn, err := grpc.Dial("etcd:///",
+		conn, err := grpc.NewClient("etcd:///",
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(credentials.NewTLS(c)),
 			grpc.WithDefaultServiceConfig(grpcServiceConfig))
@@ -84,7 +84,7 @@ func buildConnByDisc() *grpc.ClientConn {
 		return conn
 	} else {
 		log.Infof("Connect With InSecure through discovery")
-		conn, err := grpc.Dial("etcd:///",
+		conn, err := grpc.NewClient("etcd:///",
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithDefaultServiceConfig(grpcServiceConfig))
@@ -133,7 +133,7 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
 		PermitWithoutStream: true,             // send pings even without active streams
 	})
-	return grpc.Dial(address,
+	return grpc.NewClient(address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		keepaliveConfig,
 		retryConfig,
@@ -146,7 +146,7 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 	if err != nil {
 		panic(err)
 	}
-	return grpc.Dial(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+	return grpc.NewClient(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      GetCertPool(rootCert),

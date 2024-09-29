@@ -1,6 +1,6 @@
 module hello-grpc
 
-go 1.22
+go 1.23
 
 require (
 	// https://github.com/google/uuid/tags
@@ -22,7 +22,7 @@ require (
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.67.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
-	google.golang.org/protobuf v1.34.2 // indirect
+	google.golang.org/protobuf v1.34.2
 )
 
 require (
