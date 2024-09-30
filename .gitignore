@@ -78,3 +78,8 @@ docker/gflags
 docker/Catch2
 bazel-*
 hello_grpc_flutter/build/*
+
+hello-grpc-kotlin/client/build
+hello-grpc-kotlin/server/build
+hello-grpc-kotlin/stub/build
+hello-grpc-kotlin/protos/build
