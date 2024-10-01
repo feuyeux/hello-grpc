@@ -1,5 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     application
@@ -14,6 +13,7 @@ application {
 
 dependencies {
     implementation(project(":stub"))
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${rootProject.ext["kotlinxVersion"]}")
     runtimeOnly("io.grpc:grpc-netty:${rootProject.ext["grpcVersion"]}")
 }
 

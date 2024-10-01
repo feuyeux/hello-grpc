@@ -2,6 +2,7 @@
 
 ```bash
 # brew install gradle
+gradle -v | grep JVM
 gradle clean installDist --warning-mode all
 gradle :server:ProtoServer
 gradle :client:ProtoClient

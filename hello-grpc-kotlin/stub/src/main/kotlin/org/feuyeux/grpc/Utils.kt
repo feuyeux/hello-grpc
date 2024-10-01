@@ -1,4 +1,4 @@
-package org.feuyeux.grpc;
+package org.feuyeux.grpc
 
 import java.util.Map
 

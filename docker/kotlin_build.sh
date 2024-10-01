@@ -6,8 +6,26 @@ cd "$(
   pwd -P
 )/" || exit
 
+# if os is windows, echo ok, otherwise echo alert.
+if [ "$(uname)" == "Darwin" ]; then
+  echo "macOS detected"
+elif [ "$(expr substr "$(uname -s)" 1 5)" == "Linux" ]; then
+  echo "Linux detected"
+else
+  export JAVA_HOME_8=/d/zoo/java-se-8u44/
+  export JAVA_HOME_11=/d/zoo/jdk-11.0.23/
+  export JAVA_HOME_21=/d/zoo/jdk-21.0.3/
+  export JAVA_HOME_23=/d/zoo/jdk-23/
+fi
+# if the first input parameter is empty, use JAVA_HOME_21, otherwise use it.
+if [ -z "$1" ]; then
+  export JAVA_HOME=$JAVA_HOME_21
+else
+  export JAVA_HOME="JAVA_HOME_$1"
+fi
+echo "JAVA_HOME=$JAVA_HOME"
 gradle --version
-
+#
 echo "~~~ build grpc server kotlin ~~~"
 cd ../hello-grpc-kotlin
 cd server
