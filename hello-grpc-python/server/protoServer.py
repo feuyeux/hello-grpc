@@ -8,10 +8,7 @@ import uuid
 import grpc
 from concurrent import futures
 
-from conn import connection, utils
-
-from landing import landing_pb2
-from landing import landing_pb2_grpc
+from conn import connection, utils, landing_pb2, landing_pb2_grpc
 
 logger = logging.getLogger('grpc-server')
 logger.setLevel(logging.INFO)
@@ -74,7 +71,8 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         self.next_one = next_one
 
     def Talk(self, request, context):
-        logger.info("TALK REQUEST: data=%s,meta=%s", request.data, request.meta)
+        logger.info("TALK REQUEST: data=%s,meta=%s",
+                    request.data, request.meta)
         if self.next_one:
             headers = propaganda_headers("TALK", context)
             try:
@@ -90,10 +88,12 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             return response
 
     def TalkOneAnswerMore(self, request, context):
-        logger.info("TalkOneAnswerMore REQUEST: data=%s,meta=%s", request.data, request.meta)
+        logger.info("TalkOneAnswerMore REQUEST: data=%s,meta=%s",
+                    request.data, request.meta)
         if self.next_one:
             headers = propaganda_headers("TalkOneAnswerMore", context)
-            responses = self.next_one.TalkOneAnswerMore(request=request, metadata=headers)
+            responses = self.next_one.TalkOneAnswerMore(
+                request=request, metadata=headers)
             for response in responses:
                 yield response
         else:
@@ -114,7 +114,8 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             response = landing_pb2.TalkResponse()
             response.status = 200
             for request in request_iterator:
-                logger.info("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.data, request.meta)
+                logger.info("TalkMoreAnswerOne REQUEST: data=%s,meta=%s",
+                            request.data, request.meta)
                 print_headers("TalkMoreAnswerOne", context)
                 response.results.append(build_result(request.data))
             return response
@@ -122,12 +123,14 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
     def TalkBidirectional(self, request_iterator, context):
         if self.next_one:
             headers = propaganda_headers("TalkBidirectional", context)
-            responses = self.next_one.TalkBidirectional(request_iterator=request_iterator, metadata=headers)
+            responses = self.next_one.TalkBidirectional(
+                request_iterator=request_iterator, metadata=headers)
             for response in responses:
                 yield response
         else:
             for request in request_iterator:
-                logger.info("TalkBidirectional REQUEST: data=%s,meta=%s", request.data, request.meta)
+                logger.info("TalkBidirectional REQUEST: data=%s,meta=%s",
+                            request.data, request.meta)
                 print_headers("TalkMoreAnswerOne", context)
                 response = landing_pb2.TalkResponse()
                 response.status = 200
@@ -137,6 +140,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
 
 
 def serve():
+    concurrent_nums = 20
     backend = os.getenv("GRPC_HELLO_BACKEND")
     if backend:
         channel = connection.build_channel()
@@ -145,8 +149,9 @@ def serve():
         service_server = LandingServiceServer(stub)
     else:
         service_server = LandingServiceServer(None)
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    landing_pb2_grpc.add_LandingServiceServicer_to_server(service_server, server)
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=concurrent_nums))
+    landing_pb2_grpc.add_LandingServiceServicer_to_server(
+        service_server, server)
 
     port = os.getenv("GRPC_SERVER_PORT")
     if not port:
@@ -164,7 +169,8 @@ def serve():
             root_certificates = f.read()
         pairs = ((private_key, certificate_chain),)
         require_client_auth = False
-        server_credentials = grpc.ssl_server_credentials(pairs, root_certificates, require_client_auth)
+        server_credentials = grpc.ssl_server_credentials(
+            pairs, root_certificates, require_client_auth)
         server.add_secure_port(address, server_credentials)
         logger.info("Start GRPC TLS Server:[%s] (version:%s.%s.%s)", port, python_version[0], python_version[1],
                     python_version[2])

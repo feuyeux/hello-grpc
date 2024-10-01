@@ -1,14 +1,10 @@
 # encoding: utf-8
 import logging
-import os
 import random
 
 import time
 
-from conn import connection, utils
-
-from landing import landing_pb2
-from landing import landing_pb2_grpc
+from conn import connection, utils, landing_pb2_grpc,landing_pb2
 
 logger = logging.getLogger('grpc-client')
 logger.setLevel(logging.INFO)

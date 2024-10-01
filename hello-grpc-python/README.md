@@ -1,77 +1,50 @@
-## grpc python demo
+# grpc python demo
 
-### 1 Setup
+## 1 Setup
 
-```bash
+```sh
+# 1. Aliyun's mirror of the Python Package Index (PyPI)
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
+# 2. Tsinghua University's mirror of PyPI
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# 3. University of Science and Technology of China's mirror of PyPI
 pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple
 ```
 
-#### python2
-
-```bash
-python -m pip install --upgrade pip
-pip install virtualenv
-
-which virtualenv
-/Library/Frameworks/Python.framework/Versions/2.7/bin/virtualenv
+```sh
+sh init.sh
 ```
 
-#### python3
-
-```bash
-python3 -m pip install --upgrade pip
-export PATH="/Users/han/Library/Python/3.8/bin:$PATH"
-pip3 install virtualenv
-
-which virtualenv
-/Users/han/Library/Python/3.8/bin/virtualenv
-```
-
-```bash
-virtualenv venv
-/Users/han/Library/Python/3.8/bin/virtualenv venv
-
-source venv/bin/activate
-python -m pip install --upgrade pip
-
+```sh
 (
 #generate requirements.txt with dependencies
 pip install pipreqs
 pipreqs --encoding utf-8 . --force
 )
-
-# https://pypi.org/project/grpcio-tools/
-# https://pypi.org/project/protobuf/
-# https://pypi.org/project/futures/
-#  enum34-1.1.10 futures-3.3.0 grpcio-1.41.1 grpcio-tools-1.41.1 protobuf-3.18.0 six-1.16.0
-#pip install grpcio-tools
-pip install -r requirements.txt
-
-(python -m pip install grpcio)
 ```
 
-### 2 Generate
+## 2 Generate
 
 ```bash
+conda activate grpc_env
 sh proto2py.sh
 ```
 
-### 3 Run
+## 3 Run
 
 ```bash
+conda activate grpc_env
 sh server_start.sh
 ```
 
 ```bash
-source venv/bin/activate
- 
+conda activate grpc_env
 sh client_start.sh
 ```
 
-#### UT
+### UT
 
 ```sh
-python3 -m unittest tests/test_utils.py
+conda activate grpc_env
+python -m unittest tests/test_utils.py
 ```

@@ -2,7 +2,7 @@
 from collections import deque
 import random
 
-from landing import landing_pb2
+from conn.landing_pb2 import TalkRequest
 
 hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"]
 
@@ -19,7 +19,7 @@ def build_link_requests():
     ids = random_ids(5, 3)
     requests = deque()
     for i in range(0, 3):
-        request = landing_pb2.TalkRequest(data=ids[i], meta="PYTHON")
+        request =  TalkRequest(data=ids[i], meta="PYTHON")
         requests.appendleft(request)
     return requests
 
