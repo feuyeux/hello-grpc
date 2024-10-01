@@ -21,10 +21,10 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && apt-get clean
 
-ENV GRPC_SRC_PATH /source/grpc
-ENV HELLO_BUILD_PATH /source/build
-ENV GRPC_INSTALL_PATH /var/grpc/install
-ENV PATH "$GRPC_INSTALL_PATH/bin:$PATH"
+ENV GRPC_SRC_PATH=/source/grpc
+ENV HELLO_BUILD_PATH=/source/build
+ENV GRPC_INSTALL_PATH=/var/grpc/install
+ENV PATH="$GRPC_INSTALL_PATH/bin:$PATH"
 
 # To solve the issue: CMake 3.22 or higher is required
 # https://cmake.org/download/
@@ -55,9 +55,9 @@ RUN cd ${GRPC_SRC_PATH} && \
 
 ## build hello-grpc-cpp denpendencies ##
 
-ENV GLOG_SRC_PATH /source/glog
-ENV GFLAGS_SRC_PATH /source/gflags
-ENV CACHE2_SRC_PATH /source/Cache2
+ENV GLOG_SRC_PATH=/source/glog
+ENV GFLAGS_SRC_PATH=/source/gflags
+ENV CACHE2_SRC_PATH=/source/Cache2
 
 COPY glog $GLOG_SRC_PATH
 COPY gflags $GFLAGS_SRC_PATH
@@ -87,7 +87,7 @@ RUN cd /source/hello-grpc-cpp && mkdir build && cd build && \
 # docker run --rm -it feuyeux/grpc_cpp:1.0.0 bash
 
 FROM debian:12-slim AS server
-ENV PATH "/var/grpc/install/bin:$PATH"
+ENV PATH="/var/grpc/install/bin:$PATH"
 COPY --from=build /var/grpc/install /var/grpc/install
 WORKDIR /opt/hello-grpc/
 COPY --from=build /source/glog/build/libglog.so.1 /usr/local/lib/
@@ -99,7 +99,7 @@ RUN /sbin/ldconfig -v
 CMD ["./proto_server"]
 
 FROM debian:12-slim AS client
-ENV PATH "/var/grpc/install/bin:$PATH"
+ENV PATH="/var/grpc/install/bin:$PATH"
 COPY --from=build /source/glog/build/libglog.so.1 /usr/local/lib/
 COPY --from=build /var/grpc/install /var/grpc/install
 WORKDIR /opt/hello-grpc/

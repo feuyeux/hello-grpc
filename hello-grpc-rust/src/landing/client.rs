@@ -14,7 +14,7 @@ use hello_grpc_rust::common::utils::{build_link_requests, random_id};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    log4rs::init_file(CONFIG_PATH, Default::default()).unwrap();
+    log4rs::init_file(CONFIG_PATH, Default::default())?;
 
     let mut client = build_client().await;
 

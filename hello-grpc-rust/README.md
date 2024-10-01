@@ -10,9 +10,6 @@ rustup show
 ```
 
 ```bash
-# brew install protobuf
-# brew link --overwrite protobuf
-# protoc --version
 sh ../docker/tls/copy_certs.sh
 cargo build
 ```
@@ -35,10 +32,12 @@ $ find . -name "*.rs"
 ## 2 Run
 
 ```bash
+export GRPC_HELLO_SECURE=Y
 cargo run --bin proto-server
 ```
 
 ```bash
+export GRPC_HELLO_SECURE=Y
 cargo run --bin proto-client
 ```
 

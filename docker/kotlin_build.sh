@@ -6,7 +6,9 @@ cd "$(
   pwd -P
 )/" || exit
 
-# if os is windows, echo ok, otherwise echo alert.
+docker images | grep openjdk
+
+#
 if [ "$(uname)" == "Darwin" ]; then
   echo "macOS detected"
 elif [ "$(expr substr "$(uname -s)" 1 5)" == "Linux" ]; then

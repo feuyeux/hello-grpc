@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::pin::Pin;
-
 use chrono::prelude::*;
 use futures::stream;
 use futures::{Stream, StreamExt};
@@ -26,13 +25,10 @@ use hello_grpc_rust::common::utils::{thanks, HELLOS};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    log4rs::init_file(CONFIG_PATH, Default::default()).unwrap();
+    log4rs::init_file(CONFIG_PATH, Default::default())?;
 
     let address = format!("[::0]:{}", get_server_port()).parse().unwrap();
-    let is_tls = match env::var("GRPC_HELLO_SECURE") {
-        Ok(val) => val,
-        Err(_e) => String::default(),
-    };
+    let is_tls = env::var("GRPC_HELLO_SECURE").unwrap_or_else(|_e| String::default());
 
     let mut server = if is_tls.eq("Y") {
         let cert = tokio::fs::read(CERT_CHAIN).await?;
@@ -278,7 +274,7 @@ fn build_result(id: String) -> TalkResult {
         r#type: ok,
         kv: map,
     };
-    return result;
+    result
 }
 
 fn print_metadata(header: &MetadataMap) {
@@ -309,8 +305,5 @@ fn propaganda_headers(request: &mut Request<TalkRequest>) -> MetadataMap {
 }
 
 fn get_server_port() -> String {
-    return match env::var("GRPC_SERVER_PORT") {
-        Ok(val) => val,
-        Err(_e) => "9996".to_string(),
-    };
+    env::var("GRPC_SERVER_PORT").unwrap_or_else(|_e| "9996".to_string())
 }
