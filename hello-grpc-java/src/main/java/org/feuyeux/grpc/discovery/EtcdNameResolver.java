@@ -111,7 +111,7 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
 
   private void initializeAndWatch() {
     ByteSequence prefix = ByteSequence.from(serviceDir, Charsets.UTF_8);
-    GetOption option = GetOption.newBuilder().withPrefix(prefix).build();
+    GetOption option = GetOption.builder().withPrefix(prefix).build();
 
     GetResponse query;
     try (KV kv = etcd.getKVClient()) {
@@ -139,7 +139,7 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
 
     // set the Revision to avoid race between initializing URIs and watching for changes.
     WatchOption options =
-        WatchOption.newBuilder().withRevision(query.getHeader().getRevision()).build();
+        WatchOption.builder().withRevision(query.getHeader().getRevision()).build();
 
     etcd.getWatchClient().watch(prefix, options, this);
   }

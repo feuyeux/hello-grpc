@@ -158,32 +158,33 @@ public class Connection {
       throws ExecutionException, InterruptedException {
     if (isEtcdDiscovery()) {
       final URI uri = URI.create("http://" + getGrcServerHost() + ":" + getGrcServerPort());
-      Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build();
-      long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
-      ByteSequence key =
-          ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), Charsets.US_ASCII);
-      ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
-      PutOption option = PutOption.builder().withLeaseId(leaseId).build();
-      etcd.getKVClient().put(key, value, option);
-      try (Lease leaseClient = etcd.getLeaseClient()) {
-        leaseClient.keepAlive(
-            leaseId,
-            new StreamObserver<>() {
-              @Override
-              public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
-                log.debug("got renewal for lease: " + leaseKeepAliveResponse.getID());
-              }
+      try (Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build()) {
+        long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
+        ByteSequence key =
+            ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), Charsets.US_ASCII);
+        ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
+        PutOption option = PutOption.builder().withLeaseId(leaseId).build();
+        etcd.getKVClient().put(key, value, option);
+        try (Lease leaseClient = etcd.getLeaseClient()) {
+          leaseClient.keepAlive(
+              leaseId,
+              new StreamObserver<>() {
+                @Override
+                public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
+                  log.debug("got renewal for lease: {}", leaseKeepAliveResponse.getID());
+                }
 
-              @Override
-              public void onError(Throwable throwable) {
-                log.error("", throwable);
-              }
+                @Override
+                public void onError(Throwable throwable) {
+                  log.error("", throwable);
+                }
 
-              @Override
-              public void onCompleted() {
-                log.info("lease completed");
-              }
-            });
+                @Override
+                public void onCompleted() {
+                  log.info("lease completed");
+                }
+              });
+        }
       }
     }
     if (isNacosDiscovery()) {

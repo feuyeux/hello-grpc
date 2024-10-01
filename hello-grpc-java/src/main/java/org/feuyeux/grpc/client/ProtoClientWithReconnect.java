@@ -1,7 +1,6 @@
 package org.feuyeux.grpc.client;
 
 import static org.feuyeux.grpc.client.ProtoClient.printResponse;
-import static org.feuyeux.grpc.common.Connection.*;
 import static org.feuyeux.grpc.common.HelloUtils.buildLinkRequests;
 
 import io.grpc.*;
