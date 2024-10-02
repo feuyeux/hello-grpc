@@ -1,1 +1,0 @@
-build_cpp_bazel.sh

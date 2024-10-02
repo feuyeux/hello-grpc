@@ -53,3 +53,7 @@ updates:
     directory: "hello_grpc_flutter"
     schedule:
       interval: "daily"
+  - package-ecosystem: "bazel"
+    directory: "hello-grpc-cpp"
+    schedule:
+      interval: "daily"
