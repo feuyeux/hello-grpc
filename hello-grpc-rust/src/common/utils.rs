@@ -1,5 +1,5 @@
-use std::{collections::HashMap, sync::Mutex};
 use std::collections::LinkedList;
+use std::{collections::HashMap, sync::Mutex};
 
 use rand::Rng;
 

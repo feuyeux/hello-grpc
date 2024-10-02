@@ -61,9 +61,9 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
     let address = format!("http://{}:{}", grpc_backend_host(), grpc_backend_port());
     info!("Connect With InSecure(:{})", grpc_backend_port());
     info!("Connect With InSecure(:{})", address);
-    LandingServiceClient::connect(address).await.unwrap_or_else(|error| {
-        panic!("Problem opening the file: {:?}", error)
-    })
+    LandingServiceClient::connect(address)
+        .await
+        .unwrap_or_else(|error| panic!("Problem opening the file: {:?}", error))
 }
 
 fn grpc_server() -> String {

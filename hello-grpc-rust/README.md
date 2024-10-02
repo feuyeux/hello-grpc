@@ -11,6 +11,7 @@ rustup show
 
 ```bash
 sh ../docker/tls/copy_certs.sh
+cargo fmt
 cargo build
 ```
 
