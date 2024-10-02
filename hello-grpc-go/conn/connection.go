@@ -8,6 +8,7 @@ import (
 	"hello-grpc/common/pb"
 	"hello-grpc/etcd/discover"
 	"os"
+	"runtime"
 	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
@@ -21,12 +22,27 @@ import (
 
 var (
 	//https://myssl.com/create_test_cert.html
-	cert       = "/var/hello_grpc/client_certs/cert.pem"
-	certKey    = "/var/hello_grpc/client_certs/private.key"
-	certChain  = "/var/hello_grpc/client_certs/full_chain.pem"
-	rootCert   = "/var/hello_grpc/client_certs/myssl_root.cer"
+	certKey   string
+	certChain string
+	rootCert  string
+	//cert       = "/var/hello_grpc/client_certs/cert.pem"
 	serverName = "hello.grpc.io"
 )
+
+func init() {
+	switch runtime.GOOS {
+	case "windows":
+		certKey = "d:\\garden\\var\\hello_grpc\\client_certs\\private.key"
+		certChain = "d:\\garden\\var\\hello_grpc\\client_certs\\full_chain.pem"
+		rootCert = "d:\\garden\\var\\hello_grpc\\client_certs\\myssl_root.cer"
+	case "linux", "darwin":
+		certKey = "/var/hello_grpc/client_certs/private.key"
+		certChain = "/var/hello_grpc/client_certs/full_chain.pem"
+		rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
+	default:
+		log.Fatalf("Unsupported OS: %s", runtime.GOOS)
+	}
+}
 
 func Connect() *pb.LandingServiceClient {
 	var address string

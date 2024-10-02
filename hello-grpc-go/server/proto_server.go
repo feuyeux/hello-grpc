@@ -9,6 +9,7 @@ import (
 	"hello-grpc/server/service"
 	"net"
 	"os"
+	"runtime"
 	"time"
 
 	"google.golang.org/grpc/keepalive"
@@ -20,12 +21,27 @@ import (
 )
 
 var (
-	cert      = "/var/hello_grpc/server_certs/cert.pem"
-	certKey   = "/var/hello_grpc/server_certs/private.key"
-	certChain = "/var/hello_grpc/server_certs/full_chain.pem"
-	rootCert  = "/var/hello_grpc/server_certs/myssl_root.cer"
+	certKey   string
+	certChain string
+	rootCert  string
 )
 
+func init() {
+	switch runtime.GOOS {
+	case "windows":
+		certKey = "d:\\garden\\var\\hello_grpc\\server_certs\\private.key"
+		certChain = "d:\\garden\\var\\hello_grpc\\server_certs\\full_chain.pem"
+		rootCert = "d:\\garden\\var\\hello_grpc\\server_certs\\myssl_root.cer"
+	case "linux":
+	case "darwin":
+		certKey = "/var/hello_grpc/server_certs/private.key"
+		certChain = "/var/hello_grpc/server_certs/full_chain.pem"
+		rootCert = "/var/hello_grpc/server_certs/myssl_root.cer"
+	default:
+		log.Fatalf("Unsupported OS: %s", runtime.GOOS)
+	}
+	//cert = "/var/hello_grpc/server_certs/cert.pem"
+}
 func main() {
 	host := conn.GrpcServerHost()
 	port := conn.GrpcServerPort()
@@ -34,7 +50,7 @@ func main() {
 	if os.Getenv("GRPC_HELLO_SECURE") == "Y" {
 		cert, err := tls.LoadX509KeyPair(certChain, certKey)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Failed to load TLS certificates: %v", err)
 		}
 		s = grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{
 			ClientAuth:   tls.RequireAndVerifyClientCert,

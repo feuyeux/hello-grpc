@@ -1,5 +1,5 @@
 pub mod landing {
-    tonic::include_proto!("org.feuyeux.grpc");
+    tonic::include_proto!("hello");
 }
 
 pub mod conn;

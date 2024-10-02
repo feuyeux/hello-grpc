@@ -21,9 +21,11 @@ sh build.sh
 ## 4 Run
 
 ```bash
+export GRPC_HELLO_SECURE=Y
 sh server_start.sh
 ```
 
 ```bash
+export GRPC_HELLO_SECURE=Y
 sh client_start.sh
 ```
