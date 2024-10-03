@@ -163,3 +163,14 @@ sh server_start.sh
 ```bash
 sh client_start.sh
 ```
+
+## Build Error on Windows
+
+```sh
+ERROR: C:/users/feuye/_bazel_feuye/7zpmwd6n/external/grpc~~grpc_repo_deps_ext~envoy_api/envoy/extensions/load_balancing_policies/client_side_weighted_round_robin/v3/BUILD:7:18: Compiling external/grpc~~grpc_repo_deps_ext~envoy_api/envoy/extensions/load_balancing_policies/client_side_weighted_round_robin/v3/client_side_weighted_round_robin.upb_minitable.c failed: (Exit 2): cl.exe failed: error executing CppCompile command (from target @@grpc~~grpc_repo_deps_ext~envoy_api//envoy/extensions/load_balancing_policies/client_side_weighted_round_robin/v3:pkg) C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64\cl.exe ... (remaining 1 argument skipped)
+Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34120 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+cl : Command line error D8022 : cannot open 'bazel-out/x64_windows-fastbuild/bin/external/grpc~~grpc_repo_deps_ext~envoy_api/envoy/extensions/load_balancing_policies/client_side_weighted_round_robin/v3/_objs/pkg.upb_minitable/client_side_weighted_round_robin.upb_minitable.obj.params'
+
+```
