@@ -11,6 +11,8 @@ $ swift package tools-version
 5.8.1
 ```
 
+<https://www.swift.org/download/>
+
 switch xcode version
 
 ```sh
@@ -35,10 +37,11 @@ InstalledDir: /Applications/Xcode.14.2.app/Contents/Developer/Toolchains/XcodeDe
 ### format
 
 ```sh
-https://github.com/nicklockwood/SwiftFormat
 brew install swiftformat
-swiftformat --indent 4 --swiftversion 5.8 --exclude "**/*.grpc.swift,**/*.pb.swift" .
+swiftformat --indent 4 --swiftversion 6.0.1 --exclude "**/*.grpc.swift,**/*.pb.swift" .
 ```
+
+<!-- https://github.com/compnerd/swift-build/releases -->
 
 ## build
 

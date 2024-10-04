@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildLinkRequests = exports.ans = exports.hellos = void 0;
+exports.ans = exports.hellos = void 0;
+exports.buildLinkRequests = buildLinkRequests;
 var landing_pb_1 = require("./landing_pb");
 var fast_linked_list_1 = require("fast-linked-list");
 exports.hellos = ["Hello", "Bonjour", "Hola", "こんにちは", "Ciao", "안녕하세요"];
@@ -25,4 +26,3 @@ function buildLinkRequests() {
     }
     return requests.toArray();
 }
-exports.buildLinkRequests = buildLinkRequests;

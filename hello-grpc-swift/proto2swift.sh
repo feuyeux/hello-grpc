@@ -4,17 +4,8 @@ cd "$(
     pwd -P
 )/" || exit
 
-# brew install swift-protobuf grpc-swift
-# OR:
-# cd grpc-swift (https://github.com/grpc/grpc-swift.git)
-# swift build --product protoc-gen-grpc-swift
-# cp grpc-swift/.build/debug/protoc-gen-grpc-swift .
-# swift build --product protoc-gen-swift
-# cp grpc-swift/.build/debug/protoc-gen-swift .
-#PATH=$(pwd):$PATH
-#export PATH
-cd Common
-## proto2swift ##
+cd Sources/Common || exit
+
 protoc landing.proto \
     --proto_path=. \
     --swift_opt=Visibility=Public \

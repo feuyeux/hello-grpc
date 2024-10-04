@@ -16,7 +16,7 @@ cp -r hello-grpc-cpp docker/
 cd docker
 echo "1 build builder"
 # --progress=plain
-docker build -f cpp_grpc.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
+# docker build -f cpp_grpc.dockerfile --target build -t feuyeux/grpc_cpp:1.0.0 .
 # docker run --rm -it --entrypoint=bash feuyeux/grpc_cpp:1.0.0
 echo "2 build server"
 docker build -f cpp_grpc.dockerfile --target server -t feuyeux/grpc_server_cpp:1.0.0 .

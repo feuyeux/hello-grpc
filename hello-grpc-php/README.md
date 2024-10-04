@@ -3,6 +3,7 @@
 ## setup
 
 ```sh
+# https://windows.php.net/download/
 
 $ brew install php composer
 
@@ -13,15 +14,18 @@ Copyright (c) The PHP Group
 Zend Engine v4.2.10, Copyright (c) Zend Technologies
     with Zend OPcache v8.2.10, Copyright (c), by Zend 
 Technologies
+```
 
-# PECL(The PHP Extension Community Library)
-# PEAR(PHP Extension and Application Repository)
+```sh
+# https://getcomposer.org/download/
 
 $ composer --version
 Composer version 2.6.3 2023-09-15 09:38:21
 ```
 
 ```sh
+# PECL(The PHP Extension Community Library)
+# PEAR(PHP Extension and Application Repository)
 $ pecl install grpc
 
 $ php --ini
@@ -34,6 +38,12 @@ $ code /usr/local/etc/php/8.2/php.ini
 
 extension=grpc.so
 
+# windows
+# https://pecl.php.net/package/gRPC
+https://pecl.php.net/package/protobuf
+extension=./php_grpc.dll
+extension=./php_protobuf.dll
+
 $ php --modules | grep grpc
 ```
 
@@ -41,10 +51,12 @@ $ php --modules | grep grpc
 
 <https://getcomposer.org/doc/00-intro.md>
 
-### packagist
+### composer packagist
 
 - <https://packagist.org/packages/grpc/grpc>
 - <https://packagist.org/packages/google/protobuf>
+
+[composer.json](composer.json)
 
 ## build
 

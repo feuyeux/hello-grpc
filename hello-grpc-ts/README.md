@@ -4,7 +4,7 @@
 npm install -g uuid
 npm install -g ts-node
 npm config list
-code /Users/han/.npmrc
+code $HOME/.npmrc
 # npm config delete proxy
 # npm config delete https-proxy
 # npm config set  proxy http://127.0.0.1:50911
@@ -13,9 +13,11 @@ code /Users/han/.npmrc
 # init
 export http_proxy=''
 # export https_proxy='http://127.0.0.1:50911'
+# npm install --global yarn
 yarn install
 
 # gen code
+# https://www.npmjs.com/package/@grpc/grpc-js
 yarn add @grpc/grpc-js google-protobuf 
 yarn add -D grpc-tools grpc_tools_node_protoc_ts typescript
 

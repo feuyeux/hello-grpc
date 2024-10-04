@@ -25,6 +25,10 @@ updates:
     directory: "hello-grpc-nodejs"
     schedule:
       interval: "daily"
+  - package-ecosystem: "yarn"
+    directory: "hello-grpc-ts"
+    schedule:
+      interval: "daily"
   - package-ecosystem: "nuget"
     directory: "hello-grpc-csharp"
     schedule:
@@ -43,10 +47,6 @@ updates:
       interval: "daily"
   - package-ecosystem: "swift"
     directory: "hello-grpc-swift"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "npm"
-    directory: "hello-grpc-ts"
     schedule:
       interval: "daily"
   - package-ecosystem: "pub"

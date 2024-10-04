@@ -10,23 +10,19 @@ environment:
 
 dependencies:
   #  https://pub.dev/packages/async
-  async: ^2.2.0
+  async: ^2.11.0
   # https://pub.dev/packages/grpc
-  grpc: ^4.0.0
+  grpc: ^4.0.1
   # https://pub.dev/packages/protobuf
   protobuf: ^3.1.0
   # https://pub.dev/packages/collection
-  collection: ^1.18.0
-  #
-#  # https://pub.dev/packages/logger
-#  logger: ^2.0.2
+  collection: ^1.19.0
   # https://pub.dev/packages/logging
   logging: ^1.2.0
-  #
   # https://pub.dev/packages/uuid
-  uuid: ^4.3.3
+  uuid: ^4.5.1
   # https://pub.dev/packages/test
-  test: ^1.24.6
+  test: ^1.25.8
 dev_dependencies:
   # https://pub.dev/packages/lints
   lints: ^5.0.0

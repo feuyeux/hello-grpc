@@ -16,7 +16,7 @@ elif [[ "${1}" == "s" ]]; then
   docker build -f csharp_grpc.dockerfile --target server -t feuyeux/grpc_server_csharp:1.0.0 .
 else
   echo "build csharp"
-  docker build -f csharp_grpc.dockerfile --target build -t feuyeux/grpc_build_csharp:1.0.0 .
+  # docker build -f csharp_grpc.dockerfile --target build -t feuyeux/grpc_build_csharp:1.0.0 .
   docker build -f csharp_grpc.dockerfile --target server -t feuyeux/grpc_server_csharp:1.0.0 .
   docker build -f csharp_grpc.dockerfile --target client -t feuyeux/grpc_client_csharp:1.0.0 .
 fi

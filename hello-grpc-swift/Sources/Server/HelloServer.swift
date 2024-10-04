@@ -1,49 +1,45 @@
-#if compiler(>=5.6)
-    import ArgumentParser
-    import struct Foundation.Data
-    import struct Foundation.URL
-    import GRPC
-    import HelloCommon
-    import Logging
-    import NIOCore
-    import NIOPosix
+import ArgumentParser
 
-    @main
-    @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-    struct HelloServer: AsyncParsableCommand {
-        func run() async throws {
-            let logger = Logger(label: "HelloServer")
+import GRPC
 
-            // Create an event loop group for the server to run on.
-            let group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-            defer {
-                try! group.syncShutdownGracefully()
-            }
+import HelloCommon
 
-            // Create a provider using the features we read.
-            let provider = HelloServiceProvider()
-            let conn: Connection = HelloConn()
-            // Start the server and print its address once it has started.
-            let server = try await Server.insecure(group: group)
-                .withServiceProviders([provider])
-                .bind(host: "0.0.0.0", port: conn.port)
-                .get()
+import Logging
 
-            logger.info("server started on port \(server.channel.localAddress!.port!)")
+import NIOCore
 
-            // Wait on the server's `onClose` future to stop the program from exiting.
-            try await server.onClose.get()
+import NIOPosix
+
+import struct Foundation.Data
+
+import struct Foundation.URL
+
+struct HelloServer: AsyncParsableCommand {
+    func run() async throws {
+        let logger = Logger(label: "HelloServer")
+
+        // Create an event loop group for the server to run on.
+        let group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        defer {
+            try! group.syncShutdownGracefully()
         }
 
-        init() {}
+        // Create a provider using the features we read.
+        let provider = HelloServiceProvider()
+        let conn: Connection = HelloConn()
+        // Start the server and print its address once it has started.
+        let server = try await Server.insecure(group: group)
+            .withServiceProviders([provider])
+            .bind(host: "0.0.0.0", port: conn.port)
+            .get()
 
-        init(from _: Decoder) throws {}
+        logger.info("server started on port \(server.channel.localAddress!.port!)")
+
+        // Wait on the server's `onClose` future to stop the program from exiting.
+        try await server.onClose.get()
     }
-#else
-    @main
-    enum RouteGuide {
-        static func main() {
-            print("This example requires Swift >= 5.6")
-        }
-    }
-#endif // compiler(>=5.6)
+
+    init() {}
+
+    init(from _: Decoder) throws {}
+}

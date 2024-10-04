@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -139,13 +139,20 @@ function printResponse(methodName, response) {
         }
     }
 }
+function grpcServerHost() {
+    var server = process.env.GRPC_SERVER;
+    // @ts-ignore
+    return typeof server !== "undefined" && server !== null ? server : "localhost";
+}
 function startClient() {
     return __awaiter(this, void 0, void 0, function () {
-        var request;
+        var connectTo, request;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    client = new landing_grpc_pb_1.LandingServiceClient("localhost:".concat(conn_1.port), grpc.credentials.createInsecure());
+                    connectTo = grpcServerHost() + ":" + conn_1.port;
+                    conn_1.logger.info("connectTo:%s", connectTo);
+                    client = new landing_grpc_pb_1.LandingServiceClient(connectTo, grpc.credentials.createInsecure());
                     request = new landing_pb_1.TalkRequest();
                     request.setData("0");
                     request.setMeta("TypeScript");

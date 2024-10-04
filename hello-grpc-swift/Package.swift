@@ -1,14 +1,14 @@
-// swift-tools-version: 5.8
+// swift-tools-version: 5.10
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let packageDependencies: [Package.Dependency] = [
-    .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.19.1"),
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.59.0"),
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.24.0"),
-    .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3"),
-    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.3"),
+    .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.23.1"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.74.0"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.28.2"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
+    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
 ]
 
 extension Target.Dependency {

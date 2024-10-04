@@ -3,8 +3,8 @@
     "description": "Hello gRPC for PHP",
     "require": {
         "grpc/grpc": "^v1.57.0",
-        "google/protobuf": "^v4.26.1",
-        "ramsey/uuid": "^4.7",
+        "google/protobuf": "^v4.28.2",
+        "ramsey/uuid": "^4.7.5",
         "apache/log4php": "2.3.0"
     },
     "autoload": {
