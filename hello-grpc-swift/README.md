@@ -63,7 +63,16 @@ Clean: ⇧shift+⌘cmd+K in xcode
 ```
 
 ```sh
+
+export proxy_port=56458
+export http_proxy=127.0.0.1:$proxy_port
+export https_proxy=127.0.0.1:$proxy_port
+```
+
+```sh
 swift build
+swift build --product protoc-gen-swift
+swift build --product protoc-gen-grpc-swift
 ```
 
 ## run

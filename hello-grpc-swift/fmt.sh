@@ -5,4 +5,5 @@ cd "$(
 )/" || exit
 set -e
 
-swiftformat --indent 4 --swiftversion 5.10 --exclude "**/*.grpc.swift,**/*.pb.swift" .
+# swiftformat --indent 4 --swiftversion 5.10 --exclude "**/*.grpc.swift,**/*.pb.swift" .
+swift-format --indent 4 --swiftversion 6.0.1 --exclude "**/*.grpc.swift,**/*.pb.swift" .

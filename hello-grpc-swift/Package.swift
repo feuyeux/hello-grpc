@@ -15,20 +15,24 @@ extension Target.Dependency {
     static let helloCommon: Self = .target(name: "HelloCommon")
 
     // Product dependencies
-    static let argumentParser: Self = .product(name: "ArgumentParser", package: "swift-argument-parser")
+    static let argumentParser: Self = .product(
+        name: "ArgumentParser", package: "swift-argument-parser")
     static let grpc: Self = .product(name: "GRPC", package: "grpc-swift")
     static let nio: Self = .product(name: "NIO", package: "swift-nio")
-    static let nioConcurrencyHelpers: Self = .product(name: "NIOConcurrencyHelpers", package: "swift-nio")
+    static let nioConcurrencyHelpers: Self = .product(
+        name: "NIOConcurrencyHelpers", package: "swift-nio")
     static let nioCore: Self = .product(name: "NIOCore", package: "swift-nio")
     static let nioEmbedded: Self = .product(name: "NIOEmbedded", package: "swift-nio")
     static let nioExtras: Self = .product(name: "NIOExtras", package: "swift-nio-extras")
-    static let nioFoundationCompat: Self = .product(name: "NIOFoundationCompat", package: "swift-nio")
+    static let nioFoundationCompat: Self = .product(
+        name: "NIOFoundationCompat", package: "swift-nio")
     static let nioHTTP1: Self = .product(name: "NIOHTTP1", package: "swift-nio")
     static let nioHTTP2: Self = .product(name: "NIOHTTP2", package: "swift-nio-http2")
     static let nioPosix: Self = .product(name: "NIOPosix", package: "swift-nio")
     static let nioSSL: Self = .product(name: "NIOSSL", package: "swift-nio-ssl")
     static let nioTLS: Self = .product(name: "NIOTLS", package: "swift-nio")
-    static let nioTransportServices: Self = .product(name: "NIOTransportServices", package: "swift-nio-transport-services")
+    static let nioTransportServices: Self = .product(
+        name: "NIOTransportServices", package: "swift-nio-transport-services")
     static let logging: Self = .product(name: "Logging", package: "swift-log")
     static let protobuf: Self = .product(name: "SwiftProtobuf", package: "swift-protobuf")
 }
@@ -44,7 +48,7 @@ extension Target {
         ],
         path: "Sources/Common",
         exclude: [
-            "landing.proto",
+            "landing.proto"
         ]
     )
 
@@ -76,7 +80,7 @@ extension Target {
     static let helloCommonUT: Target = .testTarget(
         name: "HelloCommonTest",
         dependencies: [
-            "HelloCommon",
+            "HelloCommon"
         ],
         path: "Tests/helloTests"
     )
