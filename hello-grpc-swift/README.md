@@ -3,12 +3,11 @@
 ## dev
 
 ```sh
-$ swift -version                                                                                                                               2 ↵
-Swift version 5.8.1 (swift-5.8.1-RELEASE)
-Target: x86_64-apple-macosx13.0
+swift -version
+```
 
-$ swift package tools-version
-5.8.1
+```sh
+swift package tools-version
 ```
 
 <https://www.swift.org/download/>
@@ -16,7 +15,7 @@ $ swift package tools-version
 switch xcode version
 
 ```sh
-$ gcc --version                                                                                                                                                       1 ↵
+$ gcc --version
 Apple clang version 15.0.0 (clang-1500.0.40.1)
 Target: x86_64-apple-darwin22.6.0
 Thread model: posix

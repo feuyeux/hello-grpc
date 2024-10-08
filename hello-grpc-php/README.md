@@ -7,20 +7,13 @@
 
 $ brew install php composer
 
-$ php -version                                                                                                              
-
-PHP 8.2.10 (cli) (built: Aug 31 2023 19:16:09) (NTS)
-Copyright (c) The PHP Group
-Zend Engine v4.2.10, Copyright (c) Zend Technologies
-    with Zend OPcache v8.2.10, Copyright (c), by Zend 
-Technologies
+$ php -version
 ```
 
 ```sh
 # https://getcomposer.org/download/
 
 $ composer --version
-Composer version 2.6.3 2023-09-15 09:38:21
 ```
 
 ```sh
@@ -37,10 +30,14 @@ Additional .ini files parsed:      /usr/local/etc/php/8.2/conf.d/ext-opcache.ini
 $ code /usr/local/etc/php/8.2/php.ini
 
 extension=grpc.so
+```
 
-# windows
-# https://pecl.php.net/package/gRPC
-https://pecl.php.net/package/protobuf
+### windows
+
+- <https://pecl.php.net/package/gRPC>
+- <https://pecl.php.net/package/protobuf>
+
+```sh
 extension=./php_grpc.dll
 extension=./php_protobuf.dll
 
