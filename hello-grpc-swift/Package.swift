@@ -4,7 +4,7 @@
 import PackageDescription
 
 let packageDependencies: [Package.Dependency] = [
-    .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.23.1"),
+    .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.24.1"),
     .package(url: "https://github.com/apple/swift-nio.git", from: "2.74.0"),
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.28.2"),
     .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
