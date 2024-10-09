@@ -5,8 +5,7 @@ cd "$(
 )/" || exit
 set -e
 
-docker images | grep composer
-
 echo "~~~ build alpine grpc php ~~~"
+# docker images | grep composer
 docker build -f php_grpc_base.dockerfile -t feuyeux/grpc_php_base:1.0.0 .
 docker run -it --rm feuyeux/grpc_php_base:1.0.0 composer --version

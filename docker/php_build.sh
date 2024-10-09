@@ -5,8 +5,8 @@ cd "$(
 )/" || exit
 set -e
 
-echo "~~~ build grpc base php ~~~"
-sh build_alpine_grpc_php.sh
+# echo "~~~ build grpc base php ~~~"
+# sh php_base_build.sh
 
 echo "~~~ build grpc server php ~~~"
 mkdir -p hello-grpc-php
@@ -31,5 +31,5 @@ cp ../hello-grpc-php/hello_client.php hello-grpc-php
 cp ../hello-grpc-php/client_start.sh hello-grpc-php
 docker build -f php_grpc.dockerfile --target client -t feuyeux/grpc_client_php:1.0.0 .
 rm -rf hello-grpc-php
-echo "done\n"
+echo "done"
 docker run -ti --rm feuyeux/grpc_server_php:1.0.0 cat /etc/os-release

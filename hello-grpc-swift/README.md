@@ -3,12 +3,11 @@
 ## dev
 
 ```sh
-$ swift -version                                                                                                                               2 ↵
-Swift version 5.8.1 (swift-5.8.1-RELEASE)
-Target: x86_64-apple-macosx13.0
+swift -version
+```
 
-$ swift package tools-version
-5.8.1
+```sh
+swift package tools-version
 ```
 
 <https://www.swift.org/download/>
@@ -16,7 +15,7 @@ $ swift package tools-version
 switch xcode version
 
 ```sh
-$ gcc --version                                                                                                                                                       1 ↵
+$ gcc --version
 Apple clang version 15.0.0 (clang-1500.0.40.1)
 Target: x86_64-apple-darwin22.6.0
 Thread model: posix
@@ -46,16 +45,26 @@ swiftformat --indent 4 --swiftversion 6.0.1 --exclude "**/*.grpc.swift,**/*.pb.s
 ## build
 
 ```sh
-# 老 Mac 用上最新 macOS
-# https://dortania.github.io/OpenCore-Legacy-Patcher/INSTALLER.html#creating-the-installer
-# https://github.com/getlantern/lantern
+export PATH=/home/han/swift-6.0.1-RELEASE-ubuntu22.04/usr/bin:$PATH
+```
 
-brew install swift-protobuf grpc-swift
-cd Sources/Common
+```sh
+swift build
+swift build --product protoc-gen-swift
+swift build --product protoc-gen-grpc-swift
+```
+
+```sh
+export protoc_gen_swift=/mnt/d/coding/hello-grpc/hello-grpc-swift/.build/x86_64-unknown-linux-gnu/debug/protoc-gen-swift
+export protoc_generate_grpc_swift=/mnt/d/coding/hello-grpc/hello-grpc-swift/.build/x86_64-unknown-linux-gnu/debug/protoc-gen-grpc-swift
 sh proto2swift.sh
 ```
 
 ```sh
+# 老 Mac 用上最新 macOS
+# https://dortania.github.io/OpenCore-Legacy-Patcher/INSTALLER.html#creating-the-installer
+# https://github.com/getlantern/lantern
+
 # clean if meeting issue: "PCH was compiled with module cache path ..., but the path is currently ..."
 rm -rf ~/Library/Developer/Xcode/DerivedData
 rm -rf .build
@@ -63,16 +72,9 @@ Clean: ⇧shift+⌘cmd+K in xcode
 ```
 
 ```sh
-
 export proxy_port=56458
 export http_proxy=127.0.0.1:$proxy_port
 export https_proxy=127.0.0.1:$proxy_port
-```
-
-```sh
-swift build
-swift build --product protoc-gen-swift
-swift build --product protoc-gen-grpc-swift
 ```
 
 ## run

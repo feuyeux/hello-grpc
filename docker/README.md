@@ -14,7 +14,7 @@
 | 8   | [TypeScript](hello-grpc-ts)  | [node:21-alpine](ts_grpc.dockerfile)                           | feuyeux/grpc_server_ts:1.0.0     | feuyeux/grpc_client_ts:1.0.0     |
 | 9   | [Dart](hello-grpc-dart)      | [dart_grpc.dockerfile](dart_grpc.dockerfile)                   | feuyeux/grpc_server_dart:1.0.0   | feuyeux/grpc_client_dart:1.0.0   |
 | 10  | [Kotlin](hello-grpc-kotlin)  | [openjdk:21-jdk-slim](kotlin_grpc.dockerfile)                  | feuyeux/grpc_server_kotlin:1.0.0 | feuyeux/grpc_client_kotlin:1.0.0 |
-| 11  | [Swift](hello-grpc-swift)    | [swift:5.10](swift_grpc.dockerfile)                            | feuyeux/grpc_server_swift:1.0.0  | feuyeux/grpc_client_swift:1.0.0  |
+| 11  | [Swift](hello-grpc-swift)    | [swift:6.0.1-slim](swift_grpc.dockerfile)                      | feuyeux/grpc_server_swift:1.0.0  | feuyeux/grpc_client_swift:1.0.0  |
 | 12  | [PHP](hello-grpc-php)        | [composer:2.8](php_grpc_base.dockerfile)                       | feuyeux/grpc_server_php:1.0.0    | feuyeux/grpc_client_php:1.0.0    |
 
 ## Build
