@@ -178,7 +178,7 @@ public struct Hello_LandingServiceNIOClient: Hello_LandingServiceClientProtocol 
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 public protocol Hello_LandingServiceAsyncClientProtocol: GRPCClient {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Hello_LandingServiceClientInterceptorFactoryProtocol? { get }
@@ -202,7 +202,7 @@ public protocol Hello_LandingServiceAsyncClientProtocol: GRPCClient {
   ) -> GRPCAsyncBidirectionalStreamingCall<Hello_TalkRequest, Hello_TalkResponse>
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 extension Hello_LandingServiceAsyncClientProtocol {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Hello_LandingServiceClientMetadata.serviceDescriptor
@@ -257,7 +257,7 @@ extension Hello_LandingServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 extension Hello_LandingServiceAsyncClientProtocol {
   public func talk(
     _ request: Hello_TalkRequest,
@@ -332,7 +332,7 @@ extension Hello_LandingServiceAsyncClientProtocol {
   }
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 public struct Hello_LandingServiceAsyncClient: Hello_LandingServiceAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
@@ -475,7 +475,7 @@ extension Hello_LandingServiceProvider {
 }
 
 /// To implement a server, implement an object which conforms to this protocol.
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 public protocol Hello_LandingServiceAsyncProvider: CallHandlerProvider, Sendable {
   static var serviceDescriptor: GRPCServiceDescriptor { get }
   var interceptors: Hello_LandingServiceServerInterceptorFactoryProtocol? { get }
@@ -507,7 +507,7 @@ public protocol Hello_LandingServiceAsyncProvider: CallHandlerProvider, Sendable
   ) async throws
 }
 
-@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 extension Hello_LandingServiceAsyncProvider {
   public static var serviceDescriptor: GRPCServiceDescriptor {
     return Hello_LandingServiceServerMetadata.serviceDescriptor

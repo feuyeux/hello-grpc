@@ -1,29 +1,24 @@
-#if compiler(>=5.6)
-    import ArgumentParser
-    import struct Foundation.Data
-    import struct Foundation.URL
-    import GRPC
-    import HelloCommon
-    import Logging
-    import NIOCore
-    import NIOPosix
+import ArgumentParser
+import GRPC
+import HelloCommon
+import Logging
+import NIOCore
+import NIOPosix
 
-    @main
-    @available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
-    struct HelloServer: AsyncParsableCommand {
-        func run() async throws {
-            let logger = Logger(label: "HelloServer")
+import struct Foundation.Data
+import struct Foundation.URL
 
-            // Create an event loop group for the server to run on.
-            let group: EventLoopGroup = MultiThreadedEventLoopGroup(
-                numberOfThreads: System.coreCount)
-            defer {
-                try! group.syncShutdownGracefully()
-            }
+@main
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
+struct HelloServer: AsyncParsableCommand {
+    func run() async throws {
+        let logger = Logger(label: "HelloServer")
+        let group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
-            // Create a provider using the features we read.
+        do {
             let provider = HelloServiceProvider()
             let conn: Connection = HelloConn()
+
             // Start the server and print its address once it has started.
             let server = try await Server.insecure(group: group)
                 .withServiceProviders([provider])
@@ -32,19 +27,17 @@
 
             logger.info("server started on port \(server.channel.localAddress!.port!)")
 
-            // Wait on the server's `onClose` future to stop the program from exiting.
+            // Keep the server running
             try await server.onClose.get()
+        } catch {
+            logger.error("Server failed with error: \(error)")
         }
 
-        init() {}
-
-        init(from _: Decoder) throws {}
-    }
-#else
-    @main
-    enum RouteGuide {
-        static func main() {
-            print("This example requires Swift >= 5.6")
+        // Shutdown the event loop group gracefully
+        group.shutdownGracefully { error in
+            if let error = error {
+                logger.error("Failed to shutdown event loop group: \(error)")
+            }
         }
     }
-#endif  // compiler(>=5.6)
+}

@@ -49,6 +49,8 @@ export PATH=/home/han/swift-6.0.1-RELEASE-ubuntu22.04/usr/bin:$PATH
 ```
 
 ```sh
+```sh
+swift package clean
 swift build
 swift build --product protoc-gen-swift
 swift build --product protoc-gen-grpc-swift
