@@ -8,14 +8,15 @@ cd "$(
 
 echo "~~~ build grpc swift ~~~"
 # docker images | grep swift
-#docker pull swift:6.0.1
-#docker pull swift:6.0.1-slim
+# docker pull swift:6.0.1
+# docker pull swift:6.0.1-slim
+# unsupport windows because of swift-nio : https://github.com/apple/swift-nio/issues/2065
 
 rm -rf hello-grpc-swift
 mkdir hello-grpc-swift
 cp -r ../hello-grpc-swift/* hello-grpc-swift/
 # for cache the working layers
-docker build -f swift_grpc.dockerfile --target builder -t feuyeux/grpc_swift:1.0.0 .
+# docker build -f swift_grpc.dockerfile --target builder -t feuyeux/grpc_swift:1.0.0 .
 echo
 echo "~~~ build grpc server swift ~~~"
 docker build -f swift_grpc.dockerfile --target server -t feuyeux/grpc_server_swift:1.0.0 .
