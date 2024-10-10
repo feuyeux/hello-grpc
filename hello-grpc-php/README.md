@@ -65,6 +65,7 @@ php --modules | grep grpc
 ### load dependencies
 
 ```sh
+rm composer.lock
 composer install
 ```
 
@@ -78,6 +79,10 @@ sh init.sh
 
 ```sh
 php -d extension=grpc.so hello_server.php
-
 php -d extension=grpc.so hello_client.php
+```
+
+```sh
+php -d extension=php_grpc.dll hello_server.php
+php -d extension=php_grpc.dll hello_client.php
 ```

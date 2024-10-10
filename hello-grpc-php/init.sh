@@ -14,8 +14,11 @@ if [[ "$OSTYPE" == "msys" ]]; then
     if [[ ! -f "$PLUGIN" ]]; then
         cd $GRPC_SRC
         git checkout v1.66.2
-        # bazel build
-        bazel build @com_google_protobuf//:protoc && bazel build src/compiler:grpc_php_plugin
+        git submodule update --init --recursive
+        echo "bazel build"
+        bazel clean --expunge
+        bazel build @com_google_protobuf//:protoc
+        bazel build src/compiler:grpc_php_plugin
     fi
 else
     # Unix-like 系统
