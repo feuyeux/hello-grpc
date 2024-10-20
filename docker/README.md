@@ -40,7 +40,8 @@ sh ${lang}_run_client.sh
 ### cross
 
 ```sh
-sh cross_run_client.sh
+sh ${lang}_run_server.sh "secure"
+sh cross_run_client.sh "secure"
 ```
 
 ## Push
