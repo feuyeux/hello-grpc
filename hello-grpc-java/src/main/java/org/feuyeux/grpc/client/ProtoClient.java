@@ -34,12 +34,24 @@ public class ProtoClient {
   }
 
   public static void main(String[] args) {
-    log.info("GRPC_SERVER:{}", server);
-    log.info("GRPC_SERVER_PORT:{}", currentPort);
-    log.info("GRPC_HELLO_BACKEND:{}", backEnd);
-    log.info("GRPC_HELLO_BACKEND_PORT:{}", backPort);
-    log.info("GRPC_HELLO_SECURE:{}", secure);
-    log.info("GRPC_HELLO_DISCOVERY:{} {}", discovery, discoveryEndpoint);
+    if (server != null) {
+      log.info("GRPC_SERVER:{}", server);
+    }
+    if (currentPort != null) {
+      log.info("GRPC_SERVER_PORT:{}", currentPort);
+    }
+    if (backEnd != null) {
+      log.info("GRPC_HELLO_BACKEND:{}", backEnd);
+    }
+    if (backPort != null) {
+      log.info("GRPC_HELLO_BACKEND_PORT:{}", backPort);
+    }
+    if (secure != null) {
+      log.info("GRPC_HELLO_SECURE:{}", secure);
+    }
+    if (discovery != null && discoveryEndpoint != null) {
+      log.info("GRPC_HELLO_DISCOVERY:{} {}", discovery, discoveryEndpoint);
+    }
     log.info("host:{}", System.getenv("host.docker.internal"));
 
     ProtoClient protoClient = null;

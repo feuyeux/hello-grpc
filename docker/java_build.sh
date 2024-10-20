@@ -18,9 +18,8 @@ else
   export JAVA_HOME_21=/d/zoo/jdk-21.0.3/
   export JAVA_HOME_23=/d/zoo/jdk-23/
 fi
-# if the first input parameter is empty, use JAVA_HOME_21, otherwise use it.
 if [ -z "$1" ]; then
-  export JAVA_HOME=$JAVA_HOME_21
+  export JAVA_HOME=$JAVA_HOME_23
 else
   export JAVA_HOME="JAVA_HOME_$1"
 fi

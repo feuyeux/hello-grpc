@@ -82,8 +82,5 @@ pub fn grpc_backend_host() -> String {
 }
 
 fn grpc_backend_port() -> String {
-    env::var("GRPC_HELLO_BACKEND_PORT").unwrap_or_else(|_e| match env::var("GRPC_SERVER_PORT") {
-        Ok(val) => val,
-        Err(_e) => "9996".to_string(),
-    })
+    env::var("GRPC_HELLO_BACKEND_PORT").unwrap_or_else(|_e| env::var("GRPC_SERVER_PORT").unwrap_or_else(|_e| "9996".to_string()))
 }

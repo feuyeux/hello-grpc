@@ -5,6 +5,7 @@ cd "$(
 )/" || exit
 set -e
 
+echo "~~~ images for python ~~~"
 docker images | grep python | awk '{print $1}'
 
 echo "~~~ build grpc server python ~~~"

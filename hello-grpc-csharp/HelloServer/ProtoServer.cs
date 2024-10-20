@@ -5,9 +5,9 @@ using System.Reflection;
 using System.Threading;
 using Common;
 using Grpc.Core;
+using Hello;
 using log4net;
 using log4net.Config;
-using Org.Feuyeux.Grpc;
 
 [assembly: XmlConfigurator(Watch = true)]
 

@@ -4,9 +4,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Common;
 using Grpc.Core;
+using Hello;
 using log4net;
 using log4net.Config;
-using Org.Feuyeux.Grpc;
 
 namespace HelloClient
 {
@@ -22,7 +22,7 @@ namespace HelloClient
 
         public static void Main()
         {
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly()!);
             XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
             var channel = Connection.GetChannel();

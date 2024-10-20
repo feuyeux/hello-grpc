@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Common;
 using Grpc.Core;
+using Hello;
 using log4net;
-using Org.Feuyeux.Grpc;
 
 namespace HelloServer
 {

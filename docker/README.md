@@ -25,12 +25,22 @@ sh ${lang}_build.sh
 
 ## Run
 
+### server
+
 ```sh
 sh ${lang}_run_server.sh
 ```
 
+### client
+
 ```sh
 sh ${lang}_run_client.sh
+```
+
+### cross
+
+```sh
+sh cross_run_client.sh
 ```
 
 ## Push

@@ -35,22 +35,22 @@ class LandingServiceStub(object):
             channel: A grpc.Channel.
         """
         self.Talk = channel.unary_unary(
-                '/org.feuyeux.grpc.LandingService/Talk',
+                '/hello.LandingService/Talk',
                 request_serializer=landing__pb2.TalkRequest.SerializeToString,
                 response_deserializer=landing__pb2.TalkResponse.FromString,
                 _registered_method=True)
         self.TalkOneAnswerMore = channel.unary_stream(
-                '/org.feuyeux.grpc.LandingService/TalkOneAnswerMore',
+                '/hello.LandingService/TalkOneAnswerMore',
                 request_serializer=landing__pb2.TalkRequest.SerializeToString,
                 response_deserializer=landing__pb2.TalkResponse.FromString,
                 _registered_method=True)
         self.TalkMoreAnswerOne = channel.stream_unary(
-                '/org.feuyeux.grpc.LandingService/TalkMoreAnswerOne',
+                '/hello.LandingService/TalkMoreAnswerOne',
                 request_serializer=landing__pb2.TalkRequest.SerializeToString,
                 response_deserializer=landing__pb2.TalkResponse.FromString,
                 _registered_method=True)
         self.TalkBidirectional = channel.stream_stream(
-                '/org.feuyeux.grpc.LandingService/TalkBidirectional',
+                '/hello.LandingService/TalkBidirectional',
                 request_serializer=landing__pb2.TalkRequest.SerializeToString,
                 response_deserializer=landing__pb2.TalkResponse.FromString,
                 _registered_method=True)
@@ -112,9 +112,9 @@ def add_LandingServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'org.feuyeux.grpc.LandingService', rpc_method_handlers)
+            'hello.LandingService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('org.feuyeux.grpc.LandingService', rpc_method_handlers)
+    server.add_registered_method_handlers('hello.LandingService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -135,7 +135,7 @@ class LandingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/org.feuyeux.grpc.LandingService/Talk',
+            '/hello.LandingService/Talk',
             landing__pb2.TalkRequest.SerializeToString,
             landing__pb2.TalkResponse.FromString,
             options,
@@ -162,7 +162,7 @@ class LandingService(object):
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/org.feuyeux.grpc.LandingService/TalkOneAnswerMore',
+            '/hello.LandingService/TalkOneAnswerMore',
             landing__pb2.TalkRequest.SerializeToString,
             landing__pb2.TalkResponse.FromString,
             options,
@@ -189,7 +189,7 @@ class LandingService(object):
         return grpc.experimental.stream_unary(
             request_iterator,
             target,
-            '/org.feuyeux.grpc.LandingService/TalkMoreAnswerOne',
+            '/hello.LandingService/TalkMoreAnswerOne',
             landing__pb2.TalkRequest.SerializeToString,
             landing__pb2.TalkResponse.FromString,
             options,
@@ -216,7 +216,7 @@ class LandingService(object):
         return grpc.experimental.stream_stream(
             request_iterator,
             target,
-            '/org.feuyeux.grpc.LandingService/TalkBidirectional',
+            '/hello.LandingService/TalkBidirectional',
             landing__pb2.TalkRequest.SerializeToString,
             landing__pb2.TalkResponse.FromString,
             options,

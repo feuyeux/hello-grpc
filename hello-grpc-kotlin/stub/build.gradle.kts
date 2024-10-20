@@ -48,6 +48,7 @@ protobuf {
     }
 }
 
+//hello-grpc-kotlin/doc/windows_jdk.md
 java {
     sourceCompatibility = JavaVersion.VERSION_21
 }

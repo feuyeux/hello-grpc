@@ -5,8 +5,21 @@ cd "$(
 )/" || exit
 set -e
 
-langs=(rust java go csharp python)
-# TODO: cpp rust java go csharp python nodejs dart kotlin swift php ts
+langs=(
+    cpp
+    rust
+    java
+    go
+    csharp
+    python
+    node
+    ts
+    dart
+    kotlin
+    swift
+    php
+)
+
 for lang in "${langs[@]}"; do
     echo "~~~ run grpc $lang client ~~~"
     # pass the first argument to the script

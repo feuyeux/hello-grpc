@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rlanding.proto\x12\x10org.feuyeux.grpc\")\n\x0bTalkRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\t\x12\x0c\n\x04meta\x18\x02 \x01(\t\"M\n\x0cTalkResponse\x12\x0e\n\x06status\x18\x01 \x01(\x05\x12-\n\x07results\x18\x02 \x03(\x0b\x32\x1c.org.feuyeux.grpc.TalkResult\"\xa1\x01\n\nTalkResult\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x04type\x18\x02 \x01(\x0e\x32\x1c.org.feuyeux.grpc.ResultType\x12\x30\n\x02kv\x18\x03 \x03(\x0b\x32$.org.feuyeux.grpc.TalkResult.KvEntry\x1a)\n\x07KvEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01*\x1e\n\nResultType\x12\x06\n\x02OK\x10\x00\x12\x08\n\x04\x46\x41IL\x10\x01\x32\xe3\x02\n\x0eLandingService\x12G\n\x04Talk\x12\x1d.org.feuyeux.grpc.TalkRequest\x1a\x1e.org.feuyeux.grpc.TalkResponse\"\x00\x12V\n\x11TalkOneAnswerMore\x12\x1d.org.feuyeux.grpc.TalkRequest\x1a\x1e.org.feuyeux.grpc.TalkResponse\"\x00\x30\x01\x12V\n\x11TalkMoreAnswerOne\x12\x1d.org.feuyeux.grpc.TalkRequest\x1a\x1e.org.feuyeux.grpc.TalkResponse\"\x00(\x01\x12X\n\x11TalkBidirectional\x12\x1d.org.feuyeux.grpc.TalkRequest\x1a\x1e.org.feuyeux.grpc.TalkResponse\"\x00(\x01\x30\x01\x42.\n\x16org.feuyeux.grpc.protoB\x07LandingP\x01Z\tcommon/pbb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rlanding.proto\x12\x05hello\")\n\x0bTalkRequest\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\t\x12\x0c\n\x04meta\x18\x02 \x01(\t\"B\n\x0cTalkResponse\x12\x0e\n\x06status\x18\x01 \x01(\x05\x12\"\n\x07results\x18\x02 \x03(\x0b\x32\x11.hello.TalkResult\"\x8b\x01\n\nTalkResult\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x1f\n\x04type\x18\x02 \x01(\x0e\x32\x11.hello.ResultType\x12%\n\x02kv\x18\x03 \x03(\x0b\x32\x19.hello.TalkResult.KvEntry\x1a)\n\x07KvEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01*\x1e\n\nResultType\x12\x06\n\x02OK\x10\x00\x12\x08\n\x04\x46\x41IL\x10\x01\x32\x8b\x02\n\x0eLandingService\x12\x31\n\x04Talk\x12\x12.hello.TalkRequest\x1a\x13.hello.TalkResponse\"\x00\x12@\n\x11TalkOneAnswerMore\x12\x12.hello.TalkRequest\x1a\x13.hello.TalkResponse\"\x00\x30\x01\x12@\n\x11TalkMoreAnswerOne\x12\x12.hello.TalkRequest\x1a\x13.hello.TalkResponse\"\x00(\x01\x12\x42\n\x11TalkBidirectional\x12\x12.hello.TalkRequest\x1a\x13.hello.TalkResponse\"\x00(\x01\x30\x01\x42.\n\x16org.feuyeux.grpc.protoB\x07LandingP\x01Z\tcommon/pbb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,16 +34,16 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'\n\026org.feuyeux.grpc.protoB\007LandingP\001Z\tcommon/pb'
   _globals['_TALKRESULT_KVENTRY']._loaded_options = None
   _globals['_TALKRESULT_KVENTRY']._serialized_options = b'8\001'
-  _globals['_RESULTTYPE']._serialized_start=321
-  _globals['_RESULTTYPE']._serialized_end=351
-  _globals['_TALKREQUEST']._serialized_start=35
-  _globals['_TALKREQUEST']._serialized_end=76
-  _globals['_TALKRESPONSE']._serialized_start=78
-  _globals['_TALKRESPONSE']._serialized_end=155
-  _globals['_TALKRESULT']._serialized_start=158
-  _globals['_TALKRESULT']._serialized_end=319
-  _globals['_TALKRESULT_KVENTRY']._serialized_start=278
-  _globals['_TALKRESULT_KVENTRY']._serialized_end=319
-  _globals['_LANDINGSERVICE']._serialized_start=354
-  _globals['_LANDINGSERVICE']._serialized_end=709
+  _globals['_RESULTTYPE']._serialized_start=277
+  _globals['_RESULTTYPE']._serialized_end=307
+  _globals['_TALKREQUEST']._serialized_start=24
+  _globals['_TALKREQUEST']._serialized_end=65
+  _globals['_TALKRESPONSE']._serialized_start=67
+  _globals['_TALKRESPONSE']._serialized_end=133
+  _globals['_TALKRESULT']._serialized_start=136
+  _globals['_TALKRESULT']._serialized_end=275
+  _globals['_TALKRESULT_KVENTRY']._serialized_start=234
+  _globals['_TALKRESULT_KVENTRY']._serialized_end=275
+  _globals['_LANDINGSERVICE']._serialized_start=310
+  _globals['_LANDINGSERVICE']._serialized_end=577
 # @@protoc_insertion_point(module_scope)
