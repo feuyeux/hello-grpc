@@ -14,7 +14,7 @@
     <!-- https://www.nuget.org/packages/Grpc.Tools -->
     <PackageReference Include="Grpc.Tools" Version="2.67.0" PrivateAssets="All" />
     <!-- https://www.nuget.org/packages/log4net -->
-    <PackageReference Include="log4net" Version="3.0.1" />
+    <PackageReference Include="log4net" Version="3.0.2" />
     <!-- https://www.nuget.org/packages/Newtonsoft.Json -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <!-- https://www.nuget.org/packages/NETStandard.Library -->
