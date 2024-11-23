@@ -5,5 +5,3 @@ replace-with = 'tuna'
 # 清华大学
 [source.tuna]
 registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
-
-# mv cargo.config $HOME/.cargo/config
