@@ -3,8 +3,8 @@
 # grpcio-tools==1.68.1
 grpcio-tools==1.68.1
 # https://pypi.org/project/protobuf/
-# protobuf==5.29.0
-protobuf==5.29.0
+# protobuf==5.29.1
+protobuf==5.29.1
 # https://pypi.org/project/futures/
 # https://pypi.org/project/futures3/
 futures==3.0.5
