@@ -10,7 +10,7 @@
     <properties>
         <jdk.version>23</jdk.version>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
-        <grpc.version>1.68.2</grpc.version>
+        <grpc.version>1.69.0</grpc.version>
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
         <netty-resolver-dns.version>4.1.115.Final</netty-resolver-dns.version>
