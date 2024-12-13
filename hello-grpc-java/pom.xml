@@ -25,7 +25,7 @@
         <system-rules.version>1.19.0</system-rules.version>
         <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <log4j-slf4j-impl.version>2.24.2</log4j-slf4j-impl.version>
+        <log4j-slf4j-impl.version>2.24.3</log4j-slf4j-impl.version>
         <nacos.version>2.4.3</nacos.version>
     </properties>
 
