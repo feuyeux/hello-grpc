@@ -18,7 +18,7 @@ require (
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
 	go.uber.org/ratelimit v0.3.1
 	// https://pkg.go.dev/golang.org/x/net
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.69.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
