@@ -12,7 +12,7 @@
         <!-- https://www.nuget.org/packages/Microsoft.NET.Test.Sdk -->
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
         <!-- https://www.nuget.org/packages/NUnit -->
-        <PackageReference Include="NUnit" Version="4.3.1" />
+        <PackageReference Include="NUnit" Version="4.3.2" />
         <!-- https://www.nuget.org/packages/NUnit3TestAdapter -->
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
         <!-- https://www.nuget.org/packages/NUnit.Analyzers -->
