@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <!-- https://www.nuget.org/packages/Google.Protobuf -->
-    <PackageReference Include="Google.Protobuf" Version="3.29.2" />
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
     <!-- https://www.nuget.org/packages/Grpc -->
     <PackageReference Include="Grpc" Version="2.46.6" />
     <!-- https://www.nuget.org/packages/Grpc.Tools -->
