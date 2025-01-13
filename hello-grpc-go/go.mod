@@ -20,7 +20,7 @@ require (
 	// https://pkg.go.dev/golang.org/x/net
 	golang.org/x/net v0.34.0
 	// https://github.com/grpc/grpc-go/tags
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 	// https://github.com/protocolbuffers/protobuf-go/tags
 	google.golang.org/protobuf v1.35.1 // indirect
 )
