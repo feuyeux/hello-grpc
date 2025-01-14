@@ -13,7 +13,7 @@
         <grpc.version>1.69.0</grpc.version>
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
-        <netty-resolver-dns.version>4.1.116.Final</netty-resolver-dns.version>
+        <netty-resolver-dns.version>4.1.117.Final</netty-resolver-dns.version>
         <guava.version>33.4.0-jre</guava.version>
         <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
         <jetcd.version>0.8.4</jetcd.version>
