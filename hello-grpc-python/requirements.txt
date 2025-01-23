@@ -1,7 +1,7 @@
 # python -m grpc.tools.protoc --version
 # 由 grpcio-tools 版本决定； 注意与 protoc --version兼容
-# grpcio-tools==1.69.0
-grpcio-tools==1.69.0
+# grpcio-tools==1.70.0
+grpcio-tools==1.70.0
 # https://pypi.org/project/protobuf/
 # protobuf==5.29.3
 protobuf==5.29.3
