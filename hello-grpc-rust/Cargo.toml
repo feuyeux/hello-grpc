@@ -36,7 +36,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 #https://lib.rs/crates/serde_json
 serde_json = "1.0.128"
 #https://lib.rs/crates/rand
-rand = "0.8.5"
+rand = "0.9.0"
 #https://lib.rs/crates/chrono
 chrono = "0.4.38"
 #https://lib.rs/crates/uuid
