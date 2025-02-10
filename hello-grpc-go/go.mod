@@ -18,7 +18,7 @@ require (
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
 	go.uber.org/ratelimit v0.3.1
 	// https://pkg.go.dev/golang.org/x/net
-	golang.org/x/net v0.34.0
+	golang.org/x/net v0.35.0
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.70.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
@@ -38,8 +38,8 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
