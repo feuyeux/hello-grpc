@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
-        <jdk.version>23</jdk.version>
+        <jdk.version>21</jdk.version>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
         <grpc.version>1.71.0</grpc.version>
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
@@ -182,6 +182,13 @@
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
             <version>${system-rules.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-testing</artifactId>
+            <version>${grpc.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
