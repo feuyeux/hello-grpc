@@ -24,7 +24,7 @@ require (
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.71.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5 // indirect
 )
 
 require (
