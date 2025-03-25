@@ -14,7 +14,7 @@
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
         <netty-resolver-dns.version>4.1.119.Final</netty-resolver-dns.version>
-        <guava.version>33.4.5-jre</guava.version>
+        <guava.version>33.4.6-jre</guava.version>
         <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
         <jetcd.version>0.8.5</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
