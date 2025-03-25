@@ -14,7 +14,7 @@ path = "src/landing/client.rs"
 
 [dependencies]
 #grpc https://lib.rs/crates/tonic
-tonic = { version = "0.12.3", features = ["tls"] }
+tonic = { version = "0.13.0", features = ["tls"] }
 #gRPC Codec https://lib.rs/crates/prost
 prost = "0.13.3"
 # https://lib.rs/crates/tokio
