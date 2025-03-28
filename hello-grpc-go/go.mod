@@ -2,7 +2,7 @@ module hello-grpc
 
 go 1.23.0
 
-toolchain go1.23.1
+toolchain go1.24.1
 
 require (
 	// https://github.com/google/uuid/tags
@@ -16,11 +16,11 @@ require (
 	// https://github.com/stretchr/testify/tags
 	github.com/stretchr/testify v1.10.0
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
-	go.etcd.io/etcd/client/v3 v3.5.20
+	go.etcd.io/etcd/client/v3 v3.5.21
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
 	go.uber.org/ratelimit v0.3.1
 	// https://pkg.go.dev/golang.org/x/net
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.71.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
@@ -35,8 +35,8 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.20 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.20 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.21 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.21 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect
