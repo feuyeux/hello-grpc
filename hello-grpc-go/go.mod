@@ -2,7 +2,7 @@ module hello-grpc
 
 go 1.23.0
 
-toolchain go1.23.1
+toolchain go1.24.1
 
 require (
 	// https://github.com/google/uuid/tags
@@ -20,7 +20,7 @@ require (
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
 	go.uber.org/ratelimit v0.3.1
 	// https://pkg.go.dev/golang.org/x/net
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.71.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
