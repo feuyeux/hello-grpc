@@ -14,7 +14,7 @@ dependencies:
   # https://pub.dev/packages/grpc
   grpc: ^4.0.1
   # https://pub.dev/packages/protobuf
-  protobuf: ^3.1.0
+  protobuf: ^4.0.0
   # https://pub.dev/packages/collection
   collection: ^1.19.0
   # https://pub.dev/packages/logging
