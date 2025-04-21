@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- https://www.nuget.org/packages/Microsoft.NET.Test.Sdk -->
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+        <!-- https://www.nuget.org/packages/NUnit -->
+        <PackageReference Include="NUnit" Version="4.3.2" />
+        <!-- https://www.nuget.org/packages/NUnit3TestAdapter -->
+        <PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
+        <!-- https://www.nuget.org/packages/NUnit.Analyzers -->
+        <PackageReference Include="NUnit.Analyzers" Version="4.7.0" />
+        <!-- https://www.nuget.org/packages/coverlet.collector -->
+        <PackageReference Include="coverlet.collector" Version="6.0.4" />
+        <ProjectReference Include="..\Common\Common.csproj" />
+    </ItemGroup>
+
+</Project>

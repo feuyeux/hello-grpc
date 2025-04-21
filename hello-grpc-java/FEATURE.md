@@ -1,0 +1,20 @@
+# HELLO GRPC FEATURES
+
+- [x] 4 GRPC MODELS
+  - `GRPC_SERVER`(`localhost`)
+  - `GRPC_SERVER_PORT`(`9996`)
+- [x] LOG
+- [x] SEND/RECEIVE HEADERS
+- [x] DOCKER IMAGE
+- [x] CROSS ACCESS TEST
+- [x] AS PROXY(FRONT-BACK)
+  - `GRPC_HELLO_BACKEND`
+  - `GRPC_HELLO_BACKEND_PORT`
+- [x] PROPAGATE TRACING HEADERS
+- [x] TLS
+  - <https://myssl.com/create_test_cert.html>
+  - `GRPC_HELLO_SECURE`
+  - `ServerName`=`hello.grpc.io`
+- [x] TLS DOCKER
+- [x] TLS CROSS ACCESS TEST
+- [x] SERVICE DISCOVERY WITH ETCD

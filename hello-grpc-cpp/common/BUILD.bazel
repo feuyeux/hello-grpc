@@ -1,0 +1,30 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "hello_utils",
+    srcs = ["utils.cpp"],
+    hdrs = ["utils.h"],
+    deps = [
+        "//protos:hello_cc_grpc",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/random:distributions",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "hello_conn",
+    srcs = ["connection.cpp"],
+    hdrs = ["connection.h"],
+    deps = [
+        ":hello_utils",
+        "//protos:hello_cc_grpc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_grpc_grpc//:grpc++_reflection",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
+    ],
+)

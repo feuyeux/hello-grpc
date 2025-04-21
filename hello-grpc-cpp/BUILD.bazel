@@ -1,0 +1,23 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "hello_server",
+    srcs = ["server/proto_server.cpp"],
+    defines = ["BAZEL_BUILD"],
+    deps = [
+        "//common:hello_conn",
+        "//protos:hello_cc_grpc",
+        "@catch2"
+    ],
+)
+
+cc_binary(
+    name = "hello_client",
+    srcs = ["client/proto_client.cpp"],
+    defines = ["BAZEL_BUILD"],
+    deps = [
+        "//common:hello_conn",
+        "//protos:hello_cc_grpc",
+        "@catch2"
+    ],
+)

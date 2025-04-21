@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>HelloServer</AssemblyName>
+    <RootNamespace>HelloServer</RootNamespace>
+    <PackageId>HelloServer</PackageId>
+    <Authors>feuyeux</Authors>
+    <Company />
+    <Product>HelloServer</Product>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\HelloClient\HelloClient.csproj" />
+  </ItemGroup>
+
+</Project>
