@@ -2,20 +2,29 @@
 refresh_rate: 30 seconds
 
 appenders:
-  # An appender named "stdout" that writes to stdout
+  # Console appender that writes to stdout with Java-like format
   stdout:
     kind: console
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S)} - {m}{n}"
+      pattern: "{d(%H:%M:%S%.3f)} {m}{n}"
 
-  # An appender named "requests" that writes to a file with a custom pattern encoder
+  # Rolling file appender with Java-like format
   requests:
-    kind: file
+    kind: rolling_file
     path: "log/hello-grpc.log"
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S)} [{M} {T}] - {m}{n}"
+      pattern: "{d(%Y-%m-%d %H:%M:%S%.3f)} [{T}] {l} {M} - {m}{n}"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 19500kb
+      roller:
+        kind: fixed_window
+        pattern: "log/hello-grpc-{}.log.gz"
+        count: 5
 
-# Set the default logging level to "warn" and attach the "stdout" appender to the root
+# Set the default logging level to "info" and attach both appenders to the root
 root:
   level: info
   appenders:

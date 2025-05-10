@@ -3,5 +3,6 @@ plugins {
 }
 
 java {
-    sourceSets.getByName("main").resources.srcDir("src/main/proto")
+    // Point to the central proto directory instead of local one
+    sourceSets.getByName("main").resources.srcDir("../../proto")
 }

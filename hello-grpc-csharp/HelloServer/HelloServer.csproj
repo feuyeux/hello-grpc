@@ -10,12 +10,19 @@
     <Product>HelloServer</Product>
     <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\HelloClient\HelloClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 使用最新的 gRPC 实现 -->
+    <PackageReference Include="Grpc.Net.Client" Version="2.61.0" />
+    <PackageReference Include="Grpc.Net.Common" Version="2.61.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.61.0" />
   </ItemGroup>
 
 </Project>

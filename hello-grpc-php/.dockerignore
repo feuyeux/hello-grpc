@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Logs
+log/
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.vscode
+
+# Dependency directories
+vendor/
+node_modules/
+
+# Docker related
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Certificate folders if not needed in the image
+# certs/

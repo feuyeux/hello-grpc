@@ -1,7 +1,8 @@
 package log
 
 import (
-	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -10,23 +11,63 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func init() {
+	// Set log format
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "15:04:05.000",
+		ForceColors:     true,
+		FullTimestamp:   true,
+		DisableQuote:    true,
+		ForceQuote:      false,
+	})
+
+	// Set log level
+	log.SetLevel(log.InfoLevel)
+
+	// Ensure log directory exists
+	os.MkdirAll("log", os.ModePerm)
+
+	// Set file output
+	file, err := os.OpenFile("log/hello-grpc.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.SetOutput(io.MultiWriter(os.Stdout, file))
+	}
+}
+
 // DInfo dev info
 func DInfo(msg string) string {
 	id := uuid.New().String()
-	filename, line, funcName, funcName1, funcName2 := buildLogParams()
-	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcName, funcName1, funcName2, msg)
+	log.Infof("%s", msg)
 	return id
 }
 
 // TInfo dev tracing info
 func TInfo(id, msg string) {
-	filename, line, funcName, funcName1, funcName2 := buildLogParams()
-	log.Infof("[%s] %s[%d]:%s<-%s<-%s: %s\n", id, filename, line, funcName, funcName1, funcName2, msg)
+	log.Infof("%s", msg)
 }
 
 func DInfof(format string, args ...interface{}) {
-	filename, line, funcName, funcName1, funcName2 := buildLogParams()
-	log.Infof("%s[%d]:%s<-%s<-%s: %s\n", filename, line, funcName, funcName1, funcName2, fmt.Sprintf(format, args...))
+	log.Infof(format, args...)
+}
+
+// Info standard log method
+func Info(msg string) {
+	log.Info(msg)
+}
+
+// Infof standard formatted log method
+func Infof(format string, args ...interface{}) {
+	log.Infof(format, args...)
+}
+
+// Error standard error log method
+func Error(msg string) {
+	log.Error(msg)
+}
+
+// Errorf standard formatted error log method
+func Errorf(format string, args ...interface{}) {
+	log.Errorf(format, args...)
 }
 
 func buildLogParams() (string, int, string, string, string) {

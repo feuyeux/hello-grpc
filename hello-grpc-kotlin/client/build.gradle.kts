@@ -39,4 +39,10 @@ tasks {
         archiveBaseName.set("proto-client")
         mergeServiceFiles()
     }
+    
+    // 配置distTar任务
+    named<Tar>("distTar") {
+        archiveFileName.set("client.tar")
+        compression = Compression.NONE
+    }
 }

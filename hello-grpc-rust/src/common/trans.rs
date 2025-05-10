@@ -10,17 +10,16 @@ pub static TRACING_KEYS: [&'static str; 7] = [
     "x-b3-flags",
     "x-ot-span-context",
 ];
-// 对于 Linux 和类 Unix 系统
-#[cfg(unix)]
+
+#[cfg(target_os = "linux")]
 pub const CERT: &str = "/var/hello_grpc/server_certs/cert.pem";
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub const CERT_KEY: &str = "/var/hello_grpc/server_certs/private.key";
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub const CERT_CHAIN: &str = "/var/hello_grpc/server_certs/full_chain.pem";
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";
 
-// 对于 Windows
 #[cfg(target_os = "windows")]
 pub const CERT: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\cert.pem";
 #[cfg(target_os = "windows")]
@@ -30,12 +29,11 @@ pub const CERT_CHAIN: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\full_ch
 #[cfg(target_os = "windows")]
 pub const ROOT_CERT: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\myssl_root.cer";
 
-// 对于 macOS
 #[cfg(target_os = "macos")]
-pub const CERT: &str = "/usr/local/hello_grpc/server_certs/cert.pem";
+pub const CERT: &str = "/var/hello_grpc/server_certs/cert.pem";
 #[cfg(target_os = "macos")]
-pub const CERT_KEY: &str = "/usr/local/hello_grpc/server_certs/private.key";
+pub const CERT_KEY: &str = "/var/hello_grpc/server_certs/private.key";
 #[cfg(target_os = "macos")]
-pub const CERT_CHAIN: &str = "/usr/local/hello_grpc/server_certs/full_chain.pem";
+pub const CERT_CHAIN: &str = "/var/hello_grpc/server_certs/full_chain.pem";
 #[cfg(target_os = "macos")]
-pub const ROOT_CERT: &str = "/usr/local/hello_grpc/server_certs/myssl_root.cer";
+pub const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";

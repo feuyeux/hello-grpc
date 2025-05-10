@@ -1,65 +1,32 @@
-// swift-tools-version: 5.10
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.1
 
-import PackageDescription
+@preconcurrency import PackageDescription
 
 let packageDependencies: [Package.Dependency] = [
-    .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.24.1"),
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.74.0"),
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.28.2"),
-    .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
+    .package(url: "https://github.com/grpc/grpc-swift.git", from: "2.0.0"),
+    .package(url: "https://github.com/grpc/grpc-swift-protobuf.git", from: "1.0.0"),
+    .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
 ]
-
-extension Target.Dependency {
-    static let helloCommon: Self = .target(name: "HelloCommon")
-
-    // Product dependencies
-    static let argumentParser: Self = .product(
-        name: "ArgumentParser", package: "swift-argument-parser")
-    static let grpc: Self = .product(name: "GRPC", package: "grpc-swift")
-    static let nio: Self = .product(name: "NIO", package: "swift-nio")
-    static let nioConcurrencyHelpers: Self = .product(
-        name: "NIOConcurrencyHelpers", package: "swift-nio")
-    static let nioCore: Self = .product(name: "NIOCore", package: "swift-nio")
-    static let nioEmbedded: Self = .product(name: "NIOEmbedded", package: "swift-nio")
-    static let nioExtras: Self = .product(name: "NIOExtras", package: "swift-nio-extras")
-    static let nioFoundationCompat: Self = .product(
-        name: "NIOFoundationCompat", package: "swift-nio")
-    static let nioHTTP1: Self = .product(name: "NIOHTTP1", package: "swift-nio")
-    static let nioHTTP2: Self = .product(name: "NIOHTTP2", package: "swift-nio-http2")
-    static let nioPosix: Self = .product(name: "NIOPosix", package: "swift-nio")
-    static let nioSSL: Self = .product(name: "NIOSSL", package: "swift-nio-ssl")
-    static let nioTLS: Self = .product(name: "NIOTLS", package: "swift-nio")
-    static let nioTransportServices: Self = .product(
-        name: "NIOTransportServices", package: "swift-nio-transport-services")
-    static let logging: Self = .product(name: "Logging", package: "swift-log")
-    static let protobuf: Self = .product(name: "SwiftProtobuf", package: "swift-protobuf")
-}
 
 extension Target {
     static let helloCommon: Target = .target(
         name: "HelloCommon",
         dependencies: [
-            .grpc,
-            .nio,
-            .protobuf,
-            .logging,
+            .product(name: "Logging", package: "swift-log"),
+            .product(name: "GRPCCore", package: "grpc-swift"),
+            .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
+            .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
+            .product(name: "ArgumentParser", package: "swift-argument-parser"),
         ],
         path: "Sources/Common",
-        exclude: [
-            "landing.proto"
-        ]
     )
 
     static let helloClient: Target = .executableTarget(
         name: "HelloClient",
         dependencies: [
-            .grpc,
-            .helloCommon,
-            .nioCore,
-            .nioPosix,
-            .argumentParser,
+            "HelloCommon",
         ],
         path: "Sources/Client"
     )
@@ -67,20 +34,16 @@ extension Target {
     static let helloServer: Target = .executableTarget(
         name: "HelloServer",
         dependencies: [
-            .grpc,
-            .helloCommon,
-            .nioCore,
-            .nioConcurrencyHelpers,
-            .nioPosix,
-            .argumentParser,
+            "HelloCommon",
         ],
-        path: "Sources/Server"
+        path: "Sources/Server",
     )
 
-    static let helloCommonUT: Target = .testTarget(
-        name: "HelloCommonTest",
+    static let helloTests: Target = .testTarget(
+        name: "HelloTests",
         dependencies: [
-            "HelloCommon"
+            "HelloCommon",
+            "HelloServer",
         ],
         path: "Tests/helloTests"
     )
@@ -88,11 +51,12 @@ extension Target {
 
 let package = Package(
     name: "hello-grpc-swift",
+    platforms: [.macOS("15.0")],
     dependencies: packageDependencies,
     targets: [
         .helloCommon,
         .helloClient,
         .helloServer,
-        .helloCommonUT,
+        .helloTests,
     ]
 )

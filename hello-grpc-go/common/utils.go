@@ -2,10 +2,13 @@ package common
 
 import (
 	"container/list"
+	"fmt"
 	"hello-grpc/common/pb"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 var (
@@ -44,4 +47,9 @@ func RandomId(max int) string {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	n := r.Intn(max)
 	return strconv.Itoa(n)
+}
+
+// GetVersion returns the gRPC version string
+func GetVersion() string {
+	return fmt.Sprintf("grpc.version=%s", grpc.Version)
 }

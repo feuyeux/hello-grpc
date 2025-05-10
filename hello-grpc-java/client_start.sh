@@ -6,5 +6,77 @@ SCRIPT_PATH="$(
 )"
 cd "$SCRIPT_PATH" || exit
 sh build.sh
-export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
-mvn exec:java -Dexec.mainClass="org.feuyeux.grpc.client.ProtoClient"
+# Set JAVA_HOME based on OS
+case "$(uname -s)" in
+Darwin)
+    export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home"
+    ;;
+Linux)
+    echo "Linux"
+    # TODO: Set Linux JAVA_HOME here
+    ;;
+MSYS_NT* | MINGW64_NT*)
+    export JAVA_HOME="D:/zoo/jdk-24.0.1"
+    ;;
+*)
+    echo "Unsupported OS: $(uname -s)"
+    ;;
+esac
+
+# Default configuration
+USE_TLS=false
+ADDITIONAL_ARGS=""
+
+# Process command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    --tls)
+        USE_TLS=true
+        shift
+        ;;
+    --addr=*)
+        ADDR="${1#*=}"
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS -Dexec.args=\"--addr=$ADDR\""
+        shift
+        ;;
+    --log=*)
+        LOG_LEVEL="${1#*=}"
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS -Dexec.args=\"--log=$LOG_LEVEL\""
+        shift
+        ;;
+    --count=*)
+        COUNT="${1#*=}"
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS -Dexec.args=\"--count=$COUNT\""
+        shift
+        ;;
+    --help)
+        echo "Usage: $0 [options]"
+        echo "Options:"
+        echo "  --tls                 Enable TLS communication"
+        echo "  --addr=HOST:PORT      Specify server address to connect to (default: 127.0.0.1:9996)"
+        echo "  --log=LEVEL           Set log level (trace, debug, info, warn, error)"
+        echo "  --count=NUMBER        Number of requests to send"
+        echo "  --help                Show this help message"
+        exit 0
+        ;;
+    *)
+        # Pass through any other arguments
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS -Dexec.args=\"$1\""
+        shift
+        ;;
+    esac
+done
+
+# Build the command
+CMD="mvn exec:java -Dexec.mainClass=\"org.feuyeux.grpc.client.ProtoClient\""
+
+# Add TLS flag if enabled
+if [ "$USE_TLS" = true ]; then
+    CMD="$CMD -Dexec.args=\"--tls\" $ADDITIONAL_ARGS"
+else
+    [ -n "$ADDITIONAL_ARGS" ] && CMD="$CMD $ADDITIONAL_ARGS"
+fi
+
+# Execute the command
+echo "Running: $CMD"
+eval "$CMD"

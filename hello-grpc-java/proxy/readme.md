@@ -1,7 +1,7 @@
 ```bash
-b.sh
-a.sh
-c.sh
+server.sh
+proxy.sh
+client.sh
 ```
 
-`<c>` -> `[a:8887]` -> `[b:9997]`
+`[client]` -> `[proxy:8887]` -> `[server:9997]`

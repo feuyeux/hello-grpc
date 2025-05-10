@@ -3,83 +3,220 @@ package org.feuyeux.grpc
 import io.grpc.*
 import io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.NettyServerBuilder
+import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContextBuilder
 import org.apache.logging.log4j.kotlin.logger
 import org.feuyeux.grpc.conn.Connection
-import org.feuyeux.grpc.proto.*
 import java.io.File
-import java.util.*
+import java.nio.file.Files
+import java.nio.file.Paths
 import javax.net.ssl.SSLException
 
-//https://myssl.com/create_test_cert.html
-const val cert: String = "/var/hello_grpc/server_certs/cert.pem"
-const val certKey: String = "/var/hello_grpc/server_certs/private.pkcs8.key"
-const val certChain: String = "/var/hello_grpc/server_certs/full_chain.pem"
-const val rootCert: String = "/var/hello_grpc/server_certs/myssl_root.cer"
+/**
+ * Certificate paths for TLS configuration
+ */
+private val certBasePath = getCertBasePath()
+private val certPath = Paths.get(certBasePath, "cert.pem").toString()
+private val certKeyPath = Paths.get(certBasePath, "private.pkcs8.key").toString()
+private val certChainPath = Paths.get(certBasePath, "full_chain.pem").toString()
+private val rootCertPath = Paths.get(certBasePath, "myssl_root.cer").toString()
 
-fun main() {
-    val server = ProtoServer()
-    server.start()
-    server.blockUntilShutdown()
-}
-
-class ProtoServer {
-    private val log = logger()
-    private var server: Server? = getServer()
-    fun start() {
-        server?.start()
-        Runtime.getRuntime().addShutdownHook(
-                Thread {
-                    log.info("*** shutting down gRPC server since JVM is shutting down")
-                    this@ProtoServer.stop()
-                    log.info("*** server shut down")
-                }
-        )
+/**
+ * Determines the base directory for TLS certificates based on environment
+ * variable or OS-specific default paths.
+ *
+ * @return The base directory path where certificates are stored
+ */
+private fun getCertBasePath(): String {
+    // Get custom base path from environment variable if set
+    val basePath = System.getenv("CERT_BASE_PATH")
+    if (!basePath.isNullOrEmpty()) {
+        return basePath
     }
 
+    // Use platform-specific default paths
+    return when {
+        // Windows
+        System.getProperty("os.name").contains("win", ignoreCase = true) ->
+            "d:\\garden\\var\\hello_grpc\\server_certs"
+        // macOS
+        System.getProperty("os.name").contains("mac", ignoreCase = true) ->
+            "/var/hello_grpc/server_certs"
+        // Linux and others
+        else ->
+            "/var/hello_grpc/server_certs"
+    }
+}
+
+/**
+ * Main entry point for the gRPC server application.
+ * Initializes and starts the server with appropriate configuration.
+ */
+fun main() {
+    val logger = logger("ProtoServer")
+    
+    try {
+        logger.info("Using certificate paths: cert=$certPath, key=$certKeyPath, chain=$certChainPath, root=$rootCertPath")
+        
+        val server = ProtoServer()
+        server.start()
+        logger.info("Server started successfully")
+        server.blockUntilShutdown()
+    } catch (e: Exception) {
+        logger.error("Failed to start server", e)
+        System.exit(1)
+    }
+}
+
+/**
+ * gRPC server implementation for the Landing Service.
+ * Supports both secure (TLS) and insecure connections.
+ */
+class ProtoServer {
+    private val logger = logger()
+    private val server: Server? by lazy { createServer() }
+
+    /**
+     * Gets the gRPC version information for logging purposes.
+     *
+     * @return A string containing the gRPC version
+     */
+    fun getVersion(): String = try {
+        val version = Package.getPackage("io.grpc")?.implementationVersion ?: "unknown"
+        "grpc.version=$version"
+    } catch (e: Exception) {
+        "grpc.version=unknown"
+    }
+
+    /**
+     * Starts the server and registers a shutdown hook to handle graceful termination.
+     */
+    fun start() {
+        server?.start()
+        
+        Runtime.getRuntime().addShutdownHook(Thread {
+            logger.info("Shutting down gRPC server due to JVM shutdown")
+            this@ProtoServer.stop()
+            logger.info("Server shutdown complete")
+        })
+    }
+
+    /**
+     * Stops the server gracefully.
+     */
     private fun stop() {
         server?.shutdown()
     }
 
+    /**
+     * Blocks until the server shuts down.
+     */
     fun blockUntilShutdown() {
         server?.awaitTermination()
     }
 
+    /**
+     * Creates a server instance with the specified configuration.
+     *
+     * @return A configured Server instance
+     * @throws SSLException If TLS context setup fails
+     */
     @Throws(SSLException::class)
-    private fun getServer(): Server? {
+    private fun createServer(): Server? {
+        // Create service implementation
         val landingService = if (System.getenv("GRPC_HELLO_BACKEND") != null) {
+            logger.info("Operating in proxy mode with backend connection")
             val channel = Connection.getChannel(HeaderClientInterceptor())
             LandingService(ProtoClient(channel))
         } else {
+            logger.info("Operating in standalone mode (no backend)")
             LandingService(null)
         }
-        val intercept = ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
-        val secure = System.getenv("GRPC_HELLO_SECURE")
-        val serverPort = System.getenv("GRPC_SERVER_PORT")?.toInt() ?: Connection.port
-        return if (secure == null || secure != "Y") {
-            log.info("Start GRPC TLS Server[:$serverPort]")
-            ServerBuilder.forPort(Connection.port)
-                    .addService(intercept)
-                    .addTransportFilter(object : ServerTransportFilter() {
-                        override fun transportTerminated(transportAttrs: Attributes) {
-                            log.warn("GRPC Client {} terminated $transportAttrs.toString()")
-                        }
-                    })
-                    .build()
+        
+        // Apply server interceptors
+        val interceptedService = ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
+        
+        // Determine if secure mode is enabled
+        val secureMode = System.getenv("GRPC_HELLO_SECURE")
+        val serverPort = System.getenv("GRPC_SERVER_PORT")?.toIntOrNull() ?: Connection.port
+        
+        return if (secureMode != "Y") {
+            // Create insecure server
+            logger.info("Starting insecure gRPC server on port $serverPort [${getVersion()}]")
+            
+            ServerBuilder.forPort(serverPort)
+                .addService(interceptedService)
+                .addTransportFilter(object : ServerTransportFilter() {
+                    override fun transportReady(attributes: Attributes): Attributes {
+                        logger.info("New client connection established: ${attributes}")
+                        return attributes
+                    }
+                    
+                    override fun transportTerminated(attributes: Attributes) {
+                        logger.warn("Client connection terminated: ${attributes}")
+                    }
+                })
+                .build()
         } else {
-            log.info("Start GRPC TLS Server[:$serverPort]")
-            NettyServerBuilder.forPort(Connection.port)
-                    .addService(intercept)
-                    .sslContext(getSslContextBuilder()?.build())
+            // Create secure server with TLS
+            logger.info("Starting secure gRPC server with TLS on port $serverPort [${getVersion()}]")
+            
+            try {
+                // Check if certificate files exist
+                validateCertificateFiles()
+                
+                NettyServerBuilder.forPort(serverPort)
+                    .addService(interceptedService)
+                    .sslContext(buildSslContext()?.build())
                     .build()
+            } catch (e: Exception) {
+                logger.error("TLS configuration failed: ${e.message}. Falling back to insecure mode.")
+                
+                // Fall back to insecure server if TLS setup fails
+                ServerBuilder.forPort(serverPort)
+                    .addService(interceptedService)
+                    .build()
+            }
         }
     }
 
-    private fun getSslContextBuilder(): SslContextBuilder? {
-        val sslClientContextBuilder: SslContextBuilder = SslContextBuilder.forServer(File(certChain),
-                File(certKey))
-        sslClientContextBuilder.trustManager(File(rootCert))
-        sslClientContextBuilder.clientAuth(io.netty.handler.ssl.ClientAuth.REQUIRE)
-        return GrpcSslContexts.configure(sslClientContextBuilder)
+    /**
+     * Validates that the required certificate files exist.
+     *
+     * @throws IllegalStateException If any required certificate file is missing
+     */
+    private fun validateCertificateFiles() {
+        val certChainFile = File(certChainPath)
+        val certKeyFile = File(certKeyPath)
+        val rootCertFile = File(rootCertPath)
+        
+        if (!certChainFile.exists()) {
+            throw IllegalStateException("Certificate chain file not found at $certChainPath")
+        }
+        
+        if (!certKeyFile.exists()) {
+            throw IllegalStateException("Certificate key file not found at $certKeyPath")
+        }
+        
+        if (!rootCertFile.exists()) {
+            throw IllegalStateException("Root certificate file not found at $rootCertPath")
+        }
+    }
+
+    /**
+     * Builds the SSL context for secure connections.
+     *
+     * @return Configured SSL context builder
+     */
+    private fun buildSslContext(): SslContextBuilder? {
+        val sslContextBuilder = SslContextBuilder.forServer(
+            File(certChainPath),
+            File(certKeyPath)
+        )
+        
+        sslContextBuilder.trustManager(File(rootCertPath))
+        sslContextBuilder.clientAuth(ClientAuth.REQUIRE)
+        
+        return GrpcSslContexts.configure(sslContextBuilder)
     }
 }

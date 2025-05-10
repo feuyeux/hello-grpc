@@ -5,4 +5,6 @@ cd "$(
 )/" || exit
 set -e
 
-.build/debug/HelloClient
+# Enable TLS communication
+export GRPC_HELLO_SECURE=Y
+swift run HelloClient

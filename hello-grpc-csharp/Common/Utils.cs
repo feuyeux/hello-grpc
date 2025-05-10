@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Grpc.Core;
 using Hello;
 
 namespace Common;
@@ -37,5 +38,10 @@ public class Utils
             list.AddFirst(request);
         }
         return list;
+    }
+    
+    public static string GetVersion()
+    {
+        return $"grpc.version={VersionInfo.CurrentVersion}";
     }
 }

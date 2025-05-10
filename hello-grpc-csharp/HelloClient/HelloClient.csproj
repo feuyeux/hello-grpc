@@ -10,11 +10,16 @@
     <Product>HelloClient</Product>
     <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- 使用最新的 gRPC 客户端实现 -->
+    <PackageReference Include="Grpc.Net.Client" Version="2.61.0" />
   </ItemGroup>
 
   <ItemGroup>

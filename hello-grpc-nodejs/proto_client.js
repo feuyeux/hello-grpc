@@ -31,7 +31,9 @@ function talk(client, request) {
     metadata.add("k2", "v2")
     client.talk(request, metadata, function (err, response) {
         if (err) {
-            logger.error(err)
+            logger.error("Talk Error: " + err.message)
+            logger.error("Talk Error code: " + err.code)
+            logger.error("Talk Error details: " + err.details)
         } else {
             printResponse("Talk<-", response)
         }

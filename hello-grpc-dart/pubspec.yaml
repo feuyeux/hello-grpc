@@ -6,7 +6,7 @@ publish_to: none
 # brew search dart
 # dart --version
 environment:
-  sdk: '>=3.3.0'
+  sdk: '>=3.7.0'
 
 dependencies:
   #  https://pub.dev/packages/async
@@ -23,6 +23,10 @@ dependencies:
   uuid: ^4.5.1
   # https://pub.dev/packages/test
   test: ^1.25.8
+  # https://pub.dev/packages/yaml
+  yaml: ^3.1.2
+  # https://pub.dev/packages/path
+  path: ^1.9.0
 dev_dependencies:
   # https://pub.dev/packages/lints
   lints: ^5.0.0

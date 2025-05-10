@@ -1,6 +1,7 @@
 # encoding: utf-8
 from collections import deque
 import random
+import grpc
 
 from conn.landing_pb2 import TalkRequest
 
@@ -19,7 +20,7 @@ def build_link_requests():
     ids = random_ids(5, 3)
     requests = deque()
     for i in range(0, 3):
-        request =  TalkRequest(data=ids[i], meta="PYTHON")
+        request = TalkRequest(data=ids[i], meta="PYTHON")
         requests.appendleft(request)
     return requests
 
@@ -35,3 +36,10 @@ def random_ids(end, n):
 
 def random_id(end):
     return str(random.randint(0, end))
+
+
+def get_version():
+    """
+    Get the gRPC version string
+    """
+    return f"grpc.version={grpc.__version__}"

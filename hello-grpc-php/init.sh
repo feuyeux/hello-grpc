@@ -22,13 +22,23 @@ if [[ "$OSTYPE" == "msys" ]]; then
     fi
 else
     # Unix-like 系统
-    export BASEDIR="/usr/local/bin/"
-    export PROTOC=$BASEDIR/protoc
-    export PLUGIN=protoc-gen-grpc=$BASEDIR/grpc_php_plugin
+    export PROTOC=$(which protoc)
+    # Check if grpc_php_plugin is in PATH
+    if which grpc_php_plugin > /dev/null; then
+        export PLUGIN="protoc-gen-grpc=$(which grpc_php_plugin)"
+    elif [ -f "/opt/homebrew/bin/grpc_php_plugin" ]; then
+        export PLUGIN="protoc-gen-grpc=/opt/homebrew/bin/grpc_php_plugin"
+    elif [ -f "/usr/local/bin/grpc_php_plugin" ]; then
+        export PLUGIN="protoc-gen-grpc=/usr/local/bin/grpc_php_plugin"
+    else
+        echo "Error: grpc_php_plugin not found. Please install it using:"
+        echo "brew install grpc"
+        exit 1
+    fi
 fi
 
 mkdir -p common/msg common/svc
-$PROTOC --proto_path=proto \
+$PROTOC --proto_path=../proto \
     --php_out=common/msg \
     --grpc_out=generate_server:common/svc \
-    --plugin="$PLUGIN" proto/landing.proto
+    --plugin="$PLUGIN" ../proto/landing.proto

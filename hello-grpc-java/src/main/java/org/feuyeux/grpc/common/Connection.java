@@ -46,10 +46,20 @@ public class Connection {
   private static final int port = 9996;
 
   // https://myssl.com/create_test_cert.html
-  private static final String cert = "/var/hello_grpc/client_certs/cert.pem";
-  private static final String certKey = "/var/hello_grpc/client_certs/private.pkcs8.key";
-  private static final String certChain = "/var/hello_grpc/client_certs/full_chain.pem";
-  private static final String rootCert = "/var/hello_grpc/client_certs/myssl_root.cer";
+  private static final String cert = getCertPath("cert.pem");
+  private static final String certKey = getCertPath("private.pkcs8.key");
+  private static final String certChain = getCertPath("full_chain.pem");
+  private static final String rootCert = getCertPath("myssl_root.cer");
+
+  private static String getCertPath(String fileName) {
+    String os = System.getProperty("os.name").toLowerCase();
+    if (os.contains("win")) {
+      return "d:\\garden\\var\\hello_grpc\\client_certs\\" + fileName;
+    } else {
+      return "/var/hello_grpc/client_certs/" + fileName;
+    }
+  }
+
   private static final String serverName = "hello.grpc.io";
   public static final String HELLO_LANDING_SERVICE = "hello.LandingService";
 

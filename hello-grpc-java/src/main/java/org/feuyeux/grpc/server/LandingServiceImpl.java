@@ -19,14 +19,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of the LandingService gRPC service. This class demonstrates four different types
- * of gRPC communication: 1. Unary RPC - Simple request/response model 2. Server Streaming RPC -
- * Server sends multiple responses to a single client request 3. Client Streaming RPC - Client sends
- * multiple requests and server responds with a single response 4. Bidirectional Streaming RPC -
- * Both client and server send a sequence of messages
+ * Implementation of the LandingService gRPC service.
+ *
+ * <p>This class demonstrates four gRPC communication patterns:
+ *
+ * <ol>
+ *   <li>Unary RPC - Simple request/response model
+ *   <li>Server Streaming RPC - Server sends multiple responses to a single client request
+ *   <li>Client Streaming RPC - Client sends multiple requests and server responds with a single
+ *       response
+ *   <li>Bidirectional Streaming RPC - Both client and server send a sequence of messages
+ * </ol>
  */
 public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBase {
-  private static final Logger log = LoggerFactory.getLogger("LandingServiceImpl");
+  private static final Logger logger = LoggerFactory.getLogger(LandingServiceImpl.class);
   private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
   private LandingServiceGrpc.LandingServiceStub asyncStub;
 
@@ -51,34 +57,40 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   }
 
   /**
-   * Unary RPC implementation. Handles a single request and returns a single response. If a backend
-   * stub is configured, proxies the request to the next service.
+   * Unary RPC implementation.
+   *
+   * <p>Handles a single request and returns a single response. If a backend stub is configured,
+   * proxies the request to the next service.
    *
    * @param request The client request containing data and metadata
    * @param responseObserver The observer to send the response back to the client
    */
   @Override
   public void talk(TalkRequest request, StreamObserver<TalkResponse> responseObserver) {
-    log.info("TALK REQUEST: data={},meta={}", request.getData(), request.getMeta());
+    logger.info("Unary call - data: {}, meta: {}", request.getData(), request.getMeta());
+
     TalkResponse response;
     if (blockingStub == null) {
-      // No backend service, process request directly
+      // Process request locally
       response =
           TalkResponse.newBuilder()
               .setStatus(200)
-              .addResults(buildResult(request.getData()))
+              .addResults(createResult(request.getData()))
               .build();
     } else {
-      // Proxy request to backend service
+      // Forward request to backend service
       response = blockingStub.talk(request);
     }
+
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
 
   /**
-   * Server streaming RPC implementation. Handles a single request and returns multiple responses
-   * through the stream. If backend stub is configured, proxies the request to the next service.
+   * Server streaming RPC implementation.
+   *
+   * <p>Handles a single request and returns multiple responses through the stream. If backend stub
+   * is configured, proxies the request to the next service.
    *
    * @param request The client request containing comma-separated data values
    * @param responseObserver The observer to send multiple responses back to the client
@@ -86,29 +98,30 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   @Override
   public void talkOneAnswerMore(
       TalkRequest request, StreamObserver<TalkResponse> responseObserver) {
-    log.info("TalkOneAnswerMore REQUEST: data={},meta={}", request.getData(), request.getMeta());
+    logger.info("Server streaming call - data: {}, meta: {}", request.getData(), request.getMeta());
+
     if (blockingStub == null) {
-      // No backend service, process request directly
-      List<TalkResponse> talkResponses = new ArrayList<>();
-      String[] datas = request.getData().split(",");
-      for (String data : datas) {
+      // Process request locally
+      String[] dataItems = request.getData().split(",");
+      for (String dataItem : dataItems) {
         TalkResponse response =
-            TalkResponse.newBuilder().setStatus(200).addResults(buildResult(data)).build();
-        talkResponses.add(response);
+            TalkResponse.newBuilder().setStatus(200).addResults(createResult(dataItem)).build();
+        responseObserver.onNext(response);
       }
-      // Send each response individually through the stream
-      talkResponses.forEach(responseObserver::onNext);
     } else {
-      // Proxy request to backend service and forward all responses
-      Iterator<TalkResponse> talkResponses = blockingStub.talkOneAnswerMore(request);
-      talkResponses.forEachRemaining(responseObserver::onNext);
+      // Forward request to backend service
+      Iterator<TalkResponse> responseIterator = blockingStub.talkOneAnswerMore(request);
+      responseIterator.forEachRemaining(responseObserver::onNext);
     }
+
     responseObserver.onCompleted();
   }
 
   /**
-   * Client streaming RPC implementation. Handles multiple requests from the client and returns a
-   * single response. If backend stub is configured, proxies all requests to the next service.
+   * Client streaming RPC implementation.
+   *
+   * <p>Handles multiple requests from the client and returns a single response. If backend stub is
+   * configured, proxies all requests to the next service.
    *
    * @param responseObserver The observer to send the final response back to the client
    * @return A StreamObserver to receive the client's stream of requests
@@ -117,47 +130,55 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   public StreamObserver<TalkRequest> talkMoreAnswerOne(
       StreamObserver<TalkResponse> responseObserver) {
     if (asyncStub == null) {
-      // No backend service, process requests directly
+      // Process requests locally
       return new StreamObserver<>() {
-        final List<TalkResult> talkResults = new ArrayList<>();
+        private final List<TalkResult> results = new ArrayList<>();
 
         @Override
         public void onNext(TalkRequest request) {
-          log.info(
-              "TalkMoreAnswerOne REQUEST: data={},meta={}", request.getData(), request.getMeta());
-          talkResults.add(buildResult(request.getData()));
+          logger.info(
+              "Client streaming request - data: {}, meta: {}",
+              request.getData(),
+              request.getMeta());
+          results.add(createResult(request.getData()));
         }
 
         @Override
         public void onError(Throwable t) {
-          log.error("TalkMoreAnswerOne onError");
+          logger.error("Error in client streaming", t);
+          responseObserver.onError(t);
         }
 
         @Override
         public void onCompleted() {
-          // When client has sent all requests, combine results and send single response
-          responseObserver.onNext(
-              TalkResponse.newBuilder().setStatus(200).addAllResults(talkResults).build());
+          // Send combined response with all results
+          TalkResponse response =
+              TalkResponse.newBuilder().setStatus(200).addAllResults(results).build();
+          responseObserver.onNext(response);
           responseObserver.onCompleted();
         }
       };
     } else {
-      // Proxy all requests to backend service
-      StreamObserver<TalkResponse> nextObserver = nextObserver(responseObserver);
-      return new StreamObserver<>() {
-        final StreamObserver<TalkRequest> requestObserver =
-            asyncStub.talkMoreAnswerOne(nextObserver);
+      // Forward requests to backend service
+      StreamObserver<TalkResponse> backendResponseHandler =
+          createResponseForwarder(responseObserver);
+      StreamObserver<TalkRequest> requestObserver =
+          asyncStub.talkMoreAnswerOne(backendResponseHandler);
 
+      return new StreamObserver<>() {
         @Override
         public void onNext(TalkRequest request) {
-          log.info(
-              "TalkMoreAnswerOne REQUEST: data={},meta={}", request.getData(), request.getMeta());
+          logger.info(
+              "Client streaming request (forwarding) - data: {}, meta: {}",
+              request.getData(),
+              request.getMeta());
           requestObserver.onNext(request);
         }
 
         @Override
         public void onError(Throwable t) {
-          log.error("TalkMoreAnswerOne onError");
+          logger.error("Error in client streaming", t);
+          requestObserver.onError(t);
         }
 
         @Override
@@ -169,22 +190,23 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   }
 
   /**
-   * Helper method to create a response observer for proxying streaming responses from a backend
-   * service to the client.
+   * Creates a response observer that forwards responses from a backend service to the client.
    *
    * @param responseObserver The original response observer from the client
    * @return A new response observer that forwards responses to the client
    */
-  private StreamObserver<TalkResponse> nextObserver(StreamObserver<TalkResponse> responseObserver) {
+  private StreamObserver<TalkResponse> createResponseForwarder(
+      StreamObserver<TalkResponse> responseObserver) {
     return new StreamObserver<>() {
       @Override
-      public void onNext(TalkResponse talkResponse) {
-        responseObserver.onNext(talkResponse);
+      public void onNext(TalkResponse response) {
+        responseObserver.onNext(response);
       }
 
       @Override
       public void onError(Throwable t) {
-        log.error("Error from backend service", t);
+        logger.error("Error from backend service", t);
+        responseObserver.onError(t);
       }
 
       @Override
@@ -195,9 +217,11 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   }
 
   /**
-   * Bidirectional streaming RPC implementation. Handles multiple requests from the client and
-   * returns multiple responses. Each request receives a corresponding response. If backend stub is
-   * configured, proxies all requests to the next service.
+   * Bidirectional streaming RPC implementation.
+   *
+   * <p>Handles multiple requests from the client and returns multiple responses. Each request
+   * receives a corresponding response. If backend stub is configured, proxies all requests to the
+   * next service.
    *
    * @param responseObserver The observer to send responses back to the client
    * @return A StreamObserver to receive the client's stream of requests
@@ -206,23 +230,28 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   public StreamObserver<TalkRequest> talkBidirectional(
       StreamObserver<TalkResponse> responseObserver) {
     if (asyncStub == null) {
-      // No backend service, process requests directly
+      // Process requests locally
       return new StreamObserver<>() {
         @Override
         public void onNext(TalkRequest request) {
-          log.info(
-              "TalkBidirectional REQUEST: data={},meta={}", request.getData(), request.getMeta());
-          // Send a response for each request received
-          responseObserver.onNext(
+          logger.info(
+              "Bidirectional streaming request - data: {}, meta: {}",
+              request.getData(),
+              request.getMeta());
+
+          // Send a response for each request
+          TalkResponse response =
               TalkResponse.newBuilder()
                   .setStatus(200)
-                  .addResults(buildResult(request.getData()))
-                  .build());
+                  .addResults(createResult(request.getData()))
+                  .build();
+          responseObserver.onNext(response);
         }
 
         @Override
         public void onError(Throwable t) {
-          log.error("TalkBidirectional onError");
+          logger.error("Error in bidirectional streaming", t);
+          responseObserver.onError(t);
         }
 
         @Override
@@ -231,20 +260,26 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
         }
       };
     } else {
-      // Proxy all requests to backend service
-      StreamObserver<TalkResponse> nextObserver = nextObserver(responseObserver);
-      final StreamObserver<TalkRequest> requestObserver = asyncStub.talkBidirectional(nextObserver);
+      // Forward requests to backend service
+      StreamObserver<TalkResponse> backendResponseHandler =
+          createResponseForwarder(responseObserver);
+      StreamObserver<TalkRequest> requestObserver =
+          asyncStub.talkBidirectional(backendResponseHandler);
+
       return new StreamObserver<>() {
         @Override
         public void onNext(TalkRequest request) {
-          log.info(
-              "TalkBidirectional REQUEST: data={},meta={}", request.getData(), request.getMeta());
+          logger.info(
+              "Bidirectional streaming request (forwarding) - data: {}, meta: {}",
+              request.getData(),
+              request.getMeta());
           requestObserver.onNext(request);
         }
 
         @Override
         public void onError(Throwable t) {
-          log.error("TalkBidirectional onError", t);
+          logger.error("Error in bidirectional streaming", t);
+          requestObserver.onError(t);
         }
 
         @Override
@@ -256,29 +291,32 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   }
 
   /**
-   * Builds a TalkResult object containing the response data.
+   * Creates a TalkResult object with the given data ID.
    *
    * @param id The request ID (typically a language index)
    * @return A TalkResult with timestamp, type and key-value data
    */
-  private TalkResult buildResult(String id) {
+  private TalkResult createResult(String id) {
+    // Parse the ID to an integer index
     int index;
     try {
       index = Integer.parseInt(id);
-    } catch (NumberFormatException ignored) {
+    } catch (NumberFormatException e) {
       index = 0;
     }
-    String hello;
-    if (index > 5) {
-      hello = "你好";
-    } else {
-      hello = getHelloList().get(index);
-    }
+
+    // Get the greeting based on index
+    String greeting = (index > 5) ? "你好" : getHelloList().get(index);
+    String answer = getAnswerMap().get(greeting);
+
+    // Create key-value data
     Map<String, String> kv = new HashMap<>();
     kv.put("id", UUID.randomUUID().toString());
     kv.put("idx", id);
-    kv.put("data", hello + "," + getAnswerMap().get(hello));
+    kv.put("data", greeting + "," + answer);
     kv.put("meta", "JAVA");
+
+    // Build and return result
     return TalkResult.newBuilder()
         .setId(System.nanoTime())
         .setType(ResultType.OK)

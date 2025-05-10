@@ -1,101 +1,155 @@
-# hello_grpc_flutter
+# Flutter gRPC Implementation
 
-gRPC Client by Flutter
+This project implements a gRPC client using Flutter, demonstrating four communication patterns:
+1. Unary RPC
+2. Server Streaming RPC
+3. Client Streaming RPC
+4. Bidirectional Streaming RPC
 
-## SETUP
+## Prerequisites
 
-### ENV
+- Flutter SDK 2.5 or higher
+- Dart SDK 2.14 or higher
+- Protocol Buffers compiler (protoc)
+- Dart protoc plugin
+- Android Studio or VS Code with Flutter extensions
 
-```sh
-$ code $HOME/.zshrc
+## Building the Project
 
-export FLUTTER_STORAGE_BASE_URL=https://mirror.sjtu.edu.cn
-export PUB_HOSTED_URL=https://mirror.sjtu.edu.cn/dart-pub
-export FLUTTER_HOME=$HOME/flutter
-export PATH="$PATH:${FLUTTER_HOME}/bin"
+### 1. Install Dependencies
 
-export NO_PROXY=localhost,127.0.0.1
-export http_proxy=127.0.0.1:54776
-```
-
-### CocoaPods
-
-```sh
-$ brew install cocoapods
-
-$ pod --version
-1.12.1
-```
-
-### Android
-
-- <https://flutterservice.com/sdkmanager-command-not-found-flutter/>
-
-```sh
-flutter doctor --android-licenses
-```
-
-### Check
-
-```sh
-$ flutter doctor
-
-Doctor summary (to see all details, run flutter doctor -v):
-[✓] Flutter (Channel stable, 3.13.2, on macOS 13.6 22G109 darwin-x64, locale zh-Hans)
-[✓] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
-[✓] Xcode - develop for iOS and macOS (Xcode 14.3.1)
-[✓] Chrome - develop for the web
-[✓] Android Studio (version 2022.3)
-[✓] IntelliJ IDEA Ultimate Edition (version 2023.2.1)
-[✓] VS Code (version 1.81.1)
-[✓] Connected device (2 available)
-[✓] Network resources
-
-• No issues found!
-
-
-PS > flutter doctor
-Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
-Doctor summary (to see all details, run flutter doctor -v):
-[√] Flutter (Channel stable, 3.10.6, on Microsoft Windows [Version 10.0.22621.2215], locale zh-CN)
-[√] Windows Version (Installed version of Windows is version 10 or higher)
-[√] Android toolchain - develop for Android devices (Android SDK version 34.0.0)
-[√] Chrome - develop for the web
-[√] Visual Studio - develop for Windows (Visual Studio Community 2022 17.7.3)
-[√] Android Studio (version 2022.3)
-[√] IntelliJ IDEA Community Edition (version 2023.2)
-[√] VS Code (version 1.82.0)
-[√] Connected device (3 available)
-[√] Network resources
-
-• No issues found!
-```
-
-### Run
-
-```sh
+```bash
+# Install Flutter dependencies
 flutter pub get
 
-#  [ios (default), android (default), windows (default), linux (default), macos (default), web (default)]
-flutter create .
-flutter run -v
-#
-# ./clean.bat
-flutter clean
-flutter create . --platforms windows
-flutter run -d windows
-#
-# ./clean.sh
-flutter clean
-flutter create . --platforms macos
-flutter run -d macos
+# Install the protoc plugin globally (if not already installed)
+dart pub global activate protoc_plugin
 ```
 
-## GUID
+### 2. Setup Proto Files
 
-DOCUMENT: [Building your first Flutter App - with a Codelab](https://codelabs.developers.google.com/codelabs/flutter-codelab-first)
+```bash
+# Link proto files from parent directory
+./proto_link.sh
+```
 
-VIDEO：
+### 3. Generate gRPC Code from Proto Files
 
-- [youtube](https://www.youtube.com/watch?v=8sAyPDLorek)
-- [bilibili](https://www.bilibili.com/video/BV1Uh4y1R7RC)
+```bash
+# Generate Dart code from proto files
+protoc --dart_out=grpc:lib/src/generated -Iprotos protos/landing.proto
+```
+
+## Running the Application
+
+### Application Setup
+
+```bash
+# Run the Flutter app
+flutter run
+
+# Build for specific platform
+flutter build apk  # Android
+flutter build ios  # iOS (on macOS only)
+```
+
+### Connecting to Backend
+
+The Flutter client can connect to any of the server implementations using the environment variables:
+
+```bash
+# Connect to a specific server before running the app
+export GRPC_SERVER=localhost
+export GRPC_SERVER_PORT=9996
+flutter run
+```
+
+### TLS Secure Communication
+
+To enable TLS, you need to prepare certificates and configure environment variables:
+
+1. **Certificate Setup**
+
+   Place client certificates in the app's asset directory:
+   ```bash
+   # Copy certificates to the app's assets directory
+   mkdir -p assets/certs
+   cp /var/hello_grpc/client_certs/* assets/certs/
+   ```
+
+2. **Update pubspec.yaml**
+
+   Ensure that the certificates are included in the app bundle:
+   ```yaml
+   assets:
+     - assets/certs/
+   ```
+
+3. **Run with TLS Enabled**
+
+   ```bash
+   # Start a gRPC server with TLS enabled in another terminal
+   # Then run the Flutter app with TLS enabled
+   export GRPC_HELLO_SECURE=Y
+   flutter run
+   ```
+
+## Testing
+
+```bash
+# Run tests
+flutter test
+```
+
+## Troubleshooting
+
+1. **Certificate Issues**
+   ```bash
+   # Make sure certificates are included in assets
+   flutter clean
+   flutter pub get
+   ```
+
+2. **Connection Issues**
+   ```bash
+   # Ensure the server is running and accessible
+   # For Android emulators, use 10.0.2.2 instead of localhost
+   export GRPC_SERVER=10.0.2.2
+   flutter run
+   ```
+
+3. **Build Issues**
+   ```bash
+   # Clean and rebuild
+   flutter clean
+   flutter pub get
+   flutter run
+   ```
+
+## Environment Variables
+
+| Environment Variable       | Description                               | Default Value |
+|---------------------------|-------------------------------------------|--------------|
+| GRPC_HELLO_SECURE         | Enable TLS encryption                     | N            |
+| GRPC_SERVER               | Server address (client side)              | localhost    |
+| GRPC_SERVER_PORT          | Server port (client side)                 | 9996         |
+| NO_PROXY                  | Bypass proxy for certain addresses        | N/A          |
+
+## Features
+
+- ✅ Four gRPC communication models
+- ✅ TLS secure communication
+- ✅ Cross-platform (Android, iOS)
+- ✅ Material Design UI
+- ✅ Asynchronous programming with Futures and Streams
+- ✅ Header propagation
+- ✅ Environment variable configuration
+- ✅ Null safety support
+
+## Contributor Notes
+
+When modifying or extending this implementation, please:
+1. Follow Flutter and Dart style guidelines
+2. Add appropriate tests for new functionality
+3. Update documentation as needed
+4. Ensure compatibility with the multi-language chaining demonstrated in the root README

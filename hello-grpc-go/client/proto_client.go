@@ -2,181 +2,505 @@ package main
 
 import (
 	"container/list"
+	"context"
+	"fmt"
 	"hello-grpc/common"
 	"hello-grpc/conn"
 	"io"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"hello-grpc/common/pb"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
-const retries = 1
-const loops = 3
+// Configuration constants
+const (
+	retryAttempts    = 3                      // Number of connection retry attempts
+	retryDelay       = 2 * time.Second        // Delay between retries
+	iterationCount   = 3                      // Number of times to run all gRPC patterns
+	requestDelay     = 200 * time.Millisecond // Delay between iterations
+	sendDelay        = 2 * time.Millisecond   // Delay between sending requests in streaming
+	requestTimeout   = 5 * time.Second        // Timeout for individual requests
+	defaultBatchSize = 5                      // Default number of requests in a batch
+)
+
+func init() {
+	// Set up logging configuration
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05.000",
+	})
+}
 
 func main() {
-	for retry := 1; retry <= retries; retry++ {
-		err := startTalking(*conn.Connect(), 200*time.Millisecond)
-		if err != nil {
-			log.Infof("retry %d", retry)
+	// Create root context with cancellation for the entire application
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Setup signal handling for graceful shutdown
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+	// Create cancellation goroutine
+	go func() {
+		select {
+		case <-shutdown:
+			log.Info("Received shutdown signal, cancelling operations")
+			cancel()
+		case <-ctx.Done():
+			// Context was cancelled elsewhere
+			return
 		}
+	}()
+
+	log.Infof("Starting gRPC client [version: %s]", common.GetVersion())
+
+	// Attempt to establish connection and run all patterns
+	var err error
+	for attempt := 1; attempt <= retryAttempts; attempt++ {
+		log.Infof("Connection attempt %d/%d", attempt, retryAttempts)
+
+		// Connect to the gRPC server
+		client, closeFunc, connErr := createClient(ctx)
+		if connErr != nil {
+			log.Errorf("Connection attempt %d failed: %v", attempt, connErr)
+			if attempt < retryAttempts {
+				log.Infof("Retrying in %v...", retryDelay)
+				select {
+				case <-time.After(retryDelay):
+					continue
+				case <-ctx.Done():
+					log.Info("Client shutting down, aborting retries")
+					return
+				}
+			}
+			log.Error("Maximum connection attempts reached, exiting")
+			os.Exit(1)
+		}
+
+		// Close the connection when we're done
+		defer closeFunc()
+
+		// Run all the gRPC patterns
+		err = runGrpcCalls(ctx, client, requestDelay, iterationCount)
+		if err == nil || ctx.Err() != nil {
+			break // Success or deliberate cancellation, no retry needed
+		}
+
+		log.Errorf("Error running gRPC calls: %v", err)
+		if attempt < retryAttempts {
+			log.Infof("Will retry in %v...", retryDelay)
+			select {
+			case <-time.After(retryDelay):
+				// Continue to next attempt
+			case <-ctx.Done():
+				log.Info("Client shutting down, aborting retries")
+				return
+			}
+		}
+	}
+
+	if err != nil && ctx.Err() == nil {
+		log.Error("Failed to execute all gRPC calls successfully")
+		os.Exit(1)
+	}
+
+	if ctx.Err() != nil {
+		log.Info("Client execution was cancelled")
+	} else {
+		log.Info("Client execution completed successfully")
 	}
 }
 
-func startTalking(c pb.LandingServiceClient, tt time.Duration) error {
-	for round := 1; round <= loops; round++ {
-		log.Infof("round %d", round)
-		//
-		log.Infof("Unary RPC")
-		err := talk(c, &pb.TalkRequest{Data: "0", Meta: "GOLANG"})
-		if err != nil {
-			return err
-		}
-		//
-		log.Infof("Server streaming RPC")
-		err = talkOneAnswerMore(c, &pb.TalkRequest{Data: "0,1,2", Meta: "GOLANG"})
-		if err != nil {
-			return err
-		}
-		//
-		log.Infof("Client streaming RPC")
-
-		r, err := talkMoreAnswerOne(c, common.BuildLinkRequests())
-		if err != nil {
-			return err
-		}
-		printResponse(r)
-
-		//
-		log.Infof("Bidirectional streaming RPC")
-		err = talkBidirectional(c, common.BuildLinkRequests())
-		if err != nil {
-			return err
-		}
-		//
-		time.Sleep(tt)
+// createClient establishes a connection to the gRPC server and returns the client
+func createClient(ctx context.Context) (pb.LandingServiceClient, func(), error) {
+	cc, err := conn.ConnectWithContext(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create client connection: %w", err)
 	}
+
+	// Return the client and a cleanup function
+	return pb.NewLandingServiceClient(cc), func() {
+		log.Debug("Closing client connection")
+		if err := cc.Close(); err != nil {
+			log.Errorf("Error closing connection: %v", err)
+		}
+	}, nil
+}
+
+// runGrpcCalls executes all four gRPC patterns multiple times
+func runGrpcCalls(ctx context.Context, client pb.LandingServiceClient, delay time.Duration, iterations int) error {
+	for iteration := 1; iteration <= iterations; iteration++ {
+		// Check if execution was cancelled
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		log.Infof("====== Starting iteration %d/%d ======", iteration, iterations)
+
+		// 1. Unary RPC
+		log.Infof("----- Executing unary RPC -----")
+		if err := executeUnaryCall(ctx, client, &pb.TalkRequest{Data: "0", Meta: "GOLANG"}); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return fmt.Errorf("unary call failed: %w", err)
+		}
+
+		// 2. Server streaming RPC
+		log.Infof("----- Executing server streaming RPC -----")
+		if err := executeServerStreamingCall(ctx, client, &pb.TalkRequest{Data: "0,1,2", Meta: "GOLANG"}); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return fmt.Errorf("server streaming call failed: %w", err)
+		}
+
+		// 3. Client streaming RPC
+		log.Infof("----- Executing client streaming RPC -----")
+		response, err := executeClientStreamingCall(ctx, client, common.BuildLinkRequests())
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return fmt.Errorf("client streaming call failed: %w", err)
+		}
+		logResponse(response)
+
+		// 4. Bidirectional streaming RPC
+		log.Infof("----- Executing bidirectional streaming RPC -----")
+		if err := executeBidirectionalStreamingCall(ctx, client, common.BuildLinkRequests()); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return fmt.Errorf("bidirectional streaming call failed: %w", err)
+		}
+
+		// Wait before next iteration, unless it's the last one
+		if iteration < iterations {
+			log.Infof("Waiting %v before next iteration...", delay)
+			select {
+			case <-time.After(delay):
+				// Continue to next iteration
+			case <-ctx.Done():
+				log.Info("Client execution cancelled")
+				return ctx.Err()
+			}
+		}
+	}
+
+	log.Info("All gRPC calls completed successfully")
 	return nil
 }
 
-func talk(client pb.LandingServiceClient, request *pb.TalkRequest) error {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancelFunc()
-	ctx = metadata.AppendToOutgoingContext(ctx, "k1", "v1", "k2", "v2")
+// executeUnaryCall demonstrates the unary RPC pattern
+func executeUnaryCall(ctx context.Context, client pb.LandingServiceClient, request *pb.TalkRequest) error {
+	// Create a timeout context
+	callCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
 
-	r, err := client.Talk(ctx, request)
+	// Add metadata to outgoing context
+	callCtx = addMetadata(callCtx, map[string]string{
+		"request-id": fmt.Sprintf("unary-%d", time.Now().UnixNano()),
+		"client":     "go-client",
+	})
+
+	log.Infof("Sending unary request: %+v", request)
+	startTime := time.Now()
+
+	response, err := client.Talk(callCtx, request)
+	duration := time.Since(startTime)
+
 	if err != nil {
-		log.Errorf("fail to talk: %v", err)
+		logGRPCError("Unary call", err)
 		return err
 	}
-	log.Infof("Request=%+v", request)
-	printResponse(r)
+
+	log.Infof("Unary call successful in %v", duration)
+	logResponse(response)
 	return nil
 }
 
-func talkOneAnswerMore(client pb.LandingServiceClient, request *pb.TalkRequest) error {
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
-	stream, err := client.TalkOneAnswerMore(ctx, request)
+// executeServerStreamingCall demonstrates the server streaming RPC pattern
+func executeServerStreamingCall(ctx context.Context, client pb.LandingServiceClient, request *pb.TalkRequest) error {
+	// Create a timeout context
+	callCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	// Add metadata to outgoing context
+	callCtx = addMetadata(callCtx, map[string]string{
+		"request-id": fmt.Sprintf("server-stream-%d", time.Now().UnixNano()),
+		"client":     "go-client",
+	})
+
+	log.Infof("Starting server streaming with request: %+v", request)
+	startTime := time.Now()
+
+	stream, err := client.TalkOneAnswerMore(callCtx, request)
 	if err != nil {
-		log.Errorf("%v.TalkOneAnswerMore(_) = _, %v", client, err)
+		logGRPCError("Server streaming setup", err)
 		return err
 	}
-	backFirst := true
+
+	// Process responses from the stream
+	responseCount := 0
 	for {
-		r, err := stream.Recv()
+		// Check for context cancellation
+		if ctx.Err() != nil {
+			log.Info("Server streaming cancelled")
+			return ctx.Err()
+		}
+
+		response, err := stream.Recv()
 		if err == io.EOF {
+			duration := time.Since(startTime)
+			log.Infof("Server streaming completed: received %d responses in %v", responseCount, duration)
 			break
 		}
 		if err != nil {
-			log.Errorf("%v.TalkOneAnswerMore(_) = _, %v", client, err)
+			logGRPCError("Server stream receive", err)
 			return err
 		}
-		if backFirst {
-			log.Infof("Request=%+v", request)
-			backFirst = false
-		}
-		printResponse(r)
+
+		responseCount++
+		log.Infof("Received server streaming response #%d:", responseCount)
+		logResponse(response)
 	}
+
 	return nil
 }
 
-func talkMoreAnswerOne(client pb.LandingServiceClient, requests *list.List) (*pb.TalkResponse, error) {
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
-	stream, err := client.TalkMoreAnswerOne(ctx)
+// executeClientStreamingCall demonstrates the client streaming RPC pattern
+func executeClientStreamingCall(ctx context.Context, client pb.LandingServiceClient, requests *list.List) (*pb.TalkResponse, error) {
+	// Create a timeout context
+	callCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	// Add metadata to outgoing context
+	callCtx = addMetadata(callCtx, map[string]string{
+		"request-id": fmt.Sprintf("client-stream-%d", time.Now().UnixNano()),
+		"client":     "go-client",
+	})
+
+	log.Infof("Starting client streaming with %d requests", requests.Len())
+	startTime := time.Now()
+
+	stream, err := client.TalkMoreAnswerOne(callCtx)
 	if err != nil {
-		log.Errorf("%v.TalkMoreAnswerOne(_) = _, %v", client, err)
+		logGRPCError("Client streaming setup", err)
 		return nil, err
 	}
-	//
-	var wg sync.WaitGroup
-	l := requests.Len()
-	wg.Add(l)
-	i := 0
+
+	// Send each request in the stream
+	requestCount := 0
 	for e := requests.Front(); e != nil; e = e.Next() {
+		// Check for context cancellation
+		if ctx.Err() != nil {
+			log.Info("Client streaming cancelled")
+			return nil, ctx.Err()
+		}
+
 		request := e.Value.(*pb.TalkRequest)
-		go func(i int) {
-			defer wg.Done()
-			log.Infof("Request[%d]=%+v", i, request)
-			if err := stream.Send(request); err != nil {
-				log.Errorf("%v.Send(%v) = %v", stream, request, err)
-			}
-		}(i)
-		i++
+		requestCount++
+
+		log.Infof("Sending client streaming request #%d: %+v", requestCount, request)
+		if err := stream.Send(request); err != nil {
+			logGRPCError("Client stream send", err)
+			return nil, err
+		}
+
+		// Small delay between sends to avoid overwhelming the server
+		time.Sleep(sendDelay)
 	}
-	wg.Wait()
-	//
-	return stream.CloseAndRecv()
+
+	// Close the stream and get response
+	response, err := stream.CloseAndRecv()
+	duration := time.Since(startTime)
+
+	if err != nil {
+		logGRPCError("Client streaming close", err)
+		return nil, err
+	}
+
+	log.Infof("Client streaming completed: sent %d requests in %v", requestCount, duration)
+	return response, nil
 }
 
-func talkBidirectional(client pb.LandingServiceClient, requests *list.List) error {
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "k1", "v1", "k2", "v2")
-	stream, err := client.TalkBidirectional(ctx)
+// executeBidirectionalStreamingCall demonstrates the bidirectional streaming RPC pattern
+func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingServiceClient, requests *list.List) error {
+	// Create a timeout context
+	callCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	// Add metadata to outgoing context
+	callCtx = addMetadata(callCtx, map[string]string{
+		"request-id": fmt.Sprintf("bidirectional-%d", time.Now().UnixNano()),
+		"client":     "go-client",
+	})
+
+	log.Infof("Starting bidirectional streaming with %d requests", requests.Len())
+	startTime := time.Now()
+
+	stream, err := client.TalkBidirectional(callCtx)
 	if err != nil {
-		log.Errorf("%v.TalkBidirectional(_) = _, %v", client, err)
+		logGRPCError("Bidirectional streaming setup", err)
 		return err
 	}
-	waits := make(chan struct{})
+
+	// Use WaitGroup to coordinate sending and receiving
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Error channel to communicate errors from goroutines
+	errChan := make(chan error, 1)
+
+	// Create context to coordinate cancellation between goroutines
+	streamCtx, streamCancel := context.WithCancel(ctx)
+	defer streamCancel()
+
+	// Goroutine to handle responses from server
 	go func() {
+		defer wg.Done()
+
+		responseCount := 0
 		for {
-			r, err := stream.Recv()
+			// Check for context cancellation
+			if streamCtx.Err() != nil {
+				return
+			}
+
+			response, err := stream.Recv()
 			if err == io.EOF {
-				// read done.
-				close(waits)
+				// Server has completed sending
+				log.Infof("Bidirectional stream completed: received %d responses", responseCount)
 				return
 			}
 			if err != nil {
-				log.Errorf("Failed to receive a note : %v", err)
+				// Don't log if cancelled - that's expected
+				if streamCtx.Err() == nil {
+					logGRPCError("Bidirectional stream receive", err)
+					errChan <- err
+				}
+				return
 			}
-			printResponse(r)
+
+			responseCount++
+			log.Infof("Received bidirectional streaming response #%d:", responseCount)
+			logResponse(response)
 		}
 	}()
-	//
+
+	// Send all requests sequentially
+	requestCount := 0
 	for e := requests.Front(); e != nil; e = e.Next() {
-		request := e.Value.(*pb.TalkRequest)
-		log.Infof("Request=%+v", request)
-		if err := stream.Send(request); err != nil {
-			log.Errorf("Failed to send : %v", err)
+		// Check for context cancellation
+		select {
+		case <-streamCtx.Done():
+			log.Info("Bidirectional streaming cancelled")
+			return streamCtx.Err()
+		case err := <-errChan:
+			return err
+		default:
+			// Continue processing
 		}
-		time.Sleep(2 * time.Millisecond)
+
+		request := e.Value.(*pb.TalkRequest)
+		requestCount++
+
+		log.Infof("Sending bidirectional streaming request #%d: %+v", requestCount, request)
+		if err := stream.Send(request); err != nil {
+			// Cancel the receive goroutine
+			streamCancel()
+			logGRPCError("Bidirectional stream send", err)
+			return err
+		}
+
+		// Add delay between sends
+		time.Sleep(sendDelay)
 	}
-	err = stream.CloseSend()
-	if err != nil {
+
+	// Close sending side of stream
+	log.Info("Closing send side of bidirectional stream")
+	if err := stream.CloseSend(); err != nil {
+		logGRPCError("Bidirectional stream close", err)
 		return err
 	}
-	<-waits
-	return nil
+
+	// Wait for receiving side to complete or for an error
+	select {
+	case err := <-errChan:
+		return err
+	case <-streamCtx.Done():
+		return streamCtx.Err()
+	case <-callCtx.Done():
+		if callCtx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("bidirectional streaming timed out")
+		}
+		return callCtx.Err()
+	default:
+		// Wait for completion
+		wg.Wait()
+		duration := time.Since(startTime)
+		log.Infof("Bidirectional streaming completed in %v", duration)
+		return nil
+	}
 }
 
-func printResponse(response *pb.TalkResponse) {
-	if response != nil {
-		for _, result := range response.Results {
-			kv := result.Kv
-			log.Infof("[%d] %d [%s %+v %s,%s:%s]",
-				response.Status, result.Id, kv["meta"], result.Type, kv["id"], kv["idx"], kv["data"])
+// addMetadata adds key-value pairs to the outgoing context as metadata
+func addMetadata(ctx context.Context, md map[string]string) context.Context {
+	pairs := []string{}
+	for k, v := range md {
+		pairs = append(pairs, k, v)
+	}
+	return metadata.AppendToOutgoingContext(ctx, pairs...)
+}
+
+// logGRPCError logs detailed information about a gRPC error
+func logGRPCError(operation string, err error) {
+	if err == nil {
+		return
+	}
+
+	st, ok := status.FromError(err)
+	if ok {
+		log.Errorf("%s failed: code=%s message=%s details=%+v",
+			operation, st.Code(), st.Message(), st.Details())
+	} else {
+		log.Errorf("%s failed: %v", operation, err)
+	}
+}
+
+// logResponse logs the status and results of a response
+func logResponse(response *pb.TalkResponse) {
+	if response == nil {
+		log.Warn("Received nil response")
+		return
+	}
+
+	resultsCount := len(response.Results)
+	log.Infof("Response status: %d, results: %d", response.Status, resultsCount)
+
+	for i, result := range response.Results {
+		kv := result.Kv
+		if kv == nil {
+			log.Infof("  Result #%d: id=%d, type=%d, kv=nil",
+				i+1, result.Id, result.Type)
+			continue
 		}
+
+		meta, _ := kv["meta"]
+		id, _ := kv["id"]
+		idx, _ := kv["idx"]
+		data, _ := kv["data"]
+
+		log.Infof("  Result #%d: id=%d, type=%d, meta=%s, id=%s, idx=%s, data=%s",
+			i+1, result.Id, result.Type, meta, id, idx, data)
 	}
 }

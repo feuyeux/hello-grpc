@@ -1,23 +1,29 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-# https://hub.docker.com/_/microsoft-dotnet-sdk
-WORKDIR /source
-COPY hello-grpc-csharp .
-# download dependencies
-RUN dotnet restore
-# build production version
-RUN dotnet publish HelloServer -c release -o server_out --no-restore
-RUN dotnet publish HelloClient -c release -o client_out --no-restore
+# https://hub.docker.com/r/microsoft/dotnet-sdk
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build-base
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS server
-# https://hub.docker.com/_/microsoft-dotnet-runtime
-WORKDIR /app
-COPY --from=build /source/server_out .
-COPY tls/server_certs /var/hello_grpc/server_certs
-COPY tls/client_certs /var/hello_grpc/client_certs
-CMD ["dotnet","HelloServer.dll"]
+# Copy the entire project for building
+ARG PROJECT_ROOT=.
+WORKDIR /app/hello-grpc
+COPY hello-grpc-csharp /app/hello-grpc/hello-grpc-csharp
+COPY proto /app/hello-grpc/proto
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS client
+# Build C# server and client
+WORKDIR /app/hello-grpc/hello-grpc-csharp
+RUN dotnet restore HelloGrpc.sln
+RUN dotnet build -c Release HelloServer
+RUN dotnet build -c Release HelloClient
+RUN dotnet publish -c Release HelloServer -o /app/publish/server
+RUN dotnet publish -c Release HelloClient -o /app/publish/client
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS server
 WORKDIR /app
-COPY --from=build /source/client_out .
-COPY tls/client_certs /var/hello_grpc/client_certs
-CMD ["dotnet","HelloClient.dll"]
+COPY --from=build-base /app/publish/server /app
+COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+ENTRYPOINT ["dotnet", "HelloServer.dll"]
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS client
+WORKDIR /app
+COPY --from=build-base /app/publish/client /app
+COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+ENTRYPOINT ["dotnet", "HelloClient.dll"]

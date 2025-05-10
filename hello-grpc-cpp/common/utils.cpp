@@ -11,6 +11,7 @@
 #include <iostream>
 #include <random>
 #include <string>
+#include "grpcpp/grpcpp.h"
 
 using std::getenv;
 
@@ -132,14 +133,23 @@ namespace hello
         return secure;
     }
 
+    string Utils::getVersion()
+    {
+        return "grpc.version=" + grpc::Version();
+    }
+
     void Utils::initLog(char *const *argv)
     {
+        // 确保日志目录存在
 #ifdef _WIN32
-        FLAGS_log_dir = R"(D:\garden\opt\hello_grpc\)";
+        system("mkdir -p D:\\garden\\opt\\hello_grpc\\log");
+        FLAGS_log_dir = R"(D:\garden\opt\hello_grpc\log)";
 #elif __APPLE__
-        FLAGS_log_dir = "/opt/hello-grpc/";
+        system("mkdir -p log");
+        FLAGS_log_dir = "log/";
 #else
-        FLAGS_log_dir = "/opt/hello-grpc/";
+        system("mkdir -p log");
+        FLAGS_log_dir = "log/";
 #endif
         /*
          * https://google.github.io/glog/stable/logging/#format-customization
@@ -147,7 +157,19 @@ namespace hello
          * 日志格式 [IWEF]yyyymmdd hh:mm:ss.uuuuuu threadid file:line] msg
          */
         google::InitGoogleLogging(argv[0]);
+
+        // 设置输出到控制台，与Java格式对齐
         FLAGS_colorlogtostderr = true;
         FLAGS_alsologtostderr = true;
+
+        // 自定义日志前缀格式
+        google::SetLogDestination(google::INFO, "log/hello-grpc.");
+
+        // 设置最低日志级别
+        FLAGS_minloglevel = google::INFO;
+
+        // 设置日志格式
+        FLAGS_log_prefix = false; // 禁用默认前缀
+        google::InstallFailureSignalHandler();
     }
 }

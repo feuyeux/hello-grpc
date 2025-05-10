@@ -6,8 +6,10 @@ using hello::TalkRequest;
 
 #include <list>
 
-namespace hello {
-    class Utils {
+namespace hello
+{
+    class Utils
+    {
     public:
         static string hello(int index);
 
@@ -32,5 +34,7 @@ namespace hello {
         static string getBackendPort();
 
         static string getSecure();
+
+        static string getVersion();
     };
 }

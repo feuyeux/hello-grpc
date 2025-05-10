@@ -1,32 +1,33 @@
 """This is a Bazel module file."""
 
-# 确保依赖定义的顺序正确
+module(
+    name = "hello-grpc-cpp",
+    # Ensure the correct order of dependency definitions
+    version = "1.0.0",
+)
 
 ## 1 hello_cc_grpc dependencies !! Keep the order !!
 
+# https://registry.bazel.build/modules/rules_cc
+bazel_dep(name = "rules_cc", version = "0.0.17", repo_name = "rules_cc")
+
+# https://registry.bazel.build/modules/rules_proto
+bazel_dep(name = "rules_proto", version = "7.0.2")
+
 # https://registry.bazel.build/modules/apple_support
-bazel_dep(name = "apple_support", version = "1.17.1", repo_name="build_bazel_apple_support")
+bazel_dep(name = "apple_support", version = "1.17.1", repo_name = "build_bazel_apple_support")
 
 # https://registry.bazel.build/modules/rules_apple
-bazel_dep(name = "rules_apple", version = "3.9.2", repo_name="build_bazel_rules_apple")
-
-# https://registry.bazel.build/modules/gazelle
-bazel_dep(name = "gazelle", version = "0.39.1", repo_name = "bazel_gazelle")
+bazel_dep(name = "rules_apple", version = "3.16.0", repo_name = "build_bazel_rules_apple")
 
 # https://registry.bazel.build/modules/googleapis
-bazel_dep(name = "googleapis", version = "0.0.0-20240819-fe8ba054a", repo_name="com_google_googleapis")
+bazel_dep(name = "googleapis", version = "0.0.0-20240819-fe8ba054a", repo_name = "com_google_googleapis")
 
 # https://registry.bazel.build/modules/protobuf
-bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
-
-# https://registry.bazel.build/modules/rules_go
-bazel_dep(name = "rules_go", version = "0.50.1", repo_name = "io_bazel_rules_go")
-
-# https://registry.bazel.build/modules/rules_python
-bazel_dep(name = "rules_python", version = "0.36.0")
+bazel_dep(name = "protobuf", version = "30.0", repo_name = "com_google_protobuf")
 
 # https://registry.bazel.build/modules/grpc
-bazel_dep(name = "grpc", version = "1.66.0.bcr.2", repo_name = "com_github_grpc_grpc")
+bazel_dep(name = "grpc", version = "1.72.0", repo_name = "com_github_grpc_grpc")
 
 ## 2 hello_utils dependencies
 
@@ -34,9 +35,11 @@ bazel_dep(name = "grpc", version = "1.66.0.bcr.2", repo_name = "com_github_grpc_
 bazel_dep(name = "glog", version = "0.7.1", repo_name = "com_github_google_glog")
 
 # https://registry.bazel.build/modules/abseil-cpp
-bazel_dep(name = "abseil-cpp", version = "20230802.1", repo_name = "com_google_absl")
+bazel_dep(name = "abseil-cpp", version = "20250127.0", repo_name = "com_google_absl")
 
 ## 3 hello_server dependencies
 
 # https://registry.bazel.build/modules/catch2
 bazel_dep(name = "catch2", version = "3.5.2")
+
+bazel_dep(name = "googletest", version = "1.15.2")

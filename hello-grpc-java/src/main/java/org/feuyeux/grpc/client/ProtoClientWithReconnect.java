@@ -24,13 +24,13 @@ public class ProtoClientWithReconnect {
 
   public ProtoClientWithReconnect(ProtoClient protoClient) throws SSLException {
     this.protoClient = protoClient;
-    //  最大重连退避时间（毫秒）
+    // Maximum reconnect backoff time (milliseconds)
     maxReconnectBackoffMillis = 30000;
-    // 初始重连退避时间（毫秒）
+    // Initial reconnect backoff time (milliseconds)
     initialReconnectBackoffMillis = 1000;
-    // 退避乘数
+    // Backoff multiplier
     backoffMultiplier = 2.0;
-    // 最大重连尝试次数
+    // Maximum reconnection attempts
     maxReconnectAttempts = 5;
   }
 

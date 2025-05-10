@@ -5,7 +5,22 @@ SCRIPT_PATH="$(
   pwd -P
 )"
 cd "$SCRIPT_PATH" || exit
-export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+# Set JAVA_HOME based on OS
+case "$(uname -s)" in
+Darwin)
+    export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home"
+    ;;
+Linux)
+    echo "Linux"
+    # TODO: Set Linux JAVA_HOME here
+    ;;
+MSYS_NT* | MINGW64_NT*)
+    export JAVA_HOME="D:/zoo/jdk-24.0.1"
+    ;;
+*)
+    echo "Unsupported OS: $(uname -s)"
+    ;;
+esac
 mvn clean install -DskipTests -f server_pom.xml
 #export GRPC_HELLO_SECURE=Y
 java -jar target/hello-grpc-java-server.jar

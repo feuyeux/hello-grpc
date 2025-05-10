@@ -40,7 +40,14 @@ tasks {
         archiveBaseName.set("proto-server")
         mergeServiceFiles()
     }
+    
+    // 配置distTar任务
+    named<Tar>("distTar") {
+        archiveFileName.set("server.tar")
+        compression = Compression.NONE
+    }
 }
+
 tasks.test {
     useJUnitPlatform()
 }

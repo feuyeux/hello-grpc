@@ -2,22 +2,66 @@
 import logging
 import os
 import sys
-
+from logging.handlers import RotatingFileHandler
+import platform
+import pathlib
 import grpc
 
-cert = "/var/hello_grpc/client_certs/cert.pem"
-certKey = "/var/hello_grpc/client_certs/private.key"
-certChain = "/var/hello_grpc/client_certs/full_chain.pem"
-rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
+
+def get_cert_base_path():
+    # Check for environment variable override
+    base_path = os.getenv("CERT_BASE_PATH")
+    if base_path:
+        return base_path
+
+    # Use platform-specific paths
+    system = platform.system()
+    if system == "Windows":
+        return "C:\\hello_grpc\\client_certs"
+    elif system == "Darwin":  # macOS
+        return "/var/hello_grpc/client_certs"
+    else:  # Linux or other Unix
+        return "/var/hello_grpc/client_certs"
+
+
+# Build platform-specific certificate paths
+cert_base_path = get_cert_base_path()
+cert = os.path.join(cert_base_path, "cert.pem")
+certKey = os.path.join(cert_base_path, "private.key")
+certChain = os.path.join(cert_base_path, "full_chain.pem")
+rootCert = os.path.join(cert_base_path, "myssl_root.cer")
+
 serverName = "hello.grpc.io"
 
+# Ensure log directory exists
+os.makedirs("log", exist_ok=True)
+
+# Create logger
 logger = logging.getLogger('grpc-connection')
 logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
+
+# Console handler
+console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(message)s')
-console.setFormatter(formatter)
+console_formatter = logging.Formatter(
+    '%(asctime)s %(message)s', '%H:%M:%S.%03d')
+console.setFormatter(console_formatter)
+
+# File handler
+file_handler = RotatingFileHandler(
+    'log/hello-grpc.log', maxBytes=19500*1024, backupCount=5)
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter(
+    '%(asctime)s [%(threadName)s] %(levelname)-5s %(name)s - %(message)s')
+file_handler.setFormatter(file_formatter)
+
+# Add handlers
 logger.addHandler(console)
+logger.addHandler(file_handler)
+
+# Log certificate paths for debugging
+logger.info(
+    f"Using certificate paths: cert={cert}, certKey={certKey}, certChain={certChain}, rootCert={rootCert}")
 
 
 def build_channel():
@@ -46,8 +90,10 @@ def build_channel():
             certificate_chain = f.read()
         with open(rootCert, 'rb') as f:
             root_certificates = f.read()
-        credentials = grpc.ssl_channel_credentials(certificate_chain, private_key, certificate_chain)
-        options = (('grpc.ssl_target_name_override', serverName), ('grpc.default_authority', serverName))
+        credentials = grpc.ssl_channel_credentials(
+            certificate_chain, private_key, certificate_chain)
+        options = (('grpc.ssl_target_name_override', serverName),
+                   ('grpc.default_authority', serverName))
         logger.info("Connect With TLS(:%s) (version:%s.%s.%s)", port, python_version[0], python_version[1],
                     python_version[2])
         return grpc.secure_channel(address, credentials, options)

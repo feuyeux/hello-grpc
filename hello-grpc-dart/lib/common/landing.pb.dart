@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: landing.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -15,6 +15,8 @@ import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'landing.pbenum.dart';
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'landing.pbenum.dart';
 
@@ -71,7 +73,7 @@ class TalkRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasData() => $_has(0);
   @$pb.TagNumber(1)
-  void clearData() => clearField(1);
+  void clearData() => $_clearField(1);
 
   /// clientside language
   @$pb.TagNumber(2)
@@ -81,7 +83,7 @@ class TalkRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasMeta() => $_has(1);
   @$pb.TagNumber(2)
-  void clearMeta() => clearField(2);
+  void clearMeta() => $_clearField(2);
 }
 
 class TalkResponse extends $pb.GeneratedMessage {
@@ -136,17 +138,17 @@ class TalkResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasStatus() => $_has(0);
   @$pb.TagNumber(1)
-  void clearStatus() => clearField(1);
+  void clearStatus() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.List<TalkResult> get results => $_getList(1);
+  $pb.PbList<TalkResult> get results => $_getList(1);
 }
 
 class TalkResult extends $pb.GeneratedMessage {
   factory TalkResult({
     $fixnum.Int64? id,
     ResultType? type,
-    $core.Map<$core.String, $core.String>? kv,
+    $pb.PbMap<$core.String, $core.String>? kv,
   }) {
     final $result = create();
     if (id != null) {
@@ -200,24 +202,24 @@ class TalkResult extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// enum
   @$pb.TagNumber(2)
   ResultType get type => $_getN(1);
   @$pb.TagNumber(2)
-  set type(ResultType v) { setField(2, v); }
+  set type(ResultType v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasType() => $_has(1);
   @$pb.TagNumber(2)
-  void clearType() => clearField(2);
+  void clearType() => $_clearField(2);
 
   /// id:result uuid
   /// idx:language index
   /// data: hello
   /// meta: serverside language
   @$pb.TagNumber(3)
-  $core.Map<$core.String, $core.String> get kv => $_getMap(2);
+  $pb.PbMap<$core.String, $core.String> get kv => $_getMap(2);
 }
 
 

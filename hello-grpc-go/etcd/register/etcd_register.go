@@ -50,6 +50,17 @@ func (r *EtcdRegister) KeepAlive() (<-chan *clientv3.LeaseKeepAliveResponse, err
 	return resChan, nil
 }
 
+// Heartbeat manually sends a heartbeat to renew the lease
+func (r *EtcdRegister) Heartbeat() error {
+	_, err := r.etcdCli.KeepAliveOnce(context.Background(), r.leaseId)
+	if err != nil {
+		log.Errorf("Failed to send heartbeat: %v", err)
+		return err
+	}
+	log.Debug("Sent heartbeat to etcd")
+	return nil
+}
+
 func (r *EtcdRegister) Watcher(key string, resChan <-chan *clientv3.LeaseKeepAliveResponse) {
 	for {
 		select {

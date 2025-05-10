@@ -1,12 +1,7 @@
 # python -m grpc.tools.protoc --version
 # 由 grpcio-tools 版本决定； 注意与 protoc --version兼容
-# grpcio-tools==1.70.0
-grpcio-tools==1.70.0
+# https://pypi.org/project/grpcio-tools/
+grpcio-tools==1.71.0
 # https://pypi.org/project/protobuf/
-# protobuf==6.30.2
-protobuf==6.30.2
-# https://pypi.org/project/futures/
-# https://pypi.org/project/futures3/
-futures==3.0.5
-# https://pypi.org/project/setuptools/
-setuptools>=68.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
+# grpcio-tools 1.71.0 depends on protobuf<6.0dev and >=5.26.1
+protobuf==5.29.4

@@ -1,28 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <LangVersion>11</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- https://www.nuget.org/packages/Google.Protobuf -->
-    <PackageReference Include="Google.Protobuf" Version="3.30.2" />
-    <!-- https://www.nuget.org/packages/Grpc -->
-    <PackageReference Include="Grpc" Version="2.46.6" />
-    <!-- https://www.nuget.org/packages/Grpc.Tools -->
-    <PackageReference Include="Grpc.Tools" Version="2.71.0" PrivateAssets="All" />
-    <!-- https://www.nuget.org/packages/log4net -->
+    <!-- 依赖包升级到最新稳定版本 -->
+    <PackageReference Include="Google.Protobuf" Version="3.26.1" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.61.0" />
+    <PackageReference Include="Grpc.Net.Common" Version="2.61.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.61.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
     <PackageReference Include="log4net" Version="3.0.4" />
-    <!-- https://www.nuget.org/packages/Newtonsoft.Json -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <!-- https://www.nuget.org/packages/NETStandard.Library -->
-    <PackageReference Update="NETStandard.Library" Version="2.0.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <PackageReference Include="Xunit" Version="2.7.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\protos\landing.proto" Link="protos\landing.proto" />
+    <!-- Use proto files from central proto directory instead of local -->
+    <Protobuf Include="..\..\proto\landing.proto" Link="protos\landing.proto" />
   </ItemGroup>
 
 </Project>

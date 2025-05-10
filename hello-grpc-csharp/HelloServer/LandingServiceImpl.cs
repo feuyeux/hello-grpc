@@ -5,6 +5,7 @@ using Common;
 using Grpc.Core;
 using Hello;
 using log4net;
+using Microsoft.Extensions.Logging;
 
 namespace HelloServer
 {
@@ -33,7 +34,9 @@ namespace HelloServer
             }
             else
             {
-                var response = _protoClient.Talk(request);
+                // Add proxy headers
+                var headers = CreateProxyHeaders(context.RequestHeaders);
+                var response = _protoClient.Talk(request, headers);
                 return Task.FromResult(response);
             }
         }
@@ -60,6 +63,8 @@ namespace HelloServer
             }
             else
             {
+                // Add proxy headers
+                headers = CreateProxyHeaders(headers);
                 using var call = _protoClient.TalkOneAnswerMore(request, headers);
                 var nextStream = call.ResponseStream;
                 while (await nextStream.MoveNext())
@@ -95,7 +100,9 @@ namespace HelloServer
             }
             else
             {
-                using var call = _protoClient.TalkMoreAnswerOne(context.RequestHeaders);
+                // Add proxy headers
+                var headers = CreateProxyHeaders(context.RequestHeaders);
+                using var call = _protoClient.TalkMoreAnswerOne(headers);
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
                 while (await requestStream.MoveNext())
@@ -136,7 +143,9 @@ namespace HelloServer
             }
             else
             {
-                using var call = _protoClient.TalkBidirectional(context.RequestHeaders);
+                // Add proxy headers
+                var headers = CreateProxyHeaders(context.RequestHeaders);
+                using var call = _protoClient.TalkBidirectional(headers);
                 var responseReaderTask = Task.Run(async () =>
                 {
                     while (await call.ResponseStream.MoveNext())
@@ -178,6 +187,34 @@ namespace HelloServer
         private Metadata PrintHeaders(ServerCallContext context)
         {
             var headers = context.RequestHeaders;
+            foreach (var header in headers)
+            {
+                _log.Info($"->H {header.Key}:{header.Value}");
+            }
+
+            return headers;
+        }
+
+        /// <summary>
+        /// Creates a new Metadata object with proxy identification headers added
+        /// </summary>
+        /// <param name="originalHeaders">The original request headers</param>
+        /// <returns>A new Metadata object with proxy headers</returns>
+        private Metadata CreateProxyHeaders(Metadata originalHeaders)
+        {
+            // Create a new metadata object with all original headers
+            var headers = new Metadata();
+            foreach (var header in originalHeaders)
+            {
+                headers.Add(header);
+            }
+
+            // Add proxy identification headers
+            headers.Add("x-proxy-by", "csharp-proxy");
+            headers.Add("x-proxy-timestamp", DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString());
+            
+            // Log the headers we're sending
+            _log.Info("Proxying request with headers:");
             foreach (var header in headers)
             {
                 _log.Info($"->H {header.Key}:{header.Value}");

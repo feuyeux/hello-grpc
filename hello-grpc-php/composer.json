@@ -2,10 +2,10 @@
     "name": "feuyeux/hello-grpc",
     "description": "Hello gRPC for PHP",
     "require": {
-        "grpc/grpc": "^v1.57.0",
-        "google/protobuf": "^v4.28.2",
+        "grpc/grpc": "^1.57.0",
+        "google/protobuf": "^v4.0.0",
         "ramsey/uuid": "^4.7.5",
-        "apache/log4php": "2.3.0"
+        "monolog/monolog": "^3.5.0"
     },
     "autoload": {
         "psr-4": {

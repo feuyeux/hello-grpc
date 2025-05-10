@@ -6,12 +6,27 @@
     "uuid": "^11.0.2",
     "winston": "^3.10.0"
   },
+  "scripts": {
+    "compile": "tsc --outDir dist",
+    "build": "tsc --outDir dist",
+    "start:server": "node dist/hello_server.js",
+    "start:client": "node dist/hello_client.js",
+    "test": "ts-mocha test/**/*.test.ts",
+    "generate-proto": "grpc_tools_node_protoc --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --js_out=import_style=commonjs,binary:./src/proto --ts_out=service=grpc-node,mode=grpc-js:./src/proto -I ../proto ../proto/landing.proto"
+  },
   "devDependencies": {
-    "@types/uuid": "^9.0.3",
-    "grpc-tools": "^1.12.4",
+    "@types/mocha": "^10.0.10",
+    "@types/uuid": "10.0.0",
     "grpc_tools_node_protoc_ts": "^5.3.3",
+    "grpc-tools": "^1.12.4",
+    "mocha": "^11.2.2",
+    "ts-mocha": "^11.1.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.2"
+  },
+  "engines": {
+    "npm": ">=11.0.0",
+    "node": ">=23.0.0"
   },
   "license": "Apache-2.0"
 }

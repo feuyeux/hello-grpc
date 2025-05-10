@@ -15,53 +15,52 @@ import (
 	"hello-grpc/server/tracing"
 )
 
-// ProtoServer implements LandingServiceServer interface
-// This service demonstrates the four different gRPC communication patterns:
-// 1. Unary RPC - Simple request/response model
-// 2. Server Streaming RPC - Server sends multiple responses to a single client request
-// 3. Client Streaming RPC - Client sends multiple requests and server responds with a single response
-// 4. Bidirectional Streaming RPC - Both client and server send a sequence of messages
+// ProtoServer implements the LandingServiceServer interface.
+// It demonstrates four gRPC communication patterns:
+// 1. Unary RPC (Talk)
+// 2. Server Streaming RPC (TalkOneAnswerMore)
+// 3. Client Streaming RPC (TalkMoreAnswerOne)
+// 4. Bidirectional Streaming RPC (TalkBidirectional)
 type ProtoServer struct {
 	BackendClient pb.LandingServiceClient
 	pb.UnimplementedLandingServiceServer
 }
 
 // Talk implements the unary RPC method.
-// Handles a single request and returns a single response.
-// If a backend client is configured, proxies the request to the next service.
+// Receives a single request and returns a single response.
 func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.TalkResponse, error) {
-	log.Infof("TALK REQUEST: data=%s,meta=%s", request.Data, request.Meta)
-	printHeaders(ctx)
+	log.Infof("TALK REQUEST: data=%s, meta=%s", request.Data, request.Meta)
+	logHeaders(ctx)
+
 	if s.BackendClient == nil {
-		// No backend service, process request directly
+		// Process request locally
 		result := s.buildResult(request.Data)
 		return &pb.TalkResponse{
 			Status:  200,
 			Results: []*pb.TalkResult{result},
 		}, nil
-	} else {
-		// Proxy request to backend service
-		response, err := s.BackendClient.Talk(buildContext(buildTracing(ctx)), request)
-		if err != nil {
-			log.Fatalf("%v.Talk(_) = _, %v", s.BackendClient, err)
-		}
-		return response, err
 	}
+
+	// Forward request to backend service
+	response, err := s.BackendClient.Talk(createContextWithTracing(ctx), request)
+	if err != nil {
+		log.Errorf("%v.Talk(_) = _, %v", s.BackendClient, err)
+	}
+	return response, err
 }
 
 // TalkOneAnswerMore implements the server streaming RPC method.
-// Handles a single request and returns multiple responses through the stream.
-// If a backend client is configured, proxies the request to the next service.
+// Receives a single request and sends multiple responses through the stream.
 func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.LandingService_TalkOneAnswerMoreServer) error {
-	log.Infof("TalkOneAnswerMore REQUEST: data=%s,meta=%s", request.Data, request.Meta)
+	log.Infof("TalkOneAnswerMore REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 	ctx := stream.Context()
-	printHeaders(ctx)
+	logHeaders(ctx)
+
 	if s.BackendClient == nil {
-		// No backend service, process request directly
-		// Split comma-separated data values and send a response for each one
-		datas := strings.Split(request.Data, ",")
-		for _, d := range datas {
-			result := s.buildResult(d)
+		// Process request locally
+		dataItems := strings.Split(request.Data, ",")
+		for _, item := range dataItems {
+			result := s.buildResult(item)
 			if err := stream.Send(&pb.TalkResponse{
 				Status:  200,
 				Results: []*pb.TalkResult{result},
@@ -70,176 +69,176 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 			}
 		}
 		return nil
-	} else {
-		// Proxy request to backend service and forward all responses
-		nextStream, err := s.BackendClient.TalkOneAnswerMore(buildContext(buildTracing(ctx)), request)
+	}
+
+	// Forward request to backend service
+	nextStream, err := s.BackendClient.TalkOneAnswerMore(createContextWithTracing(ctx), request)
+	if err != nil {
+		log.Errorf("%v.TalkOneAnswerMore(_) = _, %v", s.BackendClient, err)
+		return err
+	}
+
+	// Forward all responses from backend to client
+	for {
+		response, err := nextStream.Recv()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			log.Fatalf("%v.TalkOneAnswerMore(_) = _, %v", s.BackendClient, err)
+			log.Errorf("%v.TalkOneAnswerMore(_) = _, %v", s.BackendClient, err)
 			return err
 		}
-		for {
-			r, err := nextStream.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				log.Fatalf("%v.TalkOneAnswerMore(_) = _, %v", s.BackendClient, err)
-				return err
-			}
-			if err := stream.Send(r); err != nil {
-				return err
-			}
+		if err := stream.Send(response); err != nil {
+			return err
 		}
-		return nil
 	}
+	return nil
 }
 
 // TalkMoreAnswerOne implements the client streaming RPC method.
-// Handles multiple requests from the client and returns a single response.
-// If a backend client is configured, proxies all requests to the next service.
+// Receives multiple requests from client and returns a single response.
 func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerOneServer) error {
 	ctx := stream.Context()
+
 	if s.BackendClient == nil {
-		// No backend service, process requests directly
-		var rs []*pb.TalkResult
-		for {
-			in, err := stream.Recv()
-			if err == io.EOF {
-				// When client has sent all requests, combine results and send single response
-				talkResponse := &pb.TalkResponse{
-					Status:  200,
-					Results: rs,
-				}
-				printHeaders(ctx)
-				err := stream.SendAndClose(talkResponse)
-				if err != nil {
-					return err
-				}
-				return nil
-			}
-			if err != nil {
-				return err
-			}
-			log.Infof("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", in.Data, in.Meta)
-			result := s.buildResult(in.Data)
-			rs = append(rs, result)
-		}
-	} else {
-		// Proxy all requests to backend service
-		nextStream, err := s.BackendClient.TalkMoreAnswerOne(buildContext(buildTracing(ctx)))
-		if err != nil {
-			log.Fatalf("%v.TalkMoreAnswerOne(_) = _, %v", s.BackendClient, err)
-			return err
-		}
+		// Process requests locally
+		var results []*pb.TalkResult
 		for {
 			request, err := stream.Recv()
 			if err == io.EOF {
-				printHeaders(ctx)
-				talkResponse, err := nextStream.CloseAndRecv()
-				if err != nil {
-					log.Fatalf("%v.TalkMoreAnswerOne() got error %v, want %v", stream, err, nil)
+				// Client finished sending requests, send combined response
+				response := &pb.TalkResponse{
+					Status:  200,
+					Results: results,
 				}
-				err = stream.SendAndClose(talkResponse)
-				if err != nil {
-					return err
-				}
-				return nil
+				logHeaders(ctx)
+				return stream.SendAndClose(response)
 			}
 			if err != nil {
 				return err
 			}
-			log.Infof("TalkMoreAnswerOne REQUEST: data=%s,meta=%s", request.Data, request.Meta)
-			if err := nextStream.Send(request); err != nil {
-				log.Fatalf("%v.Send(%v) = %v", stream, request, err)
+			log.Infof("TalkMoreAnswerOne REQUEST: data=%s, meta=%s", request.Data, request.Meta)
+			result := s.buildResult(request.Data)
+			results = append(results, result)
+		}
+	}
+
+	// Forward requests to backend service
+	nextStream, err := s.BackendClient.TalkMoreAnswerOne(createContextWithTracing(ctx))
+	if err != nil {
+		log.Errorf("%v.TalkMoreAnswerOne(_) = _, %v", s.BackendClient, err)
+		return err
+	}
+
+	// Forward all client requests to backend
+	for {
+		request, err := stream.Recv()
+		if err == io.EOF {
+			logHeaders(ctx)
+			response, err := nextStream.CloseAndRecv()
+			if err != nil {
+				log.Errorf("Error receiving response from backend: %v", err)
+				return err
 			}
+			return stream.SendAndClose(response)
+		}
+		if err != nil {
+			return err
+		}
+		log.Infof("TalkMoreAnswerOne REQUEST: data=%s, meta=%s", request.Data, request.Meta)
+		if err := nextStream.Send(request); err != nil {
+			log.Errorf("Failed to forward request: %v", err)
+			return err
 		}
 	}
 }
 
 // TalkBidirectional implements the bidirectional streaming RPC method.
-// Handles multiple requests from the client and returns multiple responses.
-// Each request receives a corresponding response.
-// If a backend client is configured, proxies all requests to the next service.
+// Handles multiple requests and returns multiple responses in a stream.
 func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirectionalServer) error {
 	ctx := stream.Context()
+
 	if s.BackendClient == nil {
-		// No backend service, process requests directly
+		// Process requests locally
 		for {
-			in, err := stream.Recv()
+			request, err := stream.Recv()
 			if err == io.EOF {
-				printHeaders(ctx)
+				logHeaders(ctx)
 				return nil
 			}
 			if err != nil {
 				return err
 			}
-			log.Infof("TalkBidirectional REQUEST: data=%s,meta=%s", in.Data, in.Meta)
-			// Send a response for each request received
-			result := s.buildResult(in.Data)
-			talkResponse := &pb.TalkResponse{
+			log.Infof("TalkBidirectional REQUEST: data=%s, meta=%s", request.Data, request.Meta)
+
+			// Send response for each request
+			result := s.buildResult(request.Data)
+			response := &pb.TalkResponse{
 				Status:  200,
 				Results: []*pb.TalkResult{result},
 			}
-			if err := stream.Send(talkResponse); err != nil {
+			if err := stream.Send(response); err != nil {
 				return err
 			}
 		}
-	} else {
-		// Proxy all requests to backend service
-		nextStream, err := s.BackendClient.TalkBidirectional(buildContext(buildTracing(ctx)))
-		if err != nil {
-			log.Fatalf("%v Request Next TalkBidirectional failed:%v", s.BackendClient, err)
-			return err
-		}
-		waitc := make(chan struct{})
-		// Goroutine to receive responses from backend service and forward them to client
-		go func() {
-			for {
-				r, err := nextStream.Recv()
-				if err == io.EOF {
-					time.Sleep(1 * time.Second)
-					printHeaders(ctx)
-					close(waitc)
-					return
-				}
-				if err != nil {
-					log.Fatalf("Failed to receive a note : %v", err)
-				}
-				if err := stream.Send(r); err != nil {
-					log.Fatalf("%v.TalkBidirectional send back failed, %v", s.BackendClient, err)
-				}
-			}
-		}()
-		// Receive requests from client and forward them to backend service
+	}
+
+	// Forward requests to backend service
+	nextStream, err := s.BackendClient.TalkBidirectional(createContextWithTracing(ctx))
+	if err != nil {
+		log.Errorf("Failed to connect to backend service: %v", err)
+		return err
+	}
+
+	// Channel to signal when response handling is done
+	done := make(chan struct{})
+
+	// Goroutine to handle responses from backend service
+	go func() {
 		for {
-			in, err := stream.Recv()
+			response, err := nextStream.Recv()
 			if err == io.EOF {
-				time.Sleep(1 * time.Second)
-				break
+				logHeaders(ctx)
+				close(done)
+				return
 			}
 			if err != nil {
-				log.Fatalf("Failed to receive from Previous: %v", err)
-				break
+				log.Errorf("Failed to receive response from backend: %v", err)
+				return
 			}
-			log.Infof("TalkBidirectional REQUEST: data=%s,meta=%s", in.Data, in.Meta)
-			if err := nextStream.Send(in); err != nil {
-				log.Fatalf("Failed to send : %v", err)
+			if err := stream.Send(response); err != nil {
+				log.Errorf("Failed to forward response to client: %v", err)
+				return
 			}
 		}
-		err = nextStream.CloseSend()
+	}()
+
+	// Handle requests from client and forward to backend
+	for {
+		request, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			return err
+			log.Errorf("Failed to receive request from client: %v", err)
+			break
 		}
-		<-waitc
-		return nil
+		log.Infof("TalkBidirectional REQUEST: data=%s, meta=%s", request.Data, request.Meta)
+		if err := nextStream.Send(request); err != nil {
+			log.Errorf("Failed to forward request to backend: %v", err)
+			break
+		}
 	}
+
+	if err := nextStream.CloseSend(); err != nil {
+		return err
+	}
+
+	<-done
+	return nil
 }
 
-// buildResult creates a TalkResult object containing the response data.
-// Parameters:
-//   - id: The request ID (typically a language index)
-//
-// Returns: A TalkResult with timestamp, type and key-value data
+// buildResult creates a TalkResult object with the given ID.
 func (s *ProtoServer) buildResult(id string) *pb.TalkResult {
 	index, _ := strconv.Atoi(id)
 	kv := make(map[string]string)
@@ -248,80 +247,69 @@ func (s *ProtoServer) buildResult(id string) *pb.TalkResult {
 	hello := common.GetHelloList()[index]
 	kv["data"] = hello + "," + common.GetAnswerMap()[hello]
 	kv["meta"] = "GOLANG"
-	result := new(pb.TalkResult)
-	result.Id = time.Now().UnixNano()
-	result.Type = pb.ResultType_OK
-	result.Kv = kv
-	return result
+
+	return &pb.TalkResult{
+		Id:   time.Now().UnixNano(),
+		Type: pb.ResultType_OK,
+		Kv:   kv,
+	}
 }
 
-// buildContext creates a new context with tracing metadata for outgoing requests.
-// Parameters:
-//   - headerTracing: Tracing information to propagate
-//
-// Returns: A context with tracing metadata appended
-func buildContext(headerTracing *tracing.HelloTracing) context.Context {
-	var ctx context.Context
+// createContextWithTracing creates a context with tracing metadata.
+func createContextWithTracing(ctx context.Context) context.Context {
+	headerTracing := extractTracing(ctx)
 	if headerTracing != nil {
-		ctx = metadata.AppendToOutgoingContext(context.Background(), headerTracing.Kv()...)
-	} else {
-		ctx = context.Background()
+		return metadata.AppendToOutgoingContext(context.Background(), headerTracing.Kv()...)
 	}
-	return ctx
+	return context.Background()
 }
 
-// buildTracing extracts tracing information from the incoming request context.
-// Parameters:
-//   - ctx: The incoming request context
-//
-// Returns: A HelloTracing object containing the extracted tracing data
-func buildTracing(ctx context.Context) *tracing.HelloTracing {
+// extractTracing extracts tracing information from the context.
+func extractTracing(ctx context.Context) *tracing.HelloTracing {
 	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		xRequestId := md.Get("x-request-id")
-		if xRequestId != nil && len(xRequestId) > 0 {
-			xB3TraceId := md.Get("x-b3-traceid")
-			xB3SpanId := md.Get("x-b3-spanid")
-			xB3ParentSpanId := md.Get("x-b3-parentspanid")
-			xB3Sampled := md.Get("x-b3-sampled")
-			xB3Flags := md.Get("x-b3-flags")
-			xOtSpanContext := md.Get("x-ot-span-context")
-			log.Infof("TALK HEADERS: "+
-				"x_request_id=%v,"+
-				"x_b3_traceid=%v,"+
-				"x_b3_spanid=%v,"+
-				"x_b3_parentspanid=%v,"+
-				"x_b3_sampled=%v,"+
-				"x_b3_flags=%v,"+
-				"x_ot_span_context=%v",
-				xRequestId, xB3TraceId, xB3SpanId, xB3ParentSpanId, xB3Sampled, xB3Flags, xOtSpanContext)
-			t := &tracing.HelloTracing{
-				RequestId:      xRequestId[0],
-				B3TraceId:      xB3TraceId[0],
-				B3SpanId:       xB3SpanId[0],
-				B3ParentSpanId: xB3ParentSpanId[0],
-				B3Sampled:      xB3Sampled[0],
-			}
-			if xB3Flags != nil {
-				t.B3Flags = xB3Flags[0]
-			}
-			if xOtSpanContext != nil {
-				t.OtSpanContext = xOtSpanContext[0]
-			}
-			return t
-		}
+	if !ok {
+		return nil
 	}
-	return nil
+
+	xRequestId := md.Get("x-request-id")
+	if xRequestId == nil || len(xRequestId) == 0 {
+		return nil
+	}
+
+	xB3TraceId := md.Get("x-b3-traceid")
+	xB3SpanId := md.Get("x-b3-spanid")
+	xB3ParentSpanId := md.Get("x-b3-parentspanid")
+	xB3Sampled := md.Get("x-b3-sampled")
+	xB3Flags := md.Get("x-b3-flags")
+	xOtSpanContext := md.Get("x-ot-span-context")
+
+	log.Infof("TRACING HEADERS: x_request_id=%v, x_b3_traceid=%v, x_b3_spanid=%v",
+		xRequestId, xB3TraceId, xB3SpanId)
+
+	t := &tracing.HelloTracing{
+		RequestId:      xRequestId[0],
+		B3TraceId:      xB3TraceId[0],
+		B3SpanId:       xB3SpanId[0],
+		B3ParentSpanId: xB3ParentSpanId[0],
+		B3Sampled:      xB3Sampled[0],
+	}
+
+	if xB3Flags != nil && len(xB3Flags) > 0 {
+		t.B3Flags = xB3Flags[0]
+	}
+	if xOtSpanContext != nil && len(xOtSpanContext) > 0 {
+		t.OtSpanContext = xOtSpanContext[0]
+	}
+
+	return t
 }
 
-// printHeaders logs all headers from the incoming request context.
-// Parameters:
-//   - ctx: The incoming request context
-func printHeaders(ctx context.Context) {
+// logHeaders logs metadata headers from the context.
+func logHeaders(ctx context.Context) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		for key, value := range md {
-			log.Infof("->H %s:%s", key, value)
+			log.Infof("Header: %s:%s", key, value)
 		}
 	}
 }

@@ -1,13 +1,20 @@
 <?php declare(strict_types=1);
+namespace Tests;
+
 use PHPUnit\Framework\TestCase;
-require __DIR__ . '/vendor/autoload.php';
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+require_once __DIR__ . '/../vendor/autoload.php';
 
 final class HelloTest extends TestCase
 {
     public function testUpper(): void
     {
-        $log = Logger::getLogger("HelloTest");
-        Logger::configure("log4php_config.xml");
+        // Create a logger
+        $log = new Logger('HelloTest');
+        $consoleHandler = new StreamHandler('php://stdout', Logger::INFO);
+        $log->pushHandler($consoleHandler);
 
         $a1 = "Hello";
         $a2 = strtoupper($a1);

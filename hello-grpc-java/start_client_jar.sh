@@ -4,7 +4,22 @@ SCRIPT_PATH="$(
   cd "$(dirname "$0")" >/dev/null 2>&1 || exit
   pwd -P
 )"
-export JAVA_HOME=/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+# Set JAVA_HOME based on OS
+case "$(uname -s)" in
+Darwin)
+    export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home"
+    ;;
+Linux)
+    echo "Linux"
+    # TODO: Set Linux JAVA_HOME here
+    ;;
+MSYS_NT* | MINGW64_NT*)
+    export JAVA_HOME="D:/zoo/jdk-24.0.1"
+    ;;
+*)
+    echo "Unsupported OS: $(uname -s)"
+    ;;
+esac
 cd "$SCRIPT_PATH" || exit
 mvn clean install -DskipTests -f client_pom.xml
 #export GRPC_HELLO_SECURE=Y

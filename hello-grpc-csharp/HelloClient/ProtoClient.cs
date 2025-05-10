@@ -22,9 +22,36 @@ namespace HelloClient
 
         public static void Main()
         {
+            // 获取程序集所在目录作为基准目录
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string configPath = Path.Combine(baseDirectory, "log4net.config");
+            
+            if (!File.Exists(configPath))
+            {
+                // 如果在基准目录中找不到文件，尝试在当前目录或项目目录中查找
+                string currentDirectory = Directory.GetCurrentDirectory();
+                string projectDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+                
+                if (File.Exists("log4net.config"))
+                    configPath = "log4net.config";
+                else if (File.Exists(Path.Combine(currentDirectory, "log4net.config")))
+                    configPath = Path.Combine(currentDirectory, "log4net.config");
+                else if (File.Exists(Path.Combine(projectDir, "log4net.config")))
+                    configPath = Path.Combine(projectDir, "log4net.config");
+                else
+                    Console.WriteLine($"Warning: log4net.config not found at {configPath}, {currentDirectory}, or {projectDir}");
+            }
+            
+            Console.WriteLine($"Loading log4net configuration from: {configPath}");
+            
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly()!);
-            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+            XmlConfigurator.Configure(logRepository, new FileInfo(configPath));
+            
+            Console.WriteLine("Log4net configuration loaded, starting client...");
 
+            // 确保控制台输出使用最低的缓冲区设置
+            Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+            
             var channel = Connection.GetChannel();
             var client = new ProtoClient(new LandingService.LandingServiceClient(channel));
             Log.Info("Unary RPC");

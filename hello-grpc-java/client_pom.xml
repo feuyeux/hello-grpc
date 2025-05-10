@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.feuyeux.grpc</groupId>
     <artifactId>hello-grpc-java-client</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
-        <jdk.version>21</jdk.version>
+        <jdk.version>24</jdk.version>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
-        <grpc.version>1.71.0</grpc.version>
+        <grpc.version>1.72.0</grpc.version>
         <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
-        <netty-resolver-dns.version>4.1.119.Final</netty-resolver-dns.version>
-        <guava.version>33.4.0-jre</guava.version>
+        <netty-resolver-dns.version>4.2.0.Final</netty-resolver-dns.version>
+        <guava.version>33.4.8-jre</guava.version>
         <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
         <jetcd.version>0.8.5</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <annotations-api.version>6.0.53</annotations-api.version>
         <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
-        <junit.version>5.12.1</junit.version>
+        <junit.version>5.12.2</junit.version>
         <system-rules.version>1.19.0</system-rules.version>
         <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
@@ -202,7 +202,7 @@
                 <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
-        <finalName>${project.name}</finalName>
+        <finalName>hello-grpc-java-client</finalName>
         <plugins>
             <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
             <plugin>
@@ -226,11 +226,13 @@
                 <configuration>
                     <clearOutputDirectory>false</clearOutputDirectory>
                     <!--<outputDirectory>${project.build.sourceDirectory}</outputDirectory>-->
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
+                    <pluginArtifact>
+                        io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
                     </pluginArtifact>
                     <pluginId>grpc-java</pluginId>
-                    <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
-                    <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
+                    <protoSourceRoot>${project.basedir}/../proto</protoSourceRoot>
+                    <protocArtifact>
+                        com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
                     </protocArtifact>
                 </configuration>
                 <executions>
@@ -274,9 +276,9 @@
                         <configuration>
                             <transformers>
                                 <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                                 <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.feuyeux.grpc.client.ProtoClient</mainClass>
                                     <manifestEntries>
                                         <Multi-Release>true</Multi-Release>

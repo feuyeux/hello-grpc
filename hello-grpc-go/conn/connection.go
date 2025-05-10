@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -40,7 +41,7 @@ func init() {
 		certChain = "/var/hello_grpc/client_certs/full_chain.pem"
 		rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
 	default:
-		log.Fatalf("Unsupported OS: %s", runtime.GOOS)
+		log.Errorf("Unsupported OS: %s", runtime.GOOS)
 	}
 }
 
@@ -72,6 +73,35 @@ func Connect() *pb.LandingServiceClient {
 		client = pb.NewLandingServiceClient(buildConn(address))
 	}
 	return &client
+}
+
+// ConnectWithContext establishes a connection to the gRPC server using the provided context
+func ConnectWithContext(ctx context.Context) (*grpc.ClientConn, error) {
+	var address string
+	var port string
+	if HasBackend() {
+		backend := getBackend()
+		backPort := os.Getenv("GRPC_HELLO_BACKEND_PORT")
+		if len(backPort) > 0 {
+			port = backPort
+		} else {
+			port = GrpcServerPort()
+		}
+		address = fmt.Sprintf("%s:%s", backend, port)
+	} else {
+		host := GrpcServerHost()
+		port = GrpcServerPort()
+		if len(host) == 0 {
+			host = "localhost"
+		}
+		address = fmt.Sprintf("%s:%s", host, port)
+	}
+	discovery := os.Getenv("GRPC_HELLO_DISCOVERY")
+	if discovery == "etcd" {
+		return buildConnByDiscWithContext(ctx)
+	} else {
+		return buildConnWithContext(ctx, address)
+	}
 }
 
 func buildConnByDisc() *grpc.ClientConn {
@@ -111,6 +141,35 @@ func buildConnByDisc() *grpc.ClientConn {
 	}
 }
 
+func buildConnByDiscWithContext(ctx context.Context) (*grpc.ClientConn, error) {
+	etcdResolverBuilder := discover.NewEtcdResolverBuilder()
+	resolver.Register(etcdResolverBuilder)
+	const grpcServiceConfig = `{"loadBalancingPolicy":"round_robin"}`
+	secure := os.Getenv("GRPC_HELLO_SECURE")
+	if secure == "Y" {
+		log.Infof("Connect With TLS through discovery")
+		cert, err := tls.LoadX509KeyPair(certChain, certKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load key pair: %w", err)
+		}
+		c := &tls.Config{
+			ServerName:   serverName,
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      GetCertPool(rootCert),
+		}
+		return grpc.DialContext(ctx, "etcd:///",
+			grpc.WithStatsHandler(&StatsHandler{}),
+			grpc.WithTransportCredentials(credentials.NewTLS(c)),
+			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+	} else {
+		log.Infof("Connect With InSecure through discovery")
+		return grpc.DialContext(ctx, "etcd:///",
+			grpc.WithStatsHandler(&StatsHandler{}),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+	}
+}
+
 func buildConn(address string) *grpc.ClientConn {
 	var conn *grpc.ClientConn
 	secure := os.Getenv("GRPC_HELLO_SECURE")
@@ -122,6 +181,17 @@ func buildConn(address string) *grpc.ClientConn {
 		conn, _ = transportInsecure(address)
 	}
 	return conn
+}
+
+func buildConnWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
+	secure := os.Getenv("GRPC_HELLO_SECURE")
+	if secure == "Y" {
+		log.Infof("Connect With TLS(%s)", address)
+		return transportCredentialsWithContext(ctx, address)
+	} else {
+		log.Infof("Connect With InSecure(%s)", address)
+		return transportInsecureWithContext(ctx, address)
+	}
 }
 
 func transportInsecure(address string) (*grpc.ClientConn, error) {
@@ -157,12 +227,57 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 	)
 }
 
+func transportInsecureWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
+	// see https://github.com/grpc/grpc/blob/master/doc/service_config.md to know more about service config
+	retryPolicy := `{
+		"methodConfig": [{
+		  "name": [{"service": "GRPC_SERVER"}],
+		  "waitForReady": true,
+		  "retryPolicy": {
+			  "MaxAttempts": 200,
+			  "InitialBackoff": ".1s",
+			  "MaxBackoff": ".05s",
+			  "BackoffMultiplier": 1.2,
+			  "RetryableStatusCodes": [ "UNAVAILABLE" ]
+		  }
+		}]}`
+	// retry https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+	retryConfig := grpc.WithDefaultServiceConfig(retryPolicy)
+	// rate limiting
+	count := 10
+	rateLimitConfig := grpc.WithUnaryInterceptor(common.UnaryClientInterceptor(common.NewLimiter(count)))
+	// keepalive
+	keepaliveConfig := grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+		PermitWithoutStream: true,             // send pings even without active streams
+	})
+	return grpc.DialContext(ctx, address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		keepaliveConfig,
+		retryConfig,
+		rateLimitConfig,
+	)
+}
+
 func transportCredentials(address string) (*grpc.ClientConn, error) {
 	cert, err := tls.LoadX509KeyPair(certChain, certKey)
 	if err != nil {
 		panic(err)
 	}
 	return grpc.NewClient(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+		ServerName:   serverName,
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      GetCertPool(rootCert),
+	})))
+}
+
+func transportCredentialsWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
+	cert, err := tls.LoadX509KeyPair(certChain, certKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load key pair: %w", err)
+	}
+	return grpc.DialContext(ctx, address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      GetCertPool(rootCert),

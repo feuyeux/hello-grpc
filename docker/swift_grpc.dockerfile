@@ -1,27 +1,44 @@
-FROM swift:6.0.1 AS builder
 # https://hub.docker.com/_/swift
+FROM swift:6.1 AS build-base
 
-COPY hello-grpc-swift building
-WORKDIR /building
+RUN sed -i 's@http://archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list \
+    && sed -i 's@http://security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list \
+    && apt-get update && apt-get install -y \
+    protobuf-compiler \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN swift package resolve
-RUN swift build -c release
-# 收集依赖库
-COPY swift_pkg_deps.sh /usr/bin/pkg-swift-deps
-RUN chmod +x /usr/bin/pkg-swift-deps
-# 运行build容器 获取依赖库
-# docker run --rm -it docker.io/feuyeux/grpc_swift:1.0.0 bash
-# pkg-swift-deps /building/.build/x86_64-unknown-linux-gnu/release/HelloServer
-# pkg-swift-deps /building/.build/x86_64-unknown-linux-gnu/release/HelloClient
+ARG PROJECT_ROOT=.
+WORKDIR /app/hello-grpc
+COPY hello-grpc-swift /app/hello-grpc/hello-grpc-swift
+COPY proto /app/hello-grpc/proto
+COPY proto2x.sh /app/hello-grpc/
 
-FROM swift:6.0.1-slim AS server
-COPY --from=builder /building/.build/x86_64-unknown-linux-gnu/release/HelloServer /hello-grpc-swift/
-WORKDIR /hello-grpc-swift
-RUN chmod +x HelloServer
-CMD ["/hello-grpc-swift/HelloServer"]
+# Build Swift server and client
+WORKDIR /app/hello-grpc/hello-grpc-swift
 
-FROM swift:6.0.1-slim AS client
-COPY --from=builder /building/.build/x86_64-unknown-linux-gnu/release/HelloClient /hello-grpc-swift/
-WORKDIR /hello-grpc-swift
-RUN chmod +x HelloClient
-CMD ["/hello-grpc-swift/HelloClient"]
+# Make sure the build script is executable
+RUN chmod +x build.sh
+RUN ../proto2x.sh swift
+RUN swift build -c release -Xswiftc -cross-module-optimization
+
+# Final server image
+FROM swift:6.1 AS server
+WORKDIR /app
+COPY --from=build-base /app/hello-grpc/hello-grpc-swift/.build/release/HelloServer /app/
+# Create certificate directories
+RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
+# Copy certificate files if they exist, or create placeholder files
+COPY docker/tls/server_certs/ /var/hello_grpc/server_certs/
+COPY docker/tls/client_certs/ /var/hello_grpc/client_certs/
+ENTRYPOINT ["/app/HelloServer"]
+
+# Final client image
+FROM swift:6.1 AS client
+WORKDIR /app
+COPY --from=build-base /app/hello-grpc/hello-grpc-swift/.build/release/HelloClient /app/
+# Create certificate directory
+RUN mkdir -p /var/hello_grpc/client_certs
+# Copy certificate files if they exist, or create placeholder files
+COPY docker/tls/client_certs/ /var/hello_grpc/client_certs/
+ENTRYPOINT ["/app/HelloClient"]
