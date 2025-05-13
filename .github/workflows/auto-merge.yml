@@ -1,19 +1,27 @@
-name: Auto-merge Dependabot PRs
+name: Continous Integration
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - synchronize
-      - reopened
+  push:
+    branches:
+      - "source"
+  pull_request:
+
+permissions:
+  contents: write
 
 jobs:
-  automerge:
-    if: startsWith(github.head_ref, 'dependabot/')
+  dependabot:
+    name: "Dependabot"
     runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'}}
     steps:
-      - name: Auto-merge
-        uses: pascalgn/automerge-action@v0.16.3
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1.3.1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Enable auto-merge for Dependabot PRs
+        run: gh pr merge --auto --merge "$PR_URL"
         env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          MERGE_METHOD: squash
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
