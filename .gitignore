@@ -111,6 +111,5 @@ hello-grpc-kotlin/protos/build/
 *.drawio.*
 default.etcd
 sync.sh
-.github/
 *.sln.DotSettings.user
 .next/

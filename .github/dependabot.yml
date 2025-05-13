@@ -1,0 +1,47 @@
+version: 2
+updates:
+  # Enable version updates for npm in all Node.js projects
+  - package-ecosystem: "npm"
+    directory: "/hello-grpc-nodejs/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for pip in all Python projects
+  - package-ecosystem: "pip"
+    directory: "/hello-grpc-python/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Go modules
+  - package-ecosystem: "gomod"
+    directory: "/hello-grpc-go/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Maven in Java projects
+  - package-ecosystem: "maven"
+    directory: "/hello-grpc-java/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Gradle in Kotlin projects
+  - package-ecosystem: "gradle"
+    directory: "/hello-grpc-kotlin/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Composer in PHP projects
+  - package-ecosystem: "composer"
+    directory: "/hello-grpc-php/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Cargo in Rust projects
+  - package-ecosystem: "cargo"
+    directory: "/hello-grpc-rust/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Swift Package Manager
+  - package-ecosystem: "swift"
+    directory: "/hello-grpc-swift/"
+    schedule:
+      interval: "weekly"
+  # Enable version updates for Dart in Flutter projects
+  - package-ecosystem: "pub"
+    directory: "/hello_grpc_flutter/"
+    schedule:
+      interval: "weekly"
