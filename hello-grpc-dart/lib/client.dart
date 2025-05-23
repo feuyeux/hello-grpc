@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:io' as io show Platform;
 import 'dart:math';
 import 'package:grpc/grpc.dart';
-import 'common/common.dart';
+import 'package:hello_grpc_dart/common/utils.dart';
 import 'src/generated/landing.pbgrpc.dart';
 import 'package:logging/logging.dart';
 

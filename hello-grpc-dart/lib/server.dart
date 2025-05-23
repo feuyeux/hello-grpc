@@ -6,7 +6,7 @@ import 'package:grpc/grpc.dart' as grpc;
 import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 
-import 'common/common.dart';
+import 'package:hello_grpc_dart/common/utils.dart';
 import 'src/generated/landing.pbgrpc.dart';
 import 'conn/conn.dart';
 

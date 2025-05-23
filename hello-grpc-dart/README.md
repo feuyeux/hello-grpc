@@ -129,9 +129,10 @@ dart test test/utils_test.dart
 
 ### Available Tests
 
-- **Utils Tests**: Tests the utility functionality including version detection 
-- **Client Tests**: Tests the client-side functionality
-- **Server Tests**: Tests the server behavior and response handling
+- **Utils Tests (`test/utils_test.dart`)**: Tests utility functions like version detection, timestamp, and UUID generation.
+- **Connection Config Tests (`test/conn_test.dart`)**: Tests connection configuration logic, including environment variable handling for ports, security, and certificate paths.
+- **Client Tests (`test/client_test.dart`)**: Tests client-side gRPC calls (unary and streaming) using a mock gRPC service.
+- **Server Tests (`test/server_test.dart`)**: Tests server-side gRPC handlers (unary and streaming) by directly invoking service implementation methods with a mock `ServiceCall`.
 
 ## Troubleshooting
 
