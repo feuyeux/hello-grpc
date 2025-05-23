@@ -120,3 +120,79 @@ fn extract_version_from_block(cargo_content: &str, start_line: &str) -> Option<S
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Imports items from the outer module (utils)
+    use crate::common::landing::TalkRequest; // Assuming TalkRequest is needed and accessible here
+
+    #[test]
+    fn test_random_id_format_and_range() {
+        let max_val = 100;
+        let id_str = random_id(max_val);
+        
+        // Check if it's a string (Rust's type system handles this implicitly)
+        // Try to parse as integer
+        match id_str.parse::<i32>() {
+            Ok(id_int) => {
+                assert!(id_int >= 0 && id_int < max_val, 
+                        "random_id {} out of range [0, {})", id_int, max_val);
+            }
+            Err(_) => {
+                panic!("random_id did not return a parsable integer string: {}", id_str);
+            }
+        }
+
+        // Test with zero max value if your function is expected to handle it.
+        // random_id(0) would panic due to rng.gen_range(0..0) being empty.
+        // Depending on desired behavior, this might need adjustment in random_id or specific error handling.
+        // For now, we assume max_val > 0.
+        let max_val_one = 1;
+        let id_str_one = random_id(max_val_one);
+        match id_str_one.parse::<i32>() {
+            Ok(id_int_one) => {
+                 assert!(id_int_one == 0,
+                         "random_id {} with max 1 should be 0, was {}", id_int_one, id_str_one);
+            }
+            Err(_) => {
+                panic!("random_id did not return a parsable integer string for max_val_one: {}", id_str_one);
+            }
+        }
+    }
+
+    #[test]
+    fn test_thanks() {
+        assert_eq!(thanks("Hello"), "Thank you very much");
+        assert_eq!(thanks("Bonjour"), "Merci beaucoup");
+        // Add more cases if desired
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_thanks_panic_on_unknown_key() {
+        // This tests if thanks() panics when an unknown key is provided,
+        // which it will due to .unwrap() on a None Option from HashMap.get().
+        thanks("UnknownGreeting");
+    }
+
+    #[test]
+    fn test_build_link_requests() {
+        let requests_list = build_link_requests();
+        assert_eq!(requests_list.len(), 3, "Should build 3 requests");
+
+        for (i, request) in requests_list.iter().enumerate() {
+            assert_eq!(request.meta, "RUST", "Request meta should be RUST");
+            // Validate data format if possible (e.g., parsable as int within a range)
+            // random_id(5) is used, so data should be "0", "1", "2", "3", or "4".
+            match request.data.parse::<i32>() {
+                Ok(data_int) => {
+                    assert!(data_int >= 0 && data_int < 5, 
+                            "Request data {} out of range [0, 5) at index {}", data_int, i);
+                }
+                Err(_) => {
+                    panic!("Request data was not a parsable i32: {} at index {}", request.data, i);
+                }
+            }
+        }
+    }
+}

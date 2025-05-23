@@ -221,3 +221,273 @@ fn print_response(response: &TalkResponse) {
         );
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*; // To call talk(), talk_one_answer_more(), etc.
+    use crate::common::landing::landing_service_server::{LandingService, LandingServiceServer};
+    use crate::common::landing::{TalkRequest, TalkResponse, TalkResult, ResultType};
+    use std::net::SocketAddr;
+    use tokio::sync::{mpsc, oneshot};
+    use tonic::transport::Server;
+    use std::time::Duration;
+    use std::collections::HashMap; // For TalkResult kv
+    use std::env; // For env::var for build_test_client
+
+    // --- Mock Landing Server ---
+    #[derive(Debug)]
+    struct MockLandingService {
+        // Use a channel to send received unary request for assertion
+        unary_req_tx: Option<mpsc::Sender<TalkRequest>>,
+        // Predefined unary response
+        unary_res: Option<TalkResponse>,
+
+        // For server streaming
+        server_streaming_req_tx: Option<mpsc::Sender<TalkRequest>>,
+        server_streaming_res_count: usize,
+
+        // For client streaming
+        client_streaming_res: Option<TalkResponse>,
+        // Use a channel to send received client stream requests for assertion
+        client_streaming_collector_tx: Option<mpsc::Sender<Vec<TalkRequest>>>,
+
+
+        // For bidirectional streaming
+        // Channel to send received bidi requests for assertion
+        bidi_req_collector_tx: Option<mpsc::Sender<Vec<TalkRequest>>>,
+        // Number of messages the mock bidi server should send back
+        bidi_res_count: usize,
+    }
+
+    impl Default for MockLandingService {
+        fn default() -> Self {
+            MockLandingService {
+                unary_req_tx: None,
+                unary_res: Some(TalkResponse { status: 200, results: vec![TalkResult::default()] }),
+                server_streaming_req_tx: None,
+                server_streaming_res_count: 1, // Default to send 1 message
+                client_streaming_res: Some(TalkResponse { status: 200, results: vec![] }),
+                client_streaming_collector_tx: None,
+                bidi_req_collector_tx: None,
+                bidi_res_count: 1,
+            }
+        }
+    }
+
+    #[tonic::async_trait]
+    impl LandingService for MockLandingService {
+        async fn talk(&self, request: Request<TalkRequest>) -> Result<Response<TalkResponse>, Status> {
+            let req_inner = request.into_inner();
+            if let Some(tx) = &self.unary_req_tx {
+                tx.send(req_inner.clone()).await.expect("Failed to send unary req for inspection");
+            }
+            Ok(Response::new(self.unary_res.clone().unwrap_or_default()))
+        }
+
+        type TalkOneAnswerMoreStream = Pin<Box<dyn Stream<Item = Result<TalkResponse, Status>> + Send + Sync + 'static>>;
+
+        async fn talk_one_answer_more(&self, request: Request<TalkRequest>) -> Result<Response<Self::TalkOneAnswerMoreStream>, Status> {
+            let req_inner = request.into_inner();
+             if let Some(tx) = &self.server_streaming_req_tx {
+                tx.send(req_inner.clone()).await.expect("Failed to send server_streaming req for inspection");
+            }
+            let count = self.server_streaming_res_count;
+            let (tx, rx) = mpsc::channel(count + 1); // Use count for channel size
+            tokio::spawn(async move {
+                for i in 0..count {
+                    let response = TalkResponse {
+                        status: 200,
+                        results: vec![TalkResult {
+                            kv: {
+                                let mut map = HashMap::new();
+                                map.insert("data".to_string(), format!("Mock Server Stream Msg {}", i+1));
+                                map
+                            },
+                            ..Default::default()
+                        }],
+                    };
+                    tx.send(Ok(response)).await.unwrap();
+                }
+            });
+            Ok(Response::new(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx))))
+        }
+
+        async fn talk_more_answer_one(&self, request: Request<Streaming<TalkRequest>>) -> Result<Response<TalkResponse>, Status> {
+            let mut stream = request.into_inner();
+            let mut collected_requests = Vec::new();
+            while let Some(req_result) = stream.next().await {
+                collected_requests.push(req_result.unwrap());
+            }
+            if let Some(tx) = &self.client_streaming_collector_tx {
+                tx.send(collected_requests).await.expect("Failed to send collected client stream reqs");
+            }
+            Ok(Response::new(self.client_streaming_res.clone().unwrap_or_default()))
+        }
+
+        type TalkBidirectionalStream = Pin<Box<dyn Stream<Item = Result<TalkResponse, Status>> + Send + Sync + 'static>>;
+
+        async fn talk_bidirectional(&self, request: Request<Streaming<TalkRequest>>) -> Result<Response<Self::TalkBidirectionalStream>, Status> {
+            let mut client_stream = request.into_inner();
+            let mut collected_requests = Vec::new();
+            // Drain the client stream first (simplistic, real bidi might interleave)
+            while let Some(req_result) = client_stream.next().await {
+                 collected_requests.push(req_result.unwrap());
+            }
+            if let Some(tx) = &self.bidi_req_collector_tx {
+                tx.send(collected_requests).await.expect("Failed to send collected bidi reqs");
+            }
+
+            let count = self.bidi_res_count;
+            let (tx_response, rx_response) = mpsc::channel(count + 1); // Use count for channel size
+            tokio::spawn(async move {
+                for i in 0..count {
+                    let response = TalkResponse {
+                        status: 200,
+                        results: vec![TalkResult {
+                            kv: {
+                                let mut map = HashMap::new();
+                                map.insert("data".to_string(), format!("Mock Bidi Stream Msg {}", i+1));
+                                map
+                            },
+                            ..Default::default()
+                        }],
+                    };
+                    tx_response.send(Ok(response)).await.unwrap();
+                }
+            });
+            Ok(Response::new(Box::pin(tokio_stream::wrappers::ReceiverStream::new(rx_response))))
+        }
+    }
+
+    async fn run_mock_server(mock_service: MockLandingService, port: u16) -> (SocketAddr, oneshot::Sender<()>) {
+        let addr: SocketAddr = format!("[::1]:{}", port).parse().unwrap();
+        let (shutdown_tx, shutdown_rx) = oneshot::channel(); // For shutdown signal
+
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(LandingServiceServer::new(mock_service))
+                .serve_with_shutdown(addr, async { shutdown_rx.await.ok(); })
+                .await
+                .unwrap();
+        });
+        // Wait a bit for server to start, simplistic
+        tokio::time::sleep(Duration::from_millis(100)).await; 
+        (addr, shutdown_tx)
+    }
+    
+    // Helper to build a real client connected to our mock server
+    async fn build_test_client(server_addr: SocketAddr) -> LandingServiceClient<Channel> {
+        // Temporarily override env vars for this client connection
+        let original_backend = env::var("GRPC_HELLO_BACKEND").ok();
+        let original_port = env::var("GRPC_HELLO_BACKEND_PORT").ok();
+        let original_secure = env::var("GRPC_HELLO_SECURE").ok();
+
+        env::set_var("GRPC_HELLO_BACKEND", server_addr.ip().to_string());
+        env::set_var("GRPC_HELLO_BACKEND_PORT", server_addr.port().to_string());
+        env::set_var("GRPC_HELLO_SECURE", "N"); // Connect insecurely to mock server
+
+        let client = crate::common::conn::build_client().await;
+
+        // Restore env vars
+        original_backend.map_or_else(|| env::remove_var("GRPC_HELLO_BACKEND"), |v| env::set_var("GRPC_HELLO_BACKEND", v));
+        original_port.map_or_else(|| env::remove_var("GRPC_HELLO_BACKEND_PORT"), |v| env::set_var("GRPC_HELLO_BACKEND_PORT", v));
+        original_secure.map_or_else(|| env::remove_var("GRPC_HELLO_SECURE"), |v| env::set_var("GRPC_HELLO_SECURE", v));
+        
+        client
+    }
+
+
+    #[tokio::test]
+    async fn test_client_talk_unary() {
+        let (unary_req_tx, mut unary_req_rx) = mpsc::channel(1);
+        let mock_service = MockLandingService {
+            unary_req_tx: Some(unary_req_tx),
+            unary_res: Some(TalkResponse { status: 200, results: vec![TalkResult {
+                kv: {
+                    let mut map = HashMap::new();
+                    map.insert("data".to_string(), "Mock Unary OK".to_string());
+                    map
+                },
+                ..Default::default()
+            }]}),
+            ..Default::default()
+        };
+        let (server_addr, shutdown_tx) = run_mock_server(mock_service, 50061).await; // Use a unique port
+        let mut client = build_test_client(server_addr).await;
+
+        // Call the actual client.rs's talk function
+        super::talk(&mut client).await.expect("Client's talk function failed");
+
+        let received_req = unary_req_rx.recv().await.unwrap();
+        assert_eq!(received_req.data, "0"); // Default data from client's talk()
+        assert_eq!(received_req.meta, "RUST");
+        // print_response is called inside client's talk(), not easily assertable here
+        shutdown_tx.send(()).unwrap(); // Shutdown server
+    }
+
+    #[tokio::test]
+    async fn test_client_talk_one_answer_more() {
+        let (server_streaming_req_tx, mut server_streaming_req_rx) = mpsc::channel(1);
+        let mock_service = MockLandingService {
+            server_streaming_req_tx: Some(server_streaming_req_tx),
+            server_streaming_res_count: 2, // Mock server sends 2 messages
+            ..Default::default()
+        };
+        let (server_addr, shutdown_tx) = run_mock_server(mock_service, 50062).await;
+        let mut client = build_test_client(server_addr).await;
+
+        super::talk_one_answer_more(&mut client).await.expect("Client's server streaming failed");
+        
+        let received_req = server_streaming_req_rx.recv().await.unwrap();
+        assert_eq!(received_req.data, "0,1,2"); // Default data from client's talk_one_answer_more()
+        // Output of print_response called inside client's function is not captured here.
+        // Test primarily verifies client calls server and server stream is processed without error.
+        shutdown_tx.send(()).unwrap(); // Shutdown server
+    }
+
+    #[tokio::test]
+    async fn test_client_talk_more_answer_one() {
+        let (client_streaming_collector_tx, mut client_streaming_collector_rx) = mpsc::channel(1);
+        let mock_service = MockLandingService {
+            client_streaming_collector_tx: Some(client_streaming_collector_tx),
+            client_streaming_res: Some(TalkResponse { status: 200, results: vec![TalkResult {
+                 kv: {
+                    let mut map = HashMap::new();
+                    map.insert("data".to_string(), "Mock ClientStream OK".to_string());
+                    map
+                },
+                ..Default::default()
+            }]}),
+            ..Default::default()
+        };
+        let (server_addr, shutdown_tx) = run_mock_server(mock_service, 50063).await;
+        let mut client = build_test_client(server_addr).await;
+
+        super::talk_more_answer_one(&mut client).await.expect("Client's client streaming failed");
+
+        let received_reqs = client_streaming_collector_rx.recv().await.unwrap();
+        assert_eq!(received_reqs.len(), 3); // client.rs build_link_requests() sends 3
+        assert_eq!(received_reqs[0].meta, "RUST");
+        shutdown_tx.send(()).unwrap(); // Shutdown server
+    }
+
+    #[tokio::test]
+    async fn test_client_talk_bidirectional() {
+        let (bidi_req_collector_tx, mut bidi_req_collector_rx) = mpsc::channel(1);
+        let mock_service = MockLandingService {
+            bidi_req_collector_tx: Some(bidi_req_collector_tx),
+            bidi_res_count: 3, // Mock server sends 3 messages back
+            ..Default::default()
+        };
+        let (server_addr, shutdown_tx) = run_mock_server(mock_service, 50064).await;
+        let mut client = build_test_client(server_addr).await;
+
+        super::talk_bidirectional(&mut client).await.expect("Client's bidi streaming failed");
+
+        let received_reqs = bidi_req_collector_rx.recv().await.unwrap();
+        // client.rs talk_bidirectional sends 3 requests
+        assert_eq!(received_reqs.len(), 3); 
+        assert_eq!(received_reqs[0].meta, "RUST");
+        shutdown_tx.send(()).unwrap(); // Shutdown server
+    }
+}

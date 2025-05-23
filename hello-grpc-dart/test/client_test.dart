@@ -27,9 +27,9 @@ class MockLandingServiceClient extends LandingServiceClient {
     _unaryRequestHandler = handler;
   }
 
-  // Using 'uaryCall' as per the prompt's specific instruction for this subtask.
+  // Using 'unaryCall' (corrected from 'uaryCall').
   @override
-  Future<LandingResponse> uaryCall(LandingRequest request, {CallOptions? options}) async { // Prompt implies non-nullable options.
+  Future<LandingResponse> unaryCall(LandingRequest request, {CallOptions? options}) async { // Prompt implies non-nullable options.
     _unaryRequestReceived = request;
     if (_unaryRequestHandler != null) {
       return _unaryRequestHandler!(request);
@@ -152,8 +152,8 @@ void main() {
       
       mockClient.setUnaryResponse(expectedResponse);
       
-      // Pass CallOptions() to match the prompt's uaryCall signature for options.
-      final response = await mockClient.uaryCall(request, options: CallOptions()); 
+      // Pass CallOptions() to match the prompt's unaryCall signature for options.
+      final response = await mockClient.unaryCall(request, options: CallOptions()); 
       
       expect(mockClient._unaryRequestReceived!.name, 'TestUnary'); // Null assertion on nullable field
       expect(response.message, 'Unary response for TestUnary');

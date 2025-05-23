@@ -66,13 +66,13 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
         .unwrap_or_else(|error| panic!("Problem opening the file: {:?}", error))
 }
 
-fn grpc_server() -> String {
+pub fn grpc_server() -> String {
     env::var("GRPC_SERVER").unwrap_or_else(|_err| "[::1]".to_string())
 }
 
 pub fn has_backend() -> bool {
     match env::var("GRPC_HELLO_BACKEND") {
-        Ok(val) => val.is_empty(),
+        Ok(val) => !val.is_empty(),
         Err(_err) => false,
     }
 }
@@ -81,7 +81,161 @@ pub fn grpc_backend_host() -> String {
     env::var("GRPC_HELLO_BACKEND").unwrap_or_else(|_err| grpc_server())
 }
 
-fn grpc_backend_port() -> String {
+pub fn grpc_backend_port() -> String {
     env::var("GRPC_HELLO_BACKEND_PORT")
         .unwrap_or_else(|_err| env::var("GRPC_SERVER_PORT").unwrap_or_else(|_err| "9996".to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Imports items from the outer module (conn)
+    use std::env;
+
+    // Helper to temporarily set an environment variable
+    fn with_env_var<F>(key: &str, value: Option<&str>, mut closure: F)
+    where
+        F: FnMut(),
+    {
+        let original_value = env::var(key).ok();
+        if let Some(v) = value {
+            env::set_var(key, v);
+        } else {
+            env::remove_var(key);
+        }
+
+        closure();
+
+        // Restore original value
+        if let Some(orig_v) = original_value {
+            env::set_var(key, orig_v);
+        } else {
+            env::remove_var(key);
+        }
+    }
+    
+    // Helper for multiple env vars
+    fn with_env_vars<F>(vars: Vec<(&str, Option<&str>)>, mut closure: F)
+    where
+        F: FnMut(),
+    {
+        let original_values: Vec<(&str, Option<String>)> = vars
+            .iter()
+            .map(|(k, _)| (*k, env::var(*k).ok()))
+            .collect();
+
+        for (k, v_opt) in vars {
+            if let Some(v) = v_opt {
+                env::set_var(k, v);
+            } else {
+                env::remove_var(k);
+            }
+        }
+
+        closure();
+
+        // Restore original values
+        for (k, orig_v_opt) in original_values {
+            if let Some(orig_v) = orig_v_opt {
+                env::set_var(k, orig_v);
+            } else {
+                env::remove_var(k);
+            }
+        }
+    }
+
+
+    #[test]
+    fn test_grpc_server_default() {
+        with_env_var("GRPC_SERVER", None, || {
+            assert_eq!(grpc_server(), "[::1]");
+        });
+    }
+
+    #[test]
+    fn test_grpc_server_custom() {
+        with_env_var("GRPC_SERVER", Some("myhost.com"), || {
+            assert_eq!(grpc_server(), "myhost.com");
+        });
+    }
+
+    #[test]
+    fn test_has_backend_false_by_default() {
+        with_env_var("GRPC_HELLO_BACKEND", None, || {
+            assert_eq!(has_backend(), false);
+        });
+    }
+
+    #[test]
+    fn test_has_backend_false_if_empty() {
+        with_env_var("GRPC_HELLO_BACKEND", Some(""), || {
+            assert_eq!(has_backend(), false); // Corrected logic: !val.is_empty()
+        });
+    }
+
+    #[test]
+    fn test_has_backend_true_if_set() {
+        with_env_var("GRPC_HELLO_BACKEND", Some("backendhost"), || {
+            assert_eq!(has_backend(), true); // Corrected logic: !val.is_empty()
+        });
+    }
+
+    #[test]
+    fn test_grpc_backend_host_uses_backend_var() {
+        with_env_vars(vec![
+            ("GRPC_HELLO_BACKEND", Some("backend.example.com")),
+            ("GRPC_SERVER", Some("server.example.com")) // Should be ignored
+        ], || {
+            assert_eq!(grpc_backend_host(), "backend.example.com");
+        });
+    }
+
+    #[test]
+    fn test_grpc_backend_host_uses_server_var_if_backend_not_set() {
+         with_env_vars(vec![
+            ("GRPC_HELLO_BACKEND", None),
+            ("GRPC_SERVER", Some("server.example.com"))
+        ], || {
+            assert_eq!(grpc_backend_host(), "server.example.com");
+        });
+    }
+    
+    #[test]
+    fn test_grpc_backend_host_default_if_neither_set() {
+        with_env_vars(vec![
+            ("GRPC_HELLO_BACKEND", None),
+            ("GRPC_SERVER", None)
+        ], || {
+            assert_eq!(grpc_backend_host(), "[::1]");
+        });
+    }
+
+    #[test]
+    fn test_grpc_backend_port_default() {
+        with_env_vars(vec![
+            ("GRPC_HELLO_BACKEND_PORT", None),
+            ("GRPC_SERVER_PORT", None)
+        ], || {
+            assert_eq!(grpc_backend_port(), "9996");
+        });
+    }
+
+    #[test]
+    fn test_grpc_backend_port_uses_server_port_var() {
+         with_env_vars(vec![
+            ("GRPC_HELLO_BACKEND_PORT", None),
+            ("GRPC_SERVER_PORT", Some("12345"))
+        ], || {
+            assert_eq!(grpc_backend_port(), "12345");
+        });
+    }
+
+    #[test]
+    fn test_grpc_backend_port_uses_backend_port_var() {
+        with_env_vars(vec![
+            ("GRPC_HELLO_BACKEND_PORT", Some("54321")),
+            ("GRPC_SERVER_PORT", Some("12345")) // Should be ignored
+        ], || {
+            assert_eq!(grpc_backend_port(), "54321");
+        });
+    }
 }

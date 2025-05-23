@@ -128,9 +128,15 @@ To enable TLS, you need to prepare certificates and configure environment variab
 # Run all tests
 cargo test
 
-# Run specific test file with visible output
+# Run specific test file with visible output (e.g., for an integration test)
 cargo test --test version_test -- --nocapture
 ```
+
+The test suite includes:
+- Integration tests located in the `tests/` directory.
+- Unit tests embedded within each relevant source code module in `src/` (e.g., for utilities, connection logic, client functions, and server handlers).
+
+`cargo test` will execute all of these tests.
 
 ## Troubleshooting
 

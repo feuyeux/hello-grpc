@@ -619,3 +619,340 @@ impl LandingService for ProtoServer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Access ProtoServer, LandingService trait, etc.
+    use crate::common::landing::{TalkRequest, TalkResponse, ResultType, LandingServiceClient}; // Added LandingServiceClient for pool
+    use crate::common::utils; // For HELLOS, thanks
+    use tonic::Request;
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use tokio::sync::Mutex as TokioMutex; // Alias for tokio's Mutex
+    use tokio_stream::wrappers::ReceiverStream; // For creating streams from mpsc
+    use tokio::sync::mpsc; // For mpsc channels
+    use futures::stream::iter as futures_iter; // For creating a stream from an iterator
+
+    // Helper to create a default ProtoServer for non-proxy tests
+    fn new_test_server() -> ProtoServer {
+        ProtoServer {
+            backend: String::new(), // Empty backend for non-proxy mode
+            client_pool: None, // No client pool needed for non-proxy tests
+            metrics: Arc::new(ServerMetrics::new()),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_talk_unary_non_proxy() {
+        let server = new_test_server();
+        let request_payload = TalkRequest {
+            data: "0".to_string(), // Corresponds to HELLOS[0] -> "Hello"
+            meta: "TestClient".to_string(),
+        };
+        let request = Request::new(request_payload.clone());
+
+        match server.talk(request).await {
+            Ok(response) => {
+                let talk_response = response.into_inner();
+                assert_eq!(talk_response.status, 200);
+                assert_eq!(talk_response.results.len(), 1);
+                let result = &talk_response.results[0];
+                assert_eq!(result.r#type, ResultType::Ok as i32);
+                
+                let expected_hello = utils::HELLOS[0];
+                let expected_thanks = utils::thanks(expected_hello);
+                let expected_data = format!("{},{}", expected_hello, expected_thanks);
+
+                assert_eq!(result.kv.get("data").unwrap(), &expected_data);
+                assert_eq!(result.kv.get("meta").unwrap(), "RUST");
+                assert_eq!(result.kv.get("idx").unwrap(), "0");
+                assert!(result.kv.contains_key("id"));
+            }
+            Err(status) => {
+                panic!("talk unary call failed: {:?}", status);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_talk_one_answer_more_non_proxy() {
+        let server = new_test_server();
+        let request_payload = TalkRequest {
+            data: "0,1".to_string(), // Two indices
+            meta: "TestClient".to_string(),
+        };
+        let request = Request::new(request_payload);
+        let response_stream = server.talk_one_answer_more(request).await.unwrap().into_inner();
+        
+        let mut received_responses = Vec::new();
+        let mut stream = response_stream; // Type is Pin<Box<dyn Stream<Item = Result<TalkResponse, Status>> + Send + Sync + 'static>>
+        while let Some(res_result) = stream.next().await {
+            match res_result {
+                Ok(resp) => received_responses.push(resp),
+                Err(status) => panic!("Stream error: {:?}", status),
+            }
+        }
+
+        assert_eq!(received_responses.len(), 2, "Expected 2 responses for data '0,1'");
+
+        // Check first response (for data "0")
+        let resp1 = &received_responses[0];
+        assert_eq!(resp1.status, 200);
+        assert_eq!(resp1.results.len(), 1);
+        let result1 = &resp1.results[0];
+        let expected_hello1 = utils::HELLOS[0];
+        let expected_thanks1 = utils::thanks(expected_hello1);
+        assert_eq!(result1.kv.get("data").unwrap(), &format!("{},{}", expected_hello1, expected_thanks1));
+        assert_eq!(result1.kv.get("idx").unwrap(), "0");
+
+        // Check second response (for data "1")
+        let resp2 = &received_responses[1];
+        assert_eq!(resp2.status, 200);
+        assert_eq!(resp2.results.len(), 1);
+        let result2 = &resp2.results[0];
+        let expected_hello2 = utils::HELLOS[1];
+        let expected_thanks2 = utils::thanks(expected_hello2);
+        assert_eq!(result2.kv.get("data").unwrap(), &format!("{},{}", expected_hello2, expected_thanks2));
+        assert_eq!(result2.kv.get("idx").unwrap(), "1");
+    }
+
+    #[tokio::test]
+    async fn test_talk_more_answer_one_non_proxy() {
+        let server = new_test_server();
+        let requests_data = vec![
+            TalkRequest { data: "0".to_string(), meta: "Client1".to_string() },
+            TalkRequest { data: "1".to_string(), meta: "Client2".to_string() },
+        ];
+        
+        let (tx, rx) = mpsc::channel(4); // Create a channel for the stream
+        let request_stream = ReceiverStream::new(rx);
+        
+        // Spawn a task to send requests into the channel
+        tokio::spawn(async move {
+            for req_data in requests_data {
+                if tx.send(req_data).await.is_err() {
+                    eprintln!("Receiver dropped before all messages sent");
+                    return;
+                }
+            }
+        });
+
+        let request = Request::new(request_stream);
+        match server.talk_more_answer_one(request).await {
+            Ok(response) => {
+                let talk_response = response.into_inner();
+                assert_eq!(talk_response.status, 200);
+                // The server's talk_more_answer_one aggregates results.
+                // It creates a response with multiple TalkResult entries.
+                assert_eq!(talk_response.results.len(), 2, "Expected 2 results in the response");
+
+                // Check first result (from data "0")
+                let result1 = &talk_response.results[0];
+                let expected_hello1 = utils::HELLOS[0];
+                let expected_thanks1 = utils::thanks(expected_hello1);
+                assert_eq!(result1.kv.get("data").unwrap(), &format!("{},{}", expected_hello1, expected_thanks1));
+                assert_eq!(result1.kv.get("idx").unwrap(), "0");
+
+                // Check second result (from data "1")
+                let result2 = &talk_response.results[1];
+                let expected_hello2 = utils::HELLOS[1];
+                let expected_thanks2 = utils::thanks(expected_hello2);
+                assert_eq!(result2.kv.get("data").unwrap(), &format!("{},{}", expected_hello2, expected_thanks2));
+                assert_eq!(result2.kv.get("idx").unwrap(), "1");
+            }
+            Err(status) => {
+                panic!("talk_more_answer_one call failed: {:?}", status);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_talk_bidirectional_non_proxy() {
+        let server = new_test_server();
+        let client_requests_data = vec![
+            TalkRequest { data: "0".to_string(), meta: "ClientBidi1".to_string() },
+            TalkRequest { data: "1".to_string(), meta: "ClientBidi2".to_string() },
+        ];
+
+        let (tx, rx) = mpsc::channel(4);
+        let request_stream = ReceiverStream::new(rx);
+        
+        tokio::spawn(async move {
+            for req_data in client_requests_data {
+                if tx.send(req_data).await.is_err() {
+                    eprintln!("Bidirectional: Receiver dropped before all messages sent");
+                    return;
+                }
+            }
+        });
+
+        let request_tonic = Request::new(request_stream);
+        let response_stream_result = server.talk_bidirectional(request_tonic).await;
+
+        match response_stream_result {
+            Ok(response) => {
+                let mut received_responses = Vec::new();
+                let mut server_stream = response.into_inner();
+                while let Some(res_result) = server_stream.next().await {
+                    match res_result {
+                        Ok(resp) => received_responses.push(resp),
+                        Err(status) => panic!("Bidirectional stream error from server: {:?}", status),
+                    }
+                }
+
+                assert_eq!(received_responses.len(), 2, "Expected 2 responses from bidirectional server stream");
+
+                // Check first response
+                let resp1 = &received_responses[0];
+                assert_eq!(resp1.status, 200);
+                let result1 = &resp1.results[0];
+                let expected_hello1 = utils::HELLOS[0];
+                let expected_thanks1 = utils::thanks(expected_hello1);
+                assert_eq!(result1.kv.get("data").unwrap(), &format!("{},{}", expected_hello1, expected_thanks1));
+                 assert_eq!(result1.kv.get("idx").unwrap(), "0");
+
+                // Check second response
+                let resp2 = &received_responses[1];
+                assert_eq!(resp2.status, 200);
+                let result2 = &resp2.results[0];
+                let expected_hello2 = utils::HELLOS[1];
+                let expected_thanks2 = utils::thanks(expected_hello2);
+                assert_eq!(result2.kv.get("data").unwrap(), &format!("{},{}", expected_hello2, expected_thanks2));
+                assert_eq!(result2.kv.get("idx").unwrap(), "1");
+            }
+            Err(status) => {
+                panic!("talk_bidirectional call failed: {:?}", status);
+            }
+        }
+    }
+
+    // --- Proxy Tests Submodule ---
+    #[cfg(test)]
+    mod proxy_tests {
+        use super::*; // Access items from the outer tests module and server module
+        use std::env;
+        use tonic::transport::Channel; // For the client_pool type
+
+        // Helper to create a ProtoServer configured for proxy mode.
+        // For these conceptual tests, the client_pool won't contain a usable client
+        // that connects to a mock backend, so attempts to use it will likely fail
+        // or rely on build_client()'s behavior if the pool is empty/unusable.
+        fn new_proxy_test_server_conceptual(backend_host: &str, backend_port: &str) -> ProtoServer {
+            env::set_var("GRPC_HELLO_BACKEND", backend_host);
+            // grpc_backend_port() will use GRPC_HELLO_BACKEND_PORT or GRPC_SERVER_PORT or default.
+            // To ensure a specific port for the backend:
+            env::set_var("GRPC_HELLO_BACKEND_PORT", backend_port);
+            
+            // The client_pool is initialized as Some, but empty.
+            // The get_client() method in ProtoServer will attempt to call build_client()
+            // if it can't find a usable client in the pool.
+            let client_pool = Some(Arc::new(TokioMutex::new(Vec::new()))); 
+
+            ProtoServer {
+                // The 'backend' field in ProtoServer is just a String representation, not used for connection directly by ProtoServer itself.
+                // The actual connection uses GRPC_HELLO_BACKEND env var via common::conn::grpc_backend_host().
+                backend: format!("{}:{}", backend_host, backend_port), 
+                client_pool,
+                metrics: Arc::new(ServerMetrics::new()),
+            }
+        }
+        
+        // Cleanup environment variables after tests
+        fn cleanup_env_vars() {
+            env::remove_var("GRPC_HELLO_BACKEND");
+            env::remove_var("GRPC_HELLO_BACKEND_PORT");
+        }
+
+        #[tokio::test]
+        async fn test_talk_unary_proxy_attempts_connection() {
+            // This test demonstrates the proxy path is taken.
+            // It doesn't use a mock backend, so it will likely try to connect
+            // to a non-existent service and fail, which is an expected outcome here.
+            // A full test would involve a mock backend service.
+
+            let server = new_proxy_test_server_conceptual("localhost", "55555"); // Use a port unlikely to be in use
+            let request_payload = TalkRequest {
+                data: "0".to_string(),
+                meta: "TestClientProxy".to_string(),
+            };
+            let request = Request::new(request_payload.clone());
+
+            // We expect this to fail because no client is properly injected/mocked for the backend,
+            // and no real backend is running at localhost:55555.
+            // The server's get_client() will call common::conn::build_client() if the pool is empty,
+            // which will then attempt a real connection.
+            match server.talk(request).await {
+                Ok(response) => {
+                    cleanup_env_vars(); // Ensure cleanup even on panic/failure
+                    panic!("Proxy call returned Ok, but expected connection error or specific mock behavior. Response: {:?}", response.into_inner());
+                }
+                Err(status) => {
+                    // This is the expected path for this conceptual test.
+                    // The error would typically be related to connection failure or service unavailable.
+                    eprintln!("Proxy call failed as expected: {} (code: {:?})", status.message(), status.code());
+                    assert!(
+                        status.code() == tonic::Code::Unavailable ||  // If build_client fails to connect
+                        status.code() == tonic::Code::Internal || // If client available but backend call fails
+                        status.code() == tonic::Code::Unknown, // If build_client panics (e.g. include_str! fails in test env if files missing)
+                        "Expected Unavailable, Internal, or Unknown status code, got {:?} with message: {}", status.code(), status.message()
+                    );
+                }
+            }
+            cleanup_env_vars();
+        }
+
+        // TODO: Add similar conceptual tests for other streaming RPCs in proxy mode.
+        // These would follow the same pattern:
+        // 1. Configure server for proxy mode.
+        // 2. Send a request.
+        // 3. Expect an error status (e.g., Unavailable) because the mock backend isn't running.
+        //    This confirms the proxy logic path was attempted.
+        //
+        // Example for server streaming:
+        // #[tokio::test]
+        // async fn test_talk_one_answer_more_proxy_attempts_connection() {
+        //     let server = new_proxy_test_server_conceptual("localhost", "55556");
+        //     let request_payload = TalkRequest { data: "0".to_string(), meta: "TestClientProxyStream".to_string() };
+        //     let request = Request::new(request_payload);
+        //
+        //     match server.talk_one_answer_more(request).await {
+        //         Ok(response_stream) => {
+        //             // It's possible the initial call returns Ok, but stream encounters error.
+        //             // Collect responses and expect an error or empty stream.
+        //             let mut stream = response_stream.into_inner();
+        //             let first_item = stream.next().await;
+        //             if let Some(Ok(resp)) = first_item {
+        //                  cleanup_env_vars();
+        //                  panic!("Proxy server stream returned data, expected error. First item: {:?}", resp);
+        //             } else if first_item.is_none() {
+        //                  // This could happen if the backend call succeeds but returns an empty stream,
+        //                  // which is not the primary failure mode we are testing here (connection failure).
+        //                  // Or if the error occurs before any messages are sent.
+        //             }
+        //             // If first_item is Some(Err(status)), then the assertion below handles it.
+        //             // If an error is not propagated as Err(status) from the main function,
+        //             // but rather as an error within the stream itself, this test needs adjustment.
+        //             // The current implementation of talk_one_answer_more for proxy returns Err(Status)
+        //             // if the initial backend call fails, so this panic should not be hit.
+        //             cleanup_env_vars();
+        //             panic!("Proxy server stream call returned Ok, but expected error status directly from method or in stream.");
+        //         }
+        //         Err(status) => {
+        //             eprintln!("Proxy server streaming call failed as expected: {:?}", status);
+        //             assert!(
+        //                 status.code() == tonic::Code::Unavailable ||
+        //                 status.code() == tonic::Code::Internal ||
+        //                 status.code() == tonic::Code::Unknown,
+        //                 "Expected Unavailable, Internal, or Unknown, got {:?}", status.code()
+        //             );
+        //         }
+        //     }
+        //     cleanup_env_vars();
+        // }
+
+        // TODO: For full proxy testing:
+        //   1. Refactor ProtoServer to allow injection of a mock LandingServiceClient.
+        //   2. Or, implement a mock LandingService and run it on a test port, then
+        //      configure the ProtoServer's client_pool to connect to this mock service.
+    }
+}
