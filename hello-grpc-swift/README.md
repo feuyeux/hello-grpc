@@ -115,6 +115,14 @@ As of Swift 6.1, Apple has introduced a built-in testing framework called "Swift
 swift test
 ```
 
+The `swift test` command executes a comprehensive suite of tests located in `Tests/helloTests/`. These include:
+- Unit tests for common utility functions (versioning, static data maps).
+- Tests for the gRPC server logic (`HelloService`):
+    - Verifying all four RPC types (Unary, Server Streaming, Client Streaming, Bidirectional Streaming) in non-proxy (direct processing) mode.
+    - Verifying all four RPC types in proxy mode, ensuring correct payload forwarding to a mock backend. Current tests also confirm that metadata is not propagated by the proxy by default.
+- Tests for the gRPC client logic (`HelloClient`'s static RPC methods):
+    - Verifying all four RPC types against an in-process mock server.
+
 ## Troubleshooting
 
 1. **Port Already in Use**

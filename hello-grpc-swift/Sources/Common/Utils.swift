@@ -39,9 +39,8 @@ public enum Utils {
         // Try to read Package.swift to extract the gRPC version
         // Check multiple possible locations for the Package.swift file
         let possiblePaths = [
-            "../Package.swift", // Relative from executable
-            "Package.swift", // Current directory
-            "/Users/han/coding/hello-grpc/hello-grpc-swift/Package.swift", // Absolute path
+            "Package.swift", // Assuming 'swift test' runs from package root
+            "../Package.swift", // In case it runs from a common build or source directory context
         ]
 
         for packagePath in possiblePaths {
