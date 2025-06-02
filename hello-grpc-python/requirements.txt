@@ -4,4 +4,4 @@
 grpcio-tools==1.72.1
 # https://pypi.org/project/protobuf/
 # grpcio-tools 1.71.0 depends on protobuf<6.0dev and >=5.26.1
-protobuf==5.29.4
+protobuf==6.31.1
