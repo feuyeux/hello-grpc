@@ -8,8 +8,8 @@ This project implements a gRPC client using Flutter, demonstrating four communic
 
 ## Prerequisites
 
-- Flutter SDK 2.5 or higher
-- Dart SDK 2.14 or higher
+- Flutter SDK 3.0 or higher
+- Dart SDK 3.0 or higher
 - Protocol Buffers compiler (protoc)
 - Dart protoc plugin
 - Android Studio or VS Code with Flutter extensions
@@ -19,6 +19,7 @@ This project implements a gRPC client using Flutter, demonstrating four communic
 ### 1. Install Dependencies
 
 ```bash
+# https://docs.flutter.dev/get-started/install
 # Install Flutter dependencies
 flutter pub get
 
@@ -45,12 +46,15 @@ protoc --dart_out=grpc:lib/src/generated -Iprotos protos/landing.proto
 ### Application Setup
 
 ```bash
-# Run the Flutter app
+# Run the Flutter app on mobile/desktop
 flutter run
 
 # Build for specific platform
-flutter build apk  # Android
-flutter build ios  # iOS (on macOS only)
+flutter build apk     # Android
+flutter build ios     # iOS (on macOS only)  
+flutter build macos   # macOS desktop
+flutter build windows # Windows desktop
+flutter build linux   # Linux desktop
 ```
 
 ### Connecting to Backend
@@ -138,12 +142,12 @@ flutter test
 ## Features
 
 - ✅ Four gRPC communication models
-- ✅ TLS secure communication
-- ✅ Cross-platform (Android, iOS)
+- ✅ TLS secure communication  
+- ✅ Cross-platform (Android, iOS, macOS, Windows, Linux)
 - ✅ Material Design UI
 - ✅ Asynchronous programming with Futures and Streams
-- ✅ Header propagation
-- ✅ Environment variable configuration
+- ✅ Dynamic server configuration
+- ✅ Automatic local IP detection
 - ✅ Null safety support
 
 ## Contributor Notes

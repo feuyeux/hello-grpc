@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'conn/conn.dart';
 import 'package:grpc/grpc.dart';
-import 'package:location/location.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Conn.initializeWithLocalIP();
   runApp(const HelloApp());
 }
 
@@ -33,33 +35,37 @@ class HelloApp extends StatelessWidget {
 
 class HelloAppState extends ChangeNotifier {
   var list = <String>[];
+  late final TextEditingController hostController;
+  late final TextEditingController portController;
+  
+  HelloAppState() {
+    hostController = TextEditingController(text: Conn.host);
+    portController = TextEditingController(text: Conn.port.toString());
+  }
+  void updateConnection() {
+    final host = hostController.text.trim();
+    final portText = portController.text.trim();
+    
+    if (host.isNotEmpty && portText.isNotEmpty) {
+      try {
+        final port = int.parse(portText);
+        Conn.updateConnection(host, port);
+        notifyListeners();
+      } catch (e) {
+        // Handle invalid port number
+      }
+    }
+  }
+
   Future<void> askRPC() async {
+    updateConnection();
+    
     DateTime dateTime = DateTime.now();
     list.clear();
     list.add("host:${Conn.host},port:${Conn.port}");
     list.add("==BEGIN(${dateTime.toString().substring(2, 19)})==");
 
-    Location location = Location();
-    bool serviceEnabled;
-    PermissionStatus permissionGranted;
-    LocationData locationData;
-    serviceEnabled = await location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (serviceEnabled) {
-        permissionGranted = await location.hasPermission();
-        if (permissionGranted == PermissionStatus.denied) {
-          permissionGranted = await location.requestPermission();
-          if (permissionGranted == PermissionStatus.granted) {
-            locationData = await location.getLocation();
-            list.add(locationData.toString());
-          }
-        } else {
-          locationData = await location.getLocation();
-          list.add(locationData.toString());
-        }
-      }
-    }
+    // 移除了定位服务代码，专注于gRPC通信演示
 
     final channel = ClientChannel(Conn.host,
         port: Conn.port,
@@ -153,6 +159,58 @@ class AsksPage extends StatelessWidget {
       padding: const EdgeInsets.all(30.0),
       child: Column(
         children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'gRPC Server Configuration',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: appState.hostController,
+                          decoration: const InputDecoration(
+                            labelText: 'Host',
+                            hintText: 'localhost',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: TextField(
+                          controller: appState.portController,
+                          decoration: const InputDecoration(
+                            labelText: 'Port',
+                            hintText: '9996',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Current: ${Conn.host}:${Conn.port}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               ElevatedButton(
@@ -163,7 +221,7 @@ class AsksPage extends StatelessWidget {
               ),
             ],
           ),
-          const Padding(padding: EdgeInsets.all(20)),
+          const SizedBox(height: 20),
           for (var response in appState.list)
             Card(
               child: ListTile(
