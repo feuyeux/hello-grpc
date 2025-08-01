@@ -28,7 +28,7 @@ tonic = { version = "0.12", features = ["tls"] }
 tokio = { version = "1.0", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 prost = "0.13"
-thiserror = "1.0"
+thiserror = "2.0"
 local-ip-address = "0.6"
 
 [dev-dependencies]
