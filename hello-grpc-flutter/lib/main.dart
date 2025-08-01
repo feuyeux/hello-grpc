@@ -1,0 +1,327 @@
+import 'dart:math';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'common/common.dart';
+import 'common/landing.pbgrpc.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'conn/conn.dart';
+import 'package:grpc/grpc.dart';
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Conn.initializeWithLocalIP();
+  runApp(const HelloApp());
+}
+
+class HelloApp extends StatelessWidget {
+  const HelloApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => HelloAppState(),
+      child: MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color.fromRGBO(129, 199, 132, 1.0), // #81c784
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+          scaffoldBackgroundColor: const Color.fromRGBO(18, 18, 18, 1.0), // #121212
+          cardTheme: CardThemeData(
+            color: const Color.fromRGBO(30, 30, 30, 1.0), // #1e1e1e
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromRGBO(129, 199, 132, 1.0), // #81c784
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              minimumSize: const Size(0, 48),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        home: const AsksPage(),
+      ),
+    );
+  }
+}
+
+class HelloAppState extends ChangeNotifier {
+  var list = <String>[];
+  late final TextEditingController hostController;
+  late final TextEditingController portController;
+  String systemInfo = '';
+  
+  HelloAppState() {
+    hostController = TextEditingController(text: Conn.host);
+    portController = TextEditingController(text: Conn.port.toString());
+    _getSystemInfo();
+    
+    // 添加输入监听来实时更新显示
+    hostController.addListener(_updateDisplay);
+    portController.addListener(_updateDisplay);
+  }
+
+  void _updateDisplay() {
+    notifyListeners(); // 触发UI更新
+  }
+
+  String get currentConfig {
+    final host = hostController.text.trim().isEmpty ? 'localhost' : hostController.text.trim();
+    final port = portController.text.trim().isEmpty ? '9996' : portController.text.trim();
+    return '$host:$port';
+  }
+
+  void _getSystemInfo() {
+    if (Platform.isMacOS) {
+      systemInfo = 'macOS';
+    } else if (Platform.isWindows) {
+      systemInfo = 'Windows';
+    } else if (Platform.isLinux) {
+      systemInfo = 'Linux';
+    } else if (Platform.isAndroid) {
+      systemInfo = 'Android';
+    } else if (Platform.isIOS) {
+      systemInfo = 'iOS';
+    } else {
+      systemInfo = 'Unknown';
+    }
+  }
+  void updateConnection() {
+    final host = hostController.text.trim();
+    final portText = portController.text.trim();
+    
+    if (host.isNotEmpty && portText.isNotEmpty) {
+      try {
+        final port = int.parse(portText);
+        Conn.updateConnection(host, port);
+        notifyListeners();
+      } catch (e) {
+        // Handle invalid port number
+      }
+    }
+  }
+
+  Future<void> askRPC() async {
+    updateConnection();
+    
+    DateTime dateTime = DateTime.now();
+    list.clear();
+    list.add("host:${Conn.host},port:${Conn.port}");
+    list.add("==BEGIN(${dateTime.toString().substring(2, 19)})==");
+
+    // 移除了定位服务代码，专注于gRPC通信演示
+
+    final channel = ClientChannel(Conn.host,
+        port: Conn.port,
+        options:
+            const ChannelOptions(credentials: ChannelCredentials.insecure()));
+    stub = LandingServiceClient(channel,
+        options: CallOptions(timeout: const Duration(seconds: 30)));
+    // Run all of the demos in order.
+    try {
+      TalkRequest request = TalkRequest()
+        ..data = Utils.randomId(5)
+        ..meta = "FLUTTER";
+      await talk(request);
+      request = TalkRequest()
+        ..data =
+            "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
+        ..meta = "FLUTTER";
+      await talkOneAnswerMore(request);
+      await talkMoreAnswerOne();
+      await talkBidirectional();
+    } catch (e) {
+      // ignore: avoid_print
+      print('Caught error: $e');
+    }
+    await channel.shutdown();
+    list.add("====END====");
+    notifyListeners();
+  }
+
+  Future<TalkResponse> talk(TalkRequest request) async {
+    final response = await stub.talk(request);
+    list.add("Request/Response");
+    list.add(response.toString());
+    return response;
+  }
+
+  Future<void> talkOneAnswerMore(TalkRequest request) async {
+    await for (var response in stub.talkOneAnswerMore(request)) {
+      list.add("Server Streaming");
+      list.add(response.toString());
+    }
+  }
+
+  Future<void> talkMoreAnswerOne() async {
+    Stream<TalkRequest> generateRequest(int count) async* {
+      final random = Random();
+      for (var i = 0; i < count; i++) {
+        TalkRequest request = TalkRequest()
+          ..data = Utils.randomId(5)
+          ..meta = "FLUTTER";
+        yield request;
+        await Future.delayed(Duration(milliseconds: 100 + random.nextInt(100)));
+      }
+    }
+
+    final response = await stub.talkMoreAnswerOne(generateRequest(3));
+    list.add("Client Streaming");
+    list.add(response.toString());
+  }
+
+  Future<void> talkBidirectional() async {
+    Stream<TalkRequest> generateRequests() async* {
+      for (var i = 0; i < 3; i++) {
+        TalkRequest request = TalkRequest()
+          ..data = Utils.randomId(5)
+          ..meta = "FLUTTER";
+        // Short delay to simulate some other interaction.
+        await Future.delayed(const Duration(milliseconds: 10));
+        yield request;
+      }
+    }
+
+    final call = stub.talkBidirectional(generateRequests());
+    await for (var response in call) {
+      list.add("Bidirectional Streaming");
+      list.add(response.toString());
+    }
+  }
+}
+
+late LandingServiceClient stub;
+
+class AsksPage extends StatelessWidget {
+  const AsksPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<HelloAppState>();
+
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(18, 18, 18, 1.0), // #121212
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(30.0),
+        child: Column(
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'gRPC Server Configuration --  ${appState.systemInfo}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        'Current: ${appState.currentConfig}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: SizedBox(
+                          height: 56,
+                          child: TextField(
+                            controller: appState.hostController,
+                            decoration: const InputDecoration(
+                              labelText: 'Host',
+                              hintText: 'localhost',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              labelStyle: TextStyle(color: Color.fromRGBO(129, 199, 132, 1.0)),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Color.fromRGBO(129, 199, 132, 1.0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                            ),
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: SizedBox(
+                          height: 56,
+                          child: TextField(
+                            controller: appState.portController,
+                            decoration: const InputDecoration(
+                              labelText: 'Port',
+                              hintText: '9996',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              labelStyle: TextStyle(color: Color.fromRGBO(129, 199, 132, 1.0)),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Color.fromRGBO(129, 199, 132, 1.0)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  appState.askRPC();
+                },
+                child: const Text('ASK gRPC Server From Flutter'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          for (var response in appState.list)
+            Card(
+              child: ListTile(
+                title: Text(
+                  response.toString(),
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+        ],
+      ),
+      ),
+    );
+  }
+}

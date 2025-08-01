@@ -1,0 +1,296 @@
+/* Flutter Material Design inspired CSS */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-si.material-input input {
+    width: 100%;
+    height: 56px;
+    padding: 16px 12px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    background-color: transparent;
+    color: #ffffff;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+}box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    line-height: 1.5;
+    padding: 30px;
+    min-height: 100vh;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-weight: 400;
+}
+
+.app-container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Configuration Card */
+.config-card {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: none;
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.config-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #ffffff;
+}
+
+.current-config {
+    font-size: 14px;
+    color: #aaa;
+    margin: 0;
+    font-weight: 500;
+}
+
+.current-config span {
+    color: #81c784;
+    font-weight: 500;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.host-input {
+    flex: 3;
+}
+
+.port-input {
+    flex: 1;
+}
+
+/* Material Design input styling */
+.material-input {
+    position: relative;
+    height: 56px;
+}
+
+.material-input input {
+    width: 100%;
+    height: 56px;
+    padding: 16px 12px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    background-color: transparent;
+    color: #ffffff;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+}
+
+.material-input input:focus {
+    outline: none;
+    border-color: #81c784;
+    border-width: 1px;
+}
+
+.material-input label {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 16px;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    background-color: #1e1e1e;
+    padding: 0 4px;
+}
+
+.material-input input:focus + label,
+.material-input input:not(:placeholder-shown) + label {
+    top: 0;
+    font-size: 12px;
+    color: #81c784;
+}
+
+.input-group input::placeholder {
+    color: #888;
+}
+
+.current-config {
+    font-size: 14px;
+    color: #aaa;
+    margin-top: 8px;
+}
+
+.current-config span {
+    color: #81c784;
+    font-weight: 500;
+}
+
+/* Action Section */
+.action-section {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.test-button {
+    background-color: #81c784;
+    color: #000000;
+    border: none;
+    border-radius: 24px;
+    padding: 0 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(129, 199, 132, 0.3);
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+}
+
+.test-button:hover {
+    background-color: #66bb6a;
+    box-shadow: 0 4px 12px rgba(129, 199, 132, 0.4);
+    transform: translateY(-1px);
+}
+
+.test-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(129, 199, 132, 0.3);
+}
+
+/* Results Section */
+.results-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.results-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.result-card {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+}
+
+.result-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border-color: #444;
+}
+
+.result-card .result-text {
+    font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #ffffff;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 0;
+    margin: 0;
+}
+
+/* Status indicators */
+.status-begin {
+    color: #81c784;
+    font-weight: 600;
+}
+
+.status-end {
+    color: #f48fb1;
+    font-weight: 600;
+}
+
+.status-host {
+    color: #64b5f6;
+    font-weight: 600;
+}
+
+.status-request {
+    color: #ffb74d;
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    body {
+        padding: 15px;
+    }
+    
+    .input-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .host-input,
+    .port-input {
+        flex: 1;
+    }
+    
+    .test-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
