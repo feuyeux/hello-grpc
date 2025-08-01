@@ -86,7 +86,7 @@ macos/
 windows/
 !android/build.gradle
 !android/app/src/profile/AndroidManifest.xml
-hello_grpc_flutter/build/*
+hello-grpc-flutter/build/*
 
 ## PHP
 hello-grpc-php/common/msg/

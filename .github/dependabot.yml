@@ -42,6 +42,6 @@ updates:
       interval: "weekly"
   # Enable version updates for Dart in Flutter projects
   - package-ecosystem: "pub"
-    directory: "/hello_grpc_flutter/"
+    directory: "/hello-grpc-flutter/"
     schedule:
       interval: "weekly"

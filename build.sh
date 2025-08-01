@@ -115,7 +115,7 @@ build_if_selected() {
 build_if_selected "cpp" "./hello-grpc-cpp" "C++"
 build_if_selected "csharp" "./hello-grpc-csharp" "C#"
 build_if_selected "dart" "./hello-grpc-dart" "Dart"
-build_if_selected "flutter" "./hello_grpc_flutter" "Flutter"
+build_if_selected "flutter" "./hello-grpc-flutter" "Flutter"
 build_if_selected "go" "./hello-grpc-go" "Go"
 build_if_selected "java" "./hello-grpc-java" "Java"
 build_if_selected "kotlin" "./hello-grpc-kotlin" "Kotlin"
