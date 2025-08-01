@@ -444,3 +444,28 @@ pub async fn handle_platform_error(error_message: String) -> Result<String, Stri
     
     Ok(user_friendly)
 }
+
+#[tauri::command]
+pub async fn get_local_ip() -> Result<String, String> {
+    use std::net::{IpAddr, Ipv4Addr};
+    
+    // Try to get the local IP address
+    match local_ip_address::local_ip() {
+        Ok(IpAddr::V4(ip)) => {
+            // Skip loopback addresses
+            if ip != Ipv4Addr::new(127, 0, 0, 1) {
+                Ok(ip.to_string())
+            } else {
+                Ok("localhost".to_string())
+            }
+        }
+        Ok(IpAddr::V6(_)) => {
+            // For IPv6, fallback to localhost for simplicity
+            Ok("localhost".to_string())
+        }
+        Err(_) => {
+            // Fallback to localhost if we can't determine the local IP
+            Ok("localhost".to_string())
+        }
+    }
+}

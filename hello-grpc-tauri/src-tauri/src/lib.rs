@@ -37,6 +37,7 @@ pub fn run() {
             commands::validate_connection_settings,
             commands::get_platform_recommendations,
             commands::handle_platform_error,
+            commands::get_local_ip,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -10,6 +10,39 @@ function generateRandomId(length) {
     return result;
 }
 
+// Function to get local IP address
+async function getLocalIP() {
+    try {
+        // Try to get local IP using Tauri command first
+        const localIP = await invoke('get_local_ip');
+        return localIP;
+    } catch (error) {
+        console.log('Failed to get local IP from Tauri, using fallback method');
+        
+        // Fallback method using WebRTC
+        return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({
+                iceServers: []
+            });
+            
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            
+            pc.onicecandidate = (ice) => {
+                if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                const myIP = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
+                pc.onicecandidate = () => {};
+                resolve(myIP);
+            };
+            
+            // Fallback to localhost if no IP found within 2 seconds
+            setTimeout(() => {
+                resolve('localhost');
+            }, 2000);
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     const hostInput = document.getElementById('host');
     const portInput = document.getElementById('port');
@@ -17,6 +50,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     const resultsContainer = document.getElementById('results');
     const currentConfig = document.getElementById('current-config');
     const configTitle = document.querySelector('.config-title');
+
+    // Initialize with local IP
+    try {
+        const localIP = await getLocalIP();
+        hostInput.value = localIP;
+        updateCurrentConfig();
+    } catch (error) {
+        console.log('Failed to get local IP, using localhost');
+        hostInput.value = 'localhost';
+        updateCurrentConfig();
+    }
 
     // Get system information and update title
     try {

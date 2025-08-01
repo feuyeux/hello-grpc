@@ -45,3 +45,37 @@ updates:
     directory: "/hello-grpc-flutter/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "flutter"
+      include: "scope"
+  # Enable version updates for npm in Tauri frontend
+  - package-ecosystem: "npm"
+    directory: "/hello-grpc-tauri/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "tauri-frontend"
+      include: "scope"
+  # Enable version updates for Cargo in Tauri backend
+  - package-ecosystem: "cargo"
+    directory: "/hello-grpc-tauri/src-tauri/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "tauri-backend"
+      include: "scope"
