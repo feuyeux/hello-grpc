@@ -65,7 +65,31 @@ body {
 .input-row {
     display: flex;
     gap: 16px;
-    margin-bottom: 0;
+    margin-bottom: 16px;
+}
+
+/* Mode selection */
+.mode-selection {
+    display: flex;
+    gap: 20px;
+    margin-top: 8px;
+}
+
+.mode-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #ffffff;
+    cursor: pointer;
+    user-select: none;
+}
+
+.mode-label input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #81c784;
+    cursor: pointer;
 }
 
 .input-group {
@@ -227,6 +251,26 @@ body {
 
 .status-request {
     color: #ffb74d;
+    font-weight: 500;
+}
+
+.status-host {
+    color: #64b5f6;
+    font-weight: 500;
+}
+
+.status-begin {
+    color: #4fc3f7;
+    font-weight: 600;
+}
+
+.status-end {
+    color: #4fc3f7;
+    font-weight: 600;
+}
+
+.status-platform {
+    color: #fff176;
     font-weight: 500;
 }
 

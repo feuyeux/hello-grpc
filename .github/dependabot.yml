@@ -79,3 +79,21 @@ updates:
     commit-message:
       prefix: "tauri-backend"
       include: "scope"
+  # Enable version updates for Go modules in hello-grpc-gateway
+  - package-ecosystem: "gomod"
+    directory: "/hello-grpc-gateway/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "gateway"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "go"
+      - "gateway"
+    target-branch: "main"

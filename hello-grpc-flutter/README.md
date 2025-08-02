@@ -1,6 +1,7 @@
 # Flutter gRPC Implementation
 
 This project implements a gRPC client using Flutter, demonstrating four communication patterns:
+
 1. Unary RPC
 2. Server Streaming RPC
 3. Client Streaming RPC
@@ -42,11 +43,13 @@ flutter create --platforms=android,ios .
 ### 3. Configure Android NDK (if needed)
 
 Update `android/local.properties`:
+
 ```properties
 ndk.dir=/path/to/android-sdk/ndk/28.1.13356709
 ```
 
 Update `android/app/build.gradle.kts`:
+
 ```kotlin
 android {
     ndkVersion = "28.1.13356709"
@@ -92,6 +95,7 @@ flutter run
 ```
 
 For TLS, place certificates in `assets/certs/` and update `pubspec.yaml`:
+
 ```yaml
 assets:
   - assets/certs/

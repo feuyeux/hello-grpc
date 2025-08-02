@@ -114,3 +114,4 @@ sync.sh
 *.sln.DotSettings.user
 .next/
 hello-grpc-ts/dist
+*.exe

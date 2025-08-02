@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class Conn {
   static String host = 'localhost';
@@ -10,35 +10,12 @@ class Conn {
   }
   
   static Future<String> getLocalIP() async {
-    try {
-      // 获取所有网络接口
-      final interfaces = await NetworkInterface.list();
-      
-      // 优先查找WiFi或以太网接口的IPv4地址
-      for (final interface in interfaces) {
-        if (interface.name.toLowerCase().contains('en') || 
-            interface.name.toLowerCase().contains('wlan') ||
-            interface.name.toLowerCase().contains('wifi')) {
-          for (final addr in interface.addresses) {
-            if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
-              return addr.address;
-            }
-          }
-        }
-      }
-      
-      // 如果没找到，返回第一个非回环的IPv4地址
-      for (final interface in interfaces) {
-        for (final addr in interface.addresses) {
-          if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
-            return addr.address;
-          }
-        }
-      }
-    } catch (e) {
-      print('Error getting local IP: $e');
+    if (kIsWeb) {
+      // 在Web平台上，只能使用localhost
+      return 'localhost';
     }
     
+    // 在非Web平台上也简单使用localhost，避免复杂的网络接口查询
     return 'localhost';
   }
   

@@ -18,6 +18,8 @@ dependencies:
   grpc: ^4.0.0
   # https://pub.dev/packages/protobuf
   protobuf: ^4.0.0
+  # https://pub.dev/packages/http
+  http: ^1.1.0
   # https://pub.dev/packages/collection
   collection: ^1.17.1
   #

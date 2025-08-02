@@ -9,7 +9,6 @@ import 'conn/conn.dart';
 import 'conn/web_grpc_client.dart';
 import 'package:grpc/grpc.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
@@ -93,6 +92,7 @@ class HelloAppState extends ChangeNotifier {
       systemInfo = 'Flutter';
     }
   }
+  
   void updateConnection() {
     final host = hostController.text.trim();
     final portText = portController.text.trim();
@@ -117,49 +117,44 @@ class HelloAppState extends ChangeNotifier {
     list.add("==BEGIN(${dateTime.toString().substring(2, 19)})==");
 
     if (kIsWeb) {
-      // Web平台使用HTTP客户端模拟
-      list.add("Web Platform - Using HTTP simulation for gRPC");
+      // Web平台使用HTTP客户端
       final webClient = WebGrpcClient(Conn.host, Conn.port);
-      
       try {
         TalkRequest request = TalkRequest()
           ..data = Utils.randomId(5)
-          ..meta = "FLUTTER_WEB";
+          ..meta = "FLUTTER";
         await talkWeb(webClient, request);
         
         request = TalkRequest()
           ..data = "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
-          ..meta = "FLUTTER_WEB";
+          ..meta = "FLUTTER";
         await talkOneAnswerMoreWeb(webClient, request);
         await talkMoreAnswerOneWeb(webClient);
         await talkBidirectionalWeb(webClient);
       } catch (e) {
-        list.add('Web Error: $e');
-        print('Caught web error: $e');
+        print('Caught error: $e');
+        list.add("Error: $e");
       }
     } else {
-      // 非Web平台的真实gRPC调用
+      // 非Web平台使用gRPC客户端
       final channel = ClientChannel(Conn.host,
           port: Conn.port,
-          options:
-              const ChannelOptions(credentials: ChannelCredentials.insecure()));
+          options: const ChannelOptions(credentials: ChannelCredentials.insecure()));
       stub = LandingServiceClient(channel,
           options: CallOptions(timeout: const Duration(seconds: 30)));
-      // Run all of the demos in order.
+      
       try {
         TalkRequest request = TalkRequest()
           ..data = Utils.randomId(5)
           ..meta = "FLUTTER";
         await talk(request);
         request = TalkRequest()
-          ..data =
-              "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
+          ..data = "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
           ..meta = "FLUTTER";
         await talkOneAnswerMore(request);
         await talkMoreAnswerOne();
         await talkBidirectional();
       } catch (e) {
-        // ignore: avoid_print
         print('Caught error: $e');
         list.add("Error: $e");
       }
@@ -206,7 +201,6 @@ class HelloAppState extends ChangeNotifier {
         TalkRequest request = TalkRequest()
           ..data = Utils.randomId(5)
           ..meta = "FLUTTER";
-        // Short delay to simulate some other interaction.
         await Future.delayed(const Duration(milliseconds: 10));
         yield request;
       }
@@ -240,20 +234,25 @@ class HelloAppState extends ChangeNotifier {
   }
 
   Future<void> talkMoreAnswerOneWeb(WebGrpcClient client) async {
-    Stream<TalkRequest> generateRequest(int count) async* {
-      final random = Random();
-      for (var i = 0; i < count; i++) {
-        TalkRequest request = TalkRequest()
-          ..data = Utils.randomId(5)
-          ..meta = "FLUTTER_WEB";
-        yield request;
-        await Future.delayed(Duration(milliseconds: 100 + random.nextInt(100)));
+    try {
+      Stream<TalkRequest> generateRequest(int count) async* {
+        final random = Random();
+        for (var i = 0; i < count; i++) {
+          TalkRequest request = TalkRequest()
+            ..data = Utils.randomId(5)
+            ..meta = "FLUTTER";
+          yield request;
+          await Future.delayed(Duration(milliseconds: 100 + random.nextInt(100)));
+        }
       }
-    }
 
-    final response = await client.talkMoreAnswerOne(generateRequest(3));
-    list.add("Web Client Streaming");
-    list.add(response.toString());
+      final stream = generateRequest(3);
+      final response = await client.talkMoreAnswerOne(stream);
+      list.add("Web Client Streaming");
+      list.add(response.toString());
+    } catch (e) {
+      list.add("Web Error: $e");
+    }
   }
 
   Future<void> talkBidirectionalWeb(WebGrpcClient client) async {
