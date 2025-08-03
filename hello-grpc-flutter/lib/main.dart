@@ -9,7 +9,6 @@ import 'conn/conn.dart';
 import 'conn/web_grpc_client.dart';
 import 'package:grpc/grpc.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
@@ -32,7 +31,12 @@ class HelloApp extends StatelessWidget {
             brightness: Brightness.dark,
           ),
           useMaterial3: true,
-          scaffoldBackgroundColor: const Color.fromRGBO(18, 18, 18, 1.0), // #121212
+          scaffoldBackgroundColor: const Color.fromRGBO(
+            18,
+            18,
+            18,
+            1.0,
+          ), // #121212
           cardTheme: CardThemeData(
             color: const Color.fromRGBO(30, 30, 30, 1.0), // #1e1e1e
             elevation: 2,
@@ -42,14 +46,22 @@ class HelloApp extends StatelessWidget {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromRGBO(129, 199, 132, 1.0), // #81c784
+              backgroundColor: const Color.fromRGBO(
+                129,
+                199,
+                132,
+                1.0,
+              ), // #81c784
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               minimumSize: const Size(0, 48),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -64,12 +76,12 @@ class HelloAppState extends ChangeNotifier {
   late final TextEditingController hostController;
   late final TextEditingController portController;
   String systemInfo = '';
-  
+
   HelloAppState() {
     hostController = TextEditingController(text: Conn.host);
     portController = TextEditingController(text: Conn.port.toString());
     _getSystemInfo();
-    
+
     // 添加输入监听来实时更新显示
     hostController.addListener(_updateDisplay);
     portController.addListener(_updateDisplay);
@@ -80,8 +92,12 @@ class HelloAppState extends ChangeNotifier {
   }
 
   String get currentConfig {
-    final host = hostController.text.trim().isEmpty ? 'localhost' : hostController.text.trim();
-    final port = portController.text.trim().isEmpty ? '9996' : portController.text.trim();
+    final host = hostController.text.trim().isEmpty
+        ? 'localhost'
+        : hostController.text.trim();
+    final port = portController.text.trim().isEmpty
+        ? '9996'
+        : portController.text.trim();
     return '$host:$port';
   }
 
@@ -93,10 +109,11 @@ class HelloAppState extends ChangeNotifier {
       systemInfo = 'Flutter';
     }
   }
+
   void updateConnection() {
     final host = hostController.text.trim();
     final portText = portController.text.trim();
-    
+
     if (host.isNotEmpty && portText.isNotEmpty) {
       try {
         final port = int.parse(portText);
@@ -110,7 +127,7 @@ class HelloAppState extends ChangeNotifier {
 
   Future<void> askRPC() async {
     updateConnection();
-    
+
     DateTime dateTime = DateTime.now();
     list.clear();
     list.add("host:${Conn.host},port:${Conn.port}");
@@ -120,15 +137,16 @@ class HelloAppState extends ChangeNotifier {
       // Web平台使用HTTP客户端模拟
       list.add("Web Platform - Using HTTP simulation for gRPC");
       final webClient = WebGrpcClient(Conn.host, Conn.port);
-      
+
       try {
         TalkRequest request = TalkRequest()
           ..data = Utils.randomId(5)
           ..meta = "FLUTTER_WEB";
         await talkWeb(webClient, request);
-        
+
         request = TalkRequest()
-          ..data = "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
+          ..data =
+              "${Utils.randomId(5)},${Utils.randomId(5)},${Utils.randomId(5)}"
           ..meta = "FLUTTER_WEB";
         await talkOneAnswerMoreWeb(webClient, request);
         await talkMoreAnswerOneWeb(webClient);
@@ -139,12 +157,17 @@ class HelloAppState extends ChangeNotifier {
       }
     } else {
       // 非Web平台的真实gRPC调用
-      final channel = ClientChannel(Conn.host,
-          port: Conn.port,
-          options:
-              const ChannelOptions(credentials: ChannelCredentials.insecure()));
-      stub = LandingServiceClient(channel,
-          options: CallOptions(timeout: const Duration(seconds: 30)));
+      final channel = ClientChannel(
+        Conn.host,
+        port: Conn.port,
+        options: const ChannelOptions(
+          credentials: ChannelCredentials.insecure(),
+        ),
+      );
+      stub = LandingServiceClient(
+        channel,
+        options: CallOptions(timeout: const Duration(seconds: 30)),
+      );
       // Run all of the demos in order.
       try {
         TalkRequest request = TalkRequest()
@@ -220,14 +243,20 @@ class HelloAppState extends ChangeNotifier {
   }
 
   // Web平台的gRPC方法
-  Future<TalkResponse> talkWeb(WebGrpcClient client, TalkRequest request) async {
+  Future<TalkResponse> talkWeb(
+    WebGrpcClient client,
+    TalkRequest request,
+  ) async {
     final response = await client.talk(request);
     list.add("Web Request/Response");
     list.add(response.toString());
     return response;
   }
 
-  Future<void> talkOneAnswerMoreWeb(WebGrpcClient client, TalkRequest request) async {
+  Future<void> talkOneAnswerMoreWeb(
+    WebGrpcClient client,
+    TalkRequest request,
+  ) async {
     try {
       final stream = client.talkOneAnswerMore(request);
       await for (var response in stream) {
@@ -290,114 +319,259 @@ class AsksPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color.fromRGBO(18, 18, 18, 1.0), // #121212
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(30.0),
-        child: Column(
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'gRPC Server Configuration --  ${appState.systemInfo}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'Current: ${appState.currentConfig}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: SizedBox(
-                          height: 56,
-                          child: TextField(
-                            controller: appState.hostController,
-                            decoration: const InputDecoration(
-                              labelText: 'Host',
-                              hintText: 'localhost',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              labelStyle: TextStyle(color: Color.fromRGBO(129, 199, 132, 1.0)),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Color.fromRGBO(129, 199, 132, 1.0)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                            ),
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: SizedBox(
-                          height: 56,
-                          child: TextField(
-                            controller: appState.portController,
-                            decoration: const InputDecoration(
-                              labelText: 'Port',
-                              hintText: '9996',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              labelStyle: TextStyle(color: Color.fromRGBO(129, 199, 132, 1.0)),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Color.fromRGBO(129, 199, 132, 1.0)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  appState.askRPC();
-                },
-                child: const Text('ASK gRPC Server From Flutter'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          for (var response in appState.list)
-            Card(
-              child: ListTile(
-                title: Text(
-                  response.toString(),
-                  style: const TextStyle(fontSize: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 修改为可折行的布局
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'gRPC Server Configuration --  ${appState.systemInfo}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Current: ${appState.currentConfig}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // 在小屏幕设备上使用垂直布局
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // 如果宽度小于600，使用垂直布局
+                          if (constraints.maxWidth < 600) {
+                            return Column(
+                              children: [
+                                SizedBox(
+                                  height: 56,
+                                  child: TextField(
+                                    controller: appState.hostController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Host',
+                                      hintText: 'localhost',
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Color.fromRGBO(
+                                          129,
+                                          199,
+                                          132,
+                                          1.0,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Color.fromRGBO(
+                                            129,
+                                            199,
+                                            132,
+                                            1.0,
+                                          ),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  height: 56,
+                                  child: TextField(
+                                    controller: appState.portController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Port',
+                                      hintText: '9996',
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 14,
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Color.fromRGBO(
+                                          129,
+                                          199,
+                                          132,
+                                          1.0,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Color.fromRGBO(
+                                            129,
+                                            199,
+                                            132,
+                                            1.0,
+                                          ),
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ],
+                            );
+                          } else {
+                            // 宽屏设备使用水平布局
+                            return Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: SizedBox(
+                                    height: 56,
+                                    child: TextField(
+                                      controller: appState.hostController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Host',
+                                        hintText: 'localhost',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 14,
+                                        ),
+                                        labelStyle: TextStyle(
+                                          color: Color.fromRGBO(
+                                            129,
+                                            199,
+                                            132,
+                                            1.0,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Color.fromRGBO(
+                                              129,
+                                              199,
+                                              132,
+                                              1.0,
+                                            ),
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  flex: 1,
+                                  child: SizedBox(
+                                    height: 56,
+                                    child: TextField(
+                                      controller: appState.portController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Port',
+                                        hintText: '9996',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 14,
+                                        ),
+                                        labelStyle: TextStyle(
+                                          color: Color.fromRGBO(
+                                            129,
+                                            199,
+                                            132,
+                                            1.0,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Color.fromRGBO(
+                                              129,
+                                              199,
+                                              132,
+                                              1.0,
+                                            ),
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    appState.askRPC();
+                  },
+                  child: const Text('ASK gRPC Server From Flutter'),
+                ),
+              ),
+              const SizedBox(height: 20),
+              for (var response in appState.list)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 8.0),
+                  child: ListTile(
+                    title: Text(
+                      response.toString(),
+                      style: const TextStyle(fontSize: 14),
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

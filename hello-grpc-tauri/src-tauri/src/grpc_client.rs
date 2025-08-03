@@ -89,8 +89,14 @@ impl GrpcClient {
         self.settings.validate()?;
         
         let endpoint_url = self.settings.get_endpoint_url();
-        let mut endpoint = Endpoint::from_shared(endpoint_url)?
-            .timeout(Duration::from_secs(self.settings.timeout_seconds));
+        println!("Attempting to connect to: {}", endpoint_url);
+        
+        let mut endpoint = Endpoint::from_shared(endpoint_url.clone())?
+            .timeout(Duration::from_secs(self.settings.timeout_seconds))
+            .connect_timeout(Duration::from_secs(10))
+            .keep_alive_timeout(Duration::from_secs(30))
+            .http2_keep_alive_interval(Duration::from_secs(30))
+            .tcp_keepalive(Some(Duration::from_secs(30)));
 
         if self.settings.use_tls {
             let tls_config = ClientTlsConfig::new()
@@ -98,7 +104,14 @@ impl GrpcClient {
             endpoint = endpoint.tls_config(tls_config)?;
         }
 
-        let channel = endpoint.connect().await?;
+        println!("Connecting to endpoint...");
+        let channel = endpoint.connect().await
+            .map_err(|e| {
+                println!("Connection failed: {}", e);
+                GrpcError::ConnectionError(e)
+            })?;
+        
+        println!("Connection successful, creating client...");
         self.client = Some(LandingServiceClient::new(channel));
         self.is_connected = true;
         

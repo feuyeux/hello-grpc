@@ -149,35 +149,14 @@ export GRPC_VERBOSITY=DEBUG
 export GRPC_TRACE=all
 ```
 
-## Cross-Platform Applications
+## 📱 Cross-Platform Applications
 
-This project includes cross-platform applications built with modern frameworks that demonstrate gRPC integration across different platforms:
+| Framework | Platform Support | Communication Method |
+|:----------|:-----------------|:---------------------|
+| **[Flutter](hello-grpc-flutter)** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apple/apple-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/android/android-original.svg" width="16" height="16"> <img src="https://developer.apple.com/assets/elements/icons/ios/ios-96x96_2x.png" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/chrome/chrome-original.svg" width="16" height="16"> | Native gRPC (Desktop/Mobile)<br/>gRPC-Web (Browser) |
+| **[Tauri](hello-grpc-tauri)** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apple/apple-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/android/android-original.svg" width="16" height="16"> <img src="https://developer.apple.com/assets/elements/icons/ios/ios-96x96_2x.png" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/chrome/chrome-original.svg" width="16" height="16"> | Native gRPC (Desktop/Mobile)<br/>gRPC-Web (Browser) |
 
-### hello-grpc-flutter
-The [Flutter implementation](hello-grpc-flutter) provides a comprehensive cross-platform solution that runs on:
-
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" width="20" height="20"> **Windows** - Native desktop application
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apple/apple-original.svg" width="20" height="20"> **macOS** - Native desktop application  
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" width="20" height="20"> **Linux** - Native desktop application
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/android/android-original.svg" width="20" height="20"> **Android** - Mobile application
-- <img src="https://developer.apple.com/assets/elements/icons/ios/ios-96x96_2x.png" width="20" height="20"> **iOS** - Mobile application
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/chrome/chrome-original.svg" width="20" height="20"> **Web** - Progressive Web Application (requires hello-grpc-gateway)
-
-### hello-grpc-tauri  
-The [Tauri implementation](hello-grpc-tauri) offers a lightweight alternative using web technologies with native performance:
-
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" width="20" height="20"> **Windows** - Lightweight desktop app
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apple/apple-original.svg" width="20" height="20"> **macOS** - Lightweight desktop app
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" width="20" height="20"> **Linux** - Lightweight desktop app
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/android/android-original.svg" width="20" height="20"> **Android** - Mobile application
-- <img src="https://developer.apple.com/assets/elements/icons/ios/ios-96x96_2x.png" width="20" height="20"> **iOS** - Mobile application
-- <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/chrome/chrome-original.svg" width="20" height="20"> **Web** - Single Page Application (requires hello-grpc-gateway)
-
-### hello-grpc-gateway Support
-For web-based applications, the [hello-grpc-gateway](grpc-web-gateway) enables browser compatibility by translating HTTP/1.1 and HTTP/2 requests to gRPC calls, allowing seamless integration between web frontends and gRPC backend services.
-
-#### Architecture Topology
-The cross-platform applications follow this communication topology:
+### 🏗️ Architecture Topology
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -199,17 +178,10 @@ The cross-platform applications follow this communication topology:
 ```
 
 **Communication Patterns:**
-- **Web Applications**: Browser → hello-grpc-gateway → gRPC Services
-- **Native Applications**: App → Direct gRPC → gRPC Services
+- **Web Apps**: Browser → [hello-grpc-gateway](grpc-web-gateway) → gRPC Services  
+- **Native Apps**: Direct gRPC → gRPC Services
 
-**Key Features:**
-- Cross-platform native performance
-- Unified codebase across platforms
-- Full gRPC streaming support (mobile/desktop)
-- gRPC-Web compatibility for browsers
-- Modern UI frameworks integration
-
-##  Recommended Resources
+## 🔗 Recommended Resources
 
 - [Awesome gRPC](https://github.com/grpc-ecosystem/awesome-grpc)
 - [gRPC Gateway](https://github.com/grpc-ecosystem/grpc-gateway)

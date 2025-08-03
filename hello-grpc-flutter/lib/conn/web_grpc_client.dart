@@ -6,9 +6,10 @@ import '../common/common.dart';
 
 class WebGrpcClient {
   final String baseUrl;
-  
-  WebGrpcClient(String host, int port) : baseUrl = 'http://$host:9997'; // 连接到HTTP网关
-  
+
+  WebGrpcClient(String host, int port)
+      : baseUrl = 'http://$host:9997'; // 连接到HTTP网关
+
   Future<TalkResponse> talk(TalkRequest request) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/talk'),
@@ -18,7 +19,7 @@ class WebGrpcClient {
         'meta': request.meta,
       }),
     );
-    
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return _buildTalkResponseFromJson(data);
@@ -26,7 +27,7 @@ class WebGrpcClient {
       throw Exception('HTTP ${response.statusCode}: ${response.body}');
     }
   }
-  
+
   Stream<TalkResponse> talkOneAnswerMore(TalkRequest request) async* {
     final response = await http.post(
       Uri.parse('$baseUrl/api/talkOneAnswerMore'),
@@ -36,7 +37,7 @@ class WebGrpcClient {
         'meta': request.meta,
       }),
     );
-    
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List<dynamic> results = data['results'] ?? [];
@@ -47,7 +48,7 @@ class WebGrpcClient {
       throw Exception('HTTP ${response.statusCode}: ${response.body}');
     }
   }
-  
+
   Future<TalkResponse> talkMoreAnswerOne(Stream<TalkRequest> requests) async {
     final List<Map<String, dynamic>> requestList = [];
     await for (final request in requests) {
@@ -56,13 +57,13 @@ class WebGrpcClient {
         'meta': request.meta,
       });
     }
-    
+
     final response = await http.post(
       Uri.parse('$baseUrl/api/talkMoreAnswerOne'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'requests': requestList}),
     );
-    
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return _buildTalkResponseFromJson(data);
@@ -70,7 +71,7 @@ class WebGrpcClient {
       throw Exception('HTTP ${response.statusCode}: ${response.body}');
     }
   }
-  
+
   Stream<TalkResponse> talkBidirectional(Stream<TalkRequest> requests) async* {
     final List<Map<String, dynamic>> requestList = [];
     await for (final request in requests) {
@@ -79,13 +80,13 @@ class WebGrpcClient {
         'meta': request.meta,
       });
     }
-    
+
     final response = await http.post(
       Uri.parse('$baseUrl/api/talkBidirectional'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'requests': requestList}),
     );
-    
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List<dynamic> results = data['results'] ?? [];
@@ -96,29 +97,28 @@ class WebGrpcClient {
       throw Exception('HTTP ${response.statusCode}: ${response.body}');
     }
   }
-  
+
   TalkResponse _buildTalkResponseFromJson(Map<String, dynamic> data) {
-    final response = TalkResponse()
-      ..status = data['status'] ?? 200;
-    
+    final response = TalkResponse()..status = data['status'] ?? 200;
+
     final List<dynamic> results = data['results'] ?? [];
     for (final resultData in results) {
       final result = TalkResult()
         ..id = Int64.parseInt(resultData['id']?.toString() ?? '0')
         ..type = _parseResultType(resultData['type']);
-      
+
       // 处理kv映射
       final Map<String, dynamic> kv = resultData['kv'] ?? {};
       kv.forEach((key, value) {
         result.kv[key] = value.toString();
       });
-      
+
       response.results.add(result);
     }
-    
+
     return response;
   }
-  
+
   ResultType _parseResultType(dynamic type) {
     if (type == null) return ResultType.OK;
     if (type is String) {
@@ -136,5 +136,4 @@ class WebGrpcClient {
     }
     return ResultType.OK;
   }
-}
 }

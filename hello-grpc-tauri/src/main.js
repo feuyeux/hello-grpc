@@ -79,35 +79,36 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.querySelector('input[value="grpc"]').disabled = true;
     }
 
-    // Initialize with local IP
+    // Initialize with default IP (user can change it manually)
     try {
         let localIP = 'localhost';
         if (!webMode) {
-            localIP = await getLocalIP();
+            try {
+                localIP = await getLocalIP();
+            } catch (error) {
+                console.log('Failed to get local IP, using localhost', error);
+                localIP = 'localhost';
+            }
         }
         hostInput.value = localIP;
         updateCurrentConfig();
     } catch (error) {
-        console.log('Failed to get local IP, using localhost');
+        console.log('Failed to initialize IP, using localhost');
         hostInput.value = 'localhost';
         updateCurrentConfig();
     }
 
     // Get system information and update title
     try {
-        let systemInfo = 'Unknown';
+        let systemInfo = 'Tauri';
         if (webMode) {
             systemInfo = getWebPlatformInfo();
-        } else {
-            const platform = await invoke('get_platform_info');
-            const arch = await invoke('get_arch_info');
-            systemInfo = `${platform} ${arch}`;
         }
-        configTitle.textContent = `gRPC Server Configuration --  ${systemInfo}`;
+        configTitle.textContent = `gRPC Server Configuration -- ${systemInfo}`;
     } catch (error) {
         // Fallback if system info commands don't exist
         const fallbackInfo = webMode ? getWebPlatformInfo() : 'Tauri';
-        configTitle.textContent = `gRPC Server Configuration --  ${fallbackInfo}`;
+        configTitle.textContent = `gRPC Server Configuration -- ${fallbackInfo}`;
     }
 
     // Set up event listeners for streaming responses (only for native mode)
@@ -256,15 +257,25 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Native mode execution - match original Tauri behavior
     async function executeNativeMode(host, port) {
-        // Connect to server first
-        await invoke('connect_to_server', {
+        try {
+            // First initialize the config manager if not already done
+            await invoke('init_config_manager');
+        } catch (error) {
+            console.log('Config manager already initialized or failed to initialize:', error);
+        }
+
+        // Update the connection settings
+        await invoke('save_connection_settings', {
             settings: {
-                host: host,
+                server: host,
                 port: port,
                 use_tls: false,
                 timeout_seconds: 30
             }
         });
+
+        // Connect to server
+        await invoke('connect_to_server');
 
         // 1. Talk (Unary RPC) - match Flutter's talk()
         const talkRequest = {
