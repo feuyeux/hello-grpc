@@ -1,13 +1,44 @@
+/*!
+ * Platform-Specific Utilities Module
+ * 
+ * This module provides platform-specific functionality and error handling
+ * for different operating systems and deployment targets (desktop, mobile, web).
+ * It handles network configuration validation, security policy checks,
+ * and provides user-friendly error messages.
+ * 
+ * Key Features:
+ * - Platform detection (Windows, macOS, Linux, Android, iOS)
+ * - Network capability validation
+ * - Security policy enforcement (e.g., cleartext traffic restrictions)
+ * - User-friendly error message generation
+ * - Platform-specific configuration recommendations
+ * 
+ * Architecture:
+ * Commands → PlatformManager → Platform-specific logic → Error handling
+ */
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+// ============================================================================
+// Error Types
+// ============================================================================
+
 /// Platform-specific error types and handling
+/// 
+/// Represents various platform-related errors that can occur during
+/// network operations, with appropriate context for user-facing messages.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PlatformError {
+    /// Network interface is not available
     NetworkUnavailable,
+    /// Application lacks network permissions
     PermissionDenied,
+    /// Platform security policy prevents the operation
     SecurityPolicyViolation,
+    /// Platform-specific error with custom message
     PlatformSpecific(String),
+    /// Configuration validation error
     ConfigurationError(String),
 }
 

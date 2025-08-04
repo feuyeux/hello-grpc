@@ -1,13 +1,38 @@
+/*!
+ * Configuration Management Module
+ * 
+ * This module handles persistent storage and retrieval of application
+ * configuration settings using Tauri's store plugin. It provides
+ * validation, default value handling, and error recovery.
+ * 
+ * Key Features:
+ * - Persistent storage via Tauri Store plugin
+ * - Automatic validation on load/save operations
+ * - Default value fallback for missing configurations
+ * - Error handling with user-friendly messages
+ * - Settings reset capability
+ * 
+ * Storage Format: JSON file in application data directory
+ * File: settings.json
+ * Key: "connection_settings"
+ */
+
 use crate::grpc_client::{ConnectionSettings, GrpcError};
-use serde_json::Value;
-use std::collections::HashMap;
 use tauri::AppHandle;
 use tauri_plugin_store::{Store, StoreExt};
 
+/// Key used to store connection settings in the persistent store
 const SETTINGS_KEY: &str = "connection_settings";
+/// Filename for the settings store
 const STORE_FILE: &str = "settings.json";
 
+/// Configuration manager for persistent settings storage
+/// 
+/// Manages the lifecycle of application configuration settings,
+/// including loading, saving, validation, and reset operations.
+/// Uses Tauri's store plugin for cross-platform persistence.
 pub struct ConfigManager {
+    /// Tauri application handle for accessing the store
     app_handle: AppHandle,
 }
 
@@ -52,73 +77,6 @@ impl ConfigManager {
                 Ok(default_settings)
             }
         }
-    }
-
-    pub async fn reset_settings(&self) -> Result<ConnectionSettings, GrpcError> {
-        let default_settings = ConnectionSettings::default();
-        self.save_settings(&default_settings).await?;
-        Ok(default_settings)
-    }
-
-    pub async fn update_setting(&self, key: &str, value: Value) -> Result<ConnectionSettings, GrpcError> {
-        let mut settings = self.load_settings().await?;
-        
-        match key {
-            "server" => {
-                if let Some(server) = value.as_str() {
-                    settings.server = server.to_string();
-                } else {
-                    return Err(GrpcError::ConfigError("Server must be a string".to_string()));
-                }
-            }
-            "port" => {
-                if let Some(port) = value.as_u64() {
-                    if port > 0 && port <= 65535 {
-                        settings.port = port as u16;
-                    } else {
-                        return Err(GrpcError::ConfigError("Port must be between 1 and 65535".to_string()));
-                    }
-                } else {
-                    return Err(GrpcError::ConfigError("Port must be a number".to_string()));
-                }
-            }
-            "use_tls" => {
-                if let Some(use_tls) = value.as_bool() {
-                    settings.use_tls = use_tls;
-                } else {
-                    return Err(GrpcError::ConfigError("use_tls must be a boolean".to_string()));
-                }
-            }
-            "timeout_seconds" => {
-                if let Some(timeout) = value.as_u64() {
-                    if timeout > 0 {
-                        settings.timeout_seconds = timeout;
-                    } else {
-                        return Err(GrpcError::ConfigError("Timeout must be greater than 0".to_string()));
-                    }
-                } else {
-                    return Err(GrpcError::ConfigError("Timeout must be a number".to_string()));
-                }
-            }
-            _ => {
-                return Err(GrpcError::ConfigError(format!("Unknown setting key: {}", key)));
-            }
-        }
-        
-        self.save_settings(&settings).await?;
-        Ok(settings)
-    }
-
-    pub async fn get_all_settings(&self) -> Result<HashMap<String, Value>, GrpcError> {
-        let settings = self.load_settings().await?;
-        let mut map = HashMap::new();
-        
-        map.insert("server".to_string(), Value::String(settings.server));
-        map.insert("port".to_string(), Value::Number(settings.port.into()));
-        map.insert("use_tls".to_string(), Value::Bool(settings.use_tls));
-        map.insert("timeout_seconds".to_string(), Value::Number(settings.timeout_seconds.into()));
-        
-        Ok(map)
     }
 }
 

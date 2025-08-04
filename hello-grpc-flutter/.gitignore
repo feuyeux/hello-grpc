@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Generated app icons (can be regenerated with generate_app_icons.sh)
+/android/app/src/main/res/mipmap-*/ic_launcher.png
+/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-*.png
+/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_*.png
+/assets/images/app_icon.png

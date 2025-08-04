@@ -1,12 +1,13 @@
 {
   "name": "hello-grpc-tauri",
-  "private": true,
   "version": "0.1.0",
+  "description": "Clean gRPC Tauri application with dual-mode support",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
-    "android:build": "tauri android build",
-    "android:dev": "tauri android dev"
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "web": "./build-web.sh"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.7.1"

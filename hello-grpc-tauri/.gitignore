@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated app icons (can be regenerated with generate_app_icons.sh)
+/src-tauri/icons/*.png
+/src-tauri/icons/*.ico
+/src-tauri/icons/*.icns

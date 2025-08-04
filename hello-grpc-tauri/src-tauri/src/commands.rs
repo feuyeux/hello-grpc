@@ -1,6 +1,24 @@
+/*!
+ * Tauri Command Handlers Module
+ * 
+ * This module defines all Tauri command handlers that serve as the bridge
+ * between the frontend (JavaScript) and backend (Rust) components.
+ * 
+ * Command Categories:
+ * 1. Configuration Management: Initialize and save settings
+ * 2. Connection Management: Connect to server
+ * 3. gRPC Operations: Unary, streaming (server/client/bidirectional)
+ * 4. Platform Utilities: IP detection for client configuration
+ * 
+ * Architecture Pattern:
+ * Frontend (JS) → Tauri IPC → Commands → AppState → gRPC Client → Server
+ * 
+ * Note: Only commands actually used by the frontend are included.
+ * Unused platform-specific commands have been removed for simplicity.
+ */
+
 use crate::config::ConfigManager;
 use crate::grpc_client::{ConnectionSettings, GrpcClient, SharedGrpcClient};
-use crate::platform::{PlatformManager, PlatformInfo};
 use crate::proto::hello::{TalkRequest, TalkResponse};
 use serde::Serialize;
 use std::sync::Arc;
@@ -8,13 +26,20 @@ use tauri::{AppHandle, Emitter, State};
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
-// Application state
+/// Global application state shared across all command handlers
+/// 
+/// Contains the gRPC client instance and configuration manager,
+/// both wrapped in Arc<Mutex<>> for thread-safe access across
+/// multiple concurrent command invocations.
 pub struct AppState {
+    /// Shared gRPC client instance for server communication
     pub grpc_client: SharedGrpcClient,
+    /// Configuration manager for settings persistence
     pub config_manager: Arc<Mutex<Option<ConfigManager>>>,
 }
 
 impl AppState {
+    /// Create new application state with default settings
     pub fn new() -> Self {
         let default_settings = ConnectionSettings::default();
         Self {
@@ -24,32 +49,67 @@ impl AppState {
     }
 }
 
-// Event payloads for streaming operations
+// ============================================================================
+// Event Payloads for Streaming Operations
+// ============================================================================
+
+/// Event payload for streaming response events
+/// 
+/// Emitted when a new response is received during streaming operations.
+/// Contains the actual response data and stream identifier for tracking.
 #[derive(Clone, Serialize)]
 pub struct StreamingResponseEvent {
     pub response: TalkResponse,
     pub stream_id: String,
 }
 
+/// Event payload for streaming completion events
+/// 
+/// Emitted when a streaming operation completes successfully.
+/// Indicates that no more responses will be received for this stream.
 #[derive(Clone, Serialize)]
 pub struct StreamingCompleteEvent {
     pub stream_id: String,
     pub message: String,
 }
 
+/// Event payload for streaming error events
+/// 
+/// Emitted when an error occurs during streaming operations.
+/// Contains error details and stream identifier for troubleshooting.
 #[derive(Clone, Serialize)]
 pub struct StreamingErrorEvent {
     pub stream_id: String,
     pub error: String,
 }
 
+/// Event payload for connection status changes
+/// 
+/// Emitted when connection status changes (connected/disconnected).
+/// Contains current connection state and settings for UI updates.
 #[derive(Clone, Serialize)]
 pub struct ConnectionStatusEvent {
     pub connected: bool,
     pub settings: ConnectionSettings,
 }
 
-// Initialize the config manager with app handle
+// ============================================================================
+// Configuration Management Commands
+// ============================================================================
+
+/// Initialize the configuration manager with app handle
+/// 
+/// This command must be called first before using any configuration-related
+/// commands. It sets up the configuration manager with the Tauri app handle
+/// required for persistent storage operations.
+/// 
+/// # Arguments
+/// * `app_handle` - Tauri application handle for accessing storage
+/// * `state` - Application state containing config manager
+/// 
+/// # Returns
+/// * `Ok(())` - Configuration manager initialized successfully
+/// * `Err(String)` - Initialization failed with error message
 #[tauri::command]
 pub async fn init_config_manager(
     app_handle: AppHandle,
@@ -72,7 +132,22 @@ pub async fn init_config_manager(
     }
 }
 
-// Connection management commands
+// ============================================================================
+// Connection Management Commands
+// ============================================================================
+
+/// Connect to the gRPC server using current settings
+/// 
+/// Establishes a connection to the gRPC server and emits connection status
+/// events to notify the frontend of connection state changes.
+/// 
+/// # Arguments
+/// * `state` - Application state containing gRPC client
+/// * `app_handle` - Tauri handle for emitting events
+/// 
+/// # Returns
+/// * `Ok(ConnectionSettings)` - Connected successfully with settings
+/// * `Err(String)` - Connection failed with error message
 #[tauri::command]
 pub async fn connect_to_server(
     state: State<'_, AppState>,
@@ -99,32 +174,24 @@ pub async fn connect_to_server(
     }
 }
 
-#[tauri::command]
-pub async fn disconnect_from_server(
-    state: State<'_, AppState>,
-    app_handle: AppHandle,
-) -> Result<(), String> {
-    let mut client = state.grpc_client.lock().await;
-    client.disconnect().await;
-    
-    let _ = app_handle.emit("connection-status-changed", ConnectionStatusEvent {
-        connected: false,
-        settings: client.settings.clone(),
-    });
-    
-    Ok(())
-}
+// ============================================================================
+// Configuration Management Commands (Continued)
+// ============================================================================
 
-#[tauri::command]
-pub async fn get_connection_status(state: State<'_, AppState>) -> Result<ConnectionStatusEvent, String> {
-    let client = state.grpc_client.lock().await;
-    Ok(ConnectionStatusEvent {
-        connected: client.is_connected(),
-        settings: client.settings.clone(),
-    })
-}
-
-// Configuration management commands
+/// Save connection settings to persistent storage
+/// 
+/// Persists the provided connection settings and updates the gRPC client
+/// with the new configuration. Emits a connection status event to notify
+/// the frontend of the settings change.
+/// 
+/// # Arguments
+/// * `settings` - New connection settings to save
+/// * `state` - Application state containing config manager and gRPC client
+/// * `app_handle` - Tauri handle for emitting events
+/// 
+/// # Returns
+/// * `Ok(())` - Settings saved successfully
+/// * `Err(String)` - Failed to save settings with error message
 #[tauri::command]
 pub async fn save_connection_settings(
     settings: ConnectionSettings,
@@ -150,43 +217,22 @@ pub async fn save_connection_settings(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn load_connection_settings(
-    state: State<'_, AppState>,
-) -> Result<ConnectionSettings, String> {
-    let config_guard = state.config_manager.lock().await;
-    let config_manager = config_guard.as_ref()
-        .ok_or("Config manager not initialized")?;
-    
-    config_manager.load_settings().await
-        .map_err(|e| format!("Failed to load settings: {}", e))
-}
+// ============================================================================
+// gRPC Operation Commands
+// ============================================================================
 
-#[tauri::command]
-pub async fn reset_connection_settings(
-    state: State<'_, AppState>,
-    app_handle: AppHandle,
-) -> Result<ConnectionSettings, String> {
-    let config_guard = state.config_manager.lock().await;
-    let config_manager = config_guard.as_ref()
-        .ok_or("Config manager not initialized")?;
-    
-    let settings = config_manager.reset_settings().await
-        .map_err(|e| format!("Failed to reset settings: {}", e))?;
-    
-    // Update client with reset settings
-    let mut client = state.grpc_client.lock().await;
-    client.update_settings(settings.clone());
-    
-    let _ = app_handle.emit("connection-status-changed", ConnectionStatusEvent {
-        connected: client.is_connected(),
-        settings: settings.clone(),
-    });
-    
-    Ok(settings)
-}
-
-// gRPC operation commands
+/// Execute a unary RPC call (single request → single response)
+/// 
+/// This is the simplest gRPC operation pattern where the client sends
+/// one request and receives one response synchronously.
+/// 
+/// # Arguments
+/// * `request` - The talk request to send to the server
+/// * `state` - Application state containing gRPC client
+/// 
+/// # Returns
+/// * `Ok(TalkResponse)` - Server response data
+/// * `Err(String)` - RPC call failed with error message
 #[tauri::command]
 pub async fn unary_rpc(
     request: TalkRequest,
@@ -198,6 +244,21 @@ pub async fn unary_rpc(
         .map_err(|e| format!("Unary RPC failed: {}", e))
 }
 
+/// Execute a server streaming RPC call (single request → multiple responses)
+/// 
+/// The client sends one request and the server responds with a stream of
+/// responses. Events are emitted for each response received and when the
+/// stream completes or encounters an error.
+/// 
+/// # Arguments
+/// * `request` - The talk request to send to the server
+/// * `stream_id` - Unique identifier for tracking this stream
+/// * `state` - Application state containing gRPC client
+/// * `app_handle` - Tauri handle for emitting streaming events
+/// 
+/// # Returns
+/// * `Ok(())` - Stream initiated successfully (responses come via events)
+/// * `Err(String)` - Failed to initiate stream
 #[tauri::command]
 pub async fn server_streaming_rpc(
     request: TalkRequest,
@@ -380,92 +441,49 @@ pub async fn bidirectional_streaming_rpc(
     Ok(())
 }
 
-// Utility command for testing connection
-#[tauri::command]
-pub async fn test_connection(
-    state: State<'_, AppState>,
-) -> Result<String, String> {
-    let test_request = TalkRequest {
-        data: "0".to_string(),
-        meta: "rust-test".to_string(),
-    };
-    
-    let mut client = state.grpc_client.lock().await;
-    
-    match client.unary_call(test_request).await {
-        Ok(response) => Ok(format!("Connection test successful. Status: {}", response.status)),
-        Err(e) => Err(format!("Connection test failed: {}", e)),
-    }
-}
+// ============================================================================
+// Platform Utilities Commands  
+// ============================================================================
 
-// Platform-specific commands
-#[tauri::command]
-pub async fn get_platform_info() -> Result<PlatformInfo, String> {
-    Ok(PlatformManager::get_platform_info())
-}
-
-#[tauri::command]
-pub async fn validate_connection_settings(
-    settings: ConnectionSettings,
-) -> Result<(), String> {
-    match PlatformManager::validate_network_config(settings.use_tls, &settings.server) {
-        Ok(()) => Ok(()),
-        Err(e) => Err(PlatformManager::get_user_friendly_error(&e)),
-    }
-}
-
-#[tauri::command]
-pub async fn get_platform_recommendations() -> Result<Vec<(String, String)>, String> {
-    Ok(crate::platform::get_recommended_settings())
-}
-
-#[tauri::command]
-pub async fn handle_platform_error(error_message: String) -> Result<String, String> {
-    // Try to parse the error and provide platform-specific guidance
-    let user_friendly = if error_message.contains("connection refused") {
-        match PlatformManager::get_platform_info().platform {
-            crate::platform::Platform::Android => {
-                "Connection refused. Make sure the server is running and use 10.0.2.2 for Android emulator or your device's IP address.".to_string()
-            }
-            crate::platform::Platform::Ios => {
-                "Connection refused. Make sure the server is running and accessible from the iOS simulator/device.".to_string()
-            }
-            crate::platform::Platform::Desktop => {
-                "Connection refused. Make sure the server is running and accessible.".to_string()
-            }
-        }
-    } else if error_message.contains("network") || error_message.contains("dns") {
-        "Network error. Please check your internet connection and server address.".to_string()
-    } else if error_message.contains("tls") || error_message.contains("ssl") {
-        "TLS/SSL error. Please check your security settings and certificate configuration.".to_string()
-    } else {
-        format!("Error: {}", error_message)
-    };
-    
-    Ok(user_friendly)
-}
-
+/// Get local IP address for client configuration
+/// 
+/// Attempts to retrieve the local machine's IP address for use as default
+/// server host. Falls back to 'localhost' if IP detection fails.
+/// On Android, returns the emulator host IP (10.0.2.2) to access the host machine.
+/// 
+/// # Returns
+/// * `Ok(String)` - Local IP address, 'localhost' fallback, or '10.0.2.2' for Android
+/// * `Err(String)` - Should not occur (always returns Ok with fallback)
 #[tauri::command]
 pub async fn get_local_ip() -> Result<String, String> {
     use std::net::{IpAddr, Ipv4Addr};
     
-    // Try to get the local IP address
-    match local_ip_address::local_ip() {
-        Ok(IpAddr::V4(ip)) => {
-            // Skip loopback addresses
-            if ip != Ipv4Addr::new(127, 0, 0, 1) {
-                Ok(ip.to_string())
-            } else {
+    // On Android, use the special emulator host IP to access the host machine
+    #[cfg(target_os = "android")]
+    {
+        return Ok("10.0.2.2".to_string());
+    }
+    
+    // For other platforms, try to get the local IP address
+    #[cfg(not(target_os = "android"))]
+    {
+        match local_ip_address::local_ip() {
+            Ok(IpAddr::V4(ip)) => {
+                // Skip loopback addresses
+                if ip != Ipv4Addr::new(127, 0, 0, 1) {
+                    Ok(ip.to_string())
+                } else {
+                    Ok("localhost".to_string())
+                }
+            }
+            Ok(IpAddr::V6(_)) => {
+                // For IPv6, fallback to localhost for simplicity
                 Ok("localhost".to_string())
             }
-        }
-        Ok(IpAddr::V6(_)) => {
-            // For IPv6, fallback to localhost for simplicity
-            Ok("localhost".to_string())
-        }
-        Err(_) => {
-            // Fallback to localhost if we can't determine the local IP
-            Ok("localhost".to_string())
+            Err(_) => {
+                // Fallback to localhost if we can't determine the local IP
+                Ok("localhost".to_string())
+            }
         }
     }
 }

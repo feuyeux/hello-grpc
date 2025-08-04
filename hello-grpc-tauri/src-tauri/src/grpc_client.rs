@@ -1,3 +1,20 @@
+/*!
+ * gRPC Client Implementation Module
+ * 
+ * This module provides the core gRPC client functionality for communicating
+ * with gRPC servers. It handles connection management, all four gRPC operation
+ * types, and provides error handling with automatic reconnection capabilities.
+ * 
+ * Key Components:
+ * - GrpcClient: Main client implementation with connection management
+ * - ConnectionSettings: Configuration struct with validation
+ * - GrpcError: Comprehensive error handling for all failure modes
+ * - Streaming support: Server, client, and bidirectional streaming operations
+ * 
+ * Architecture:
+ * Commands → GrpcClient → Tonic gRPC → Network → gRPC Server
+ */
+
 use crate::proto::hello::{
     landing_service_client::LandingServiceClient, TalkRequest, TalkResponse,
 };
@@ -10,6 +27,15 @@ use tokio::time::timeout;
 use tonic::transport::{Channel, ClientTlsConfig, Endpoint};
 use tonic::{Request, Status, Streaming};
 
+// ============================================================================
+// Error Definitions
+// ============================================================================
+
+/// Comprehensive error type for gRPC operations
+/// 
+/// Covers all possible failure modes in gRPC communication with
+/// appropriate error context and automatic conversion from underlying
+/// error types (tonic, serde, etc.).
 #[derive(Error, Debug)]
 pub enum GrpcError {
     #[error("Connection error: {0}")]
@@ -31,11 +57,23 @@ pub enum GrpcError {
     ChannelError(String),
 }
 
+// ============================================================================
+// Configuration Types
+// ============================================================================
+
+/// Connection configuration for gRPC client
+/// 
+/// Contains all necessary parameters for establishing and maintaining
+/// a connection to a gRPC server, with validation and URL generation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionSettings {
+    /// Server hostname or IP address
     pub server: String,
+    /// Server port number
     pub port: u16,
+    /// Whether to use TLS encryption
     pub use_tls: bool,
+    /// Request timeout in seconds
     pub timeout_seconds: u64,
 }
 
