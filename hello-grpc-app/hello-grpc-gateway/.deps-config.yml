@@ -1,0 +1,58 @@
+# Hello gRPC Gateway - Dependency Update Configuration
+
+# Dependency update settings
+update_strategy: "weekly"  # daily, weekly, monthly
+auto_merge: false          # Automatically merge dependency updates
+security_updates: true    # Prioritize security updates
+
+# Version constraints
+go_version: "1.23"
+min_go_version: "1.21"
+
+# Dependencies to exclude from auto-updates
+exclude_updates:
+  - "google.golang.org/grpc"  # Keep stable version for gRPC
+  
+# Dependencies that require manual review
+manual_review:
+  - "google.golang.org/protobuf"  # Proto changes need careful review
+
+# Security scanning
+security_scan: true
+vuln_check: true
+
+# Testing requirements
+run_tests: true
+build_check: true
+
+# Notification settings
+notify_on_updates: true
+notify_on_security: true
+notify_channels:
+  - "github_issues"
+  - "pull_requests"
+
+# Report settings
+generate_reports: true
+report_format: "markdown"
+report_retention_days: 30
+
+# GitHub integration
+github:
+  create_pull_requests: true
+  auto_assign_reviewers: true
+  default_reviewers:
+    - "feuyeux"
+  labels:
+    - "dependencies"
+    - "go"
+    - "gateway"
+    - "automated"
+  branch_prefix: "gateway/deps"
+  
+# Build and test settings
+build:
+  timeout: "10m"
+  verify_build: true
+  run_tests: true
+  test_timeout: "5m"

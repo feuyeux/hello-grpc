@@ -149,7 +149,40 @@ export GRPC_VERBOSITY=DEBUG
 export GRPC_TRACE=all
 ```
 
-## 🔖 Recommended Resources
+## 📱 Cross-Platform Applications
+
+| Framework | Platform Support | Communication Method |
+|:----------|:-----------------|:---------------------|
+| **[Flutter](hello-grpc-flutter)** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apple/apple-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/android/android-original.svg" width="16" height="16"> <img src="https://developer.apple.com/assets/elements/icons/ios/ios-96x96_2x.png" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/chrome/chrome-original.svg" width="16" height="16"> | Native gRPC (Desktop/Mobile)<br/>gRPC-Web (Browser) |
+| **[Tauri](hello-grpc-tauri)** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/apple/apple-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/android/android-original.svg" width="16" height="16"> <img src="https://developer.apple.com/assets/elements/icons/ios/ios-96x96_2x.png" width="16" height="16"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/chrome/chrome-original.svg" width="16" height="16"> | Native gRPC (Desktop/Mobile)<br/>gRPC-Web (Browser) |
+
+### 🏗️ Architecture Topology
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Client Apps   │    │  hello-grpc-    │    │  gRPC Backend   │
+│                 │    │    gateway      │    │    Services     │
+│ • Flutter Web   │◄──►│                 │◄──►│                 │
+│ • Tauri Web     │    │ HTTP/1.1 ↔ gRPC │    │ • Java Server   │
+│                 │    │ HTTP/2   ↔ gRPC │    │ • Go Server     │
+└─────────────────┘    └─────────────────┘    │ • Rust Server   │
+                                              │ • etc...        │
+┌─────────────────┐                           └─────────────────┘
+│ Native Apps     │
+│                 │    ┌─────────────────────────────────────────┐
+│ • Flutter       │◄──►│         Direct gRPC Connection          │
+│   Desktop/Mobile│    │                                         │
+│ • Tauri         │    │ • Full streaming support                │
+│   Desktop/Mobile│    │ • Native performance                    │
+└─────────────────┘    └─────────────────────────────────────────┘
+```
+
+
+**Communication Patterns:**
+- **Web Apps**: Browser → [hello-grpc-gateway](grpc-web-gateway) → gRPC Services  
+- **Native Apps**: Direct gRPC → gRPC Services
+
+## 🔗 Recommended Resources
 
 - [Awesome gRPC](https://github.com/grpc-ecosystem/awesome-grpc)
 - [gRPC Gateway](https://github.com/grpc-ecosystem/grpc-gateway)

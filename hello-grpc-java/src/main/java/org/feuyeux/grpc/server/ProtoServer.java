@@ -3,9 +3,15 @@ package org.feuyeux.grpc.server;
 import static org.feuyeux.grpc.common.Connection.*;
 import static org.feuyeux.grpc.common.HelloUtils.getVersion;
 
+import io.grpc.Attributes;
+import io.grpc.BindableService;
 import io.grpc.Channel;
 import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
+import io.grpc.Server;
+import io.grpc.ServerInterceptors;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.ServerTransportFilter;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
@@ -20,6 +26,7 @@ import javax.net.ssl.SSLException;
 import org.feuyeux.grpc.client.HeaderClientInterceptor;
 import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**

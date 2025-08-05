@@ -162,7 +162,7 @@ generate_ts() {
 # Function to generate Dart gRPC code
 generate_dart() {
     echo "Generating Dart gRPC code..."
-    cd hello_grpc_flutter || exit
+    cd hello-grpc-flutter || exit
 
     # Ensure the proto directory exists with symbolic links
     ./proto_link.sh

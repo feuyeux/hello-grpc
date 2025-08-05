@@ -1,27 +1,121 @@
-name: Continous Integration
+name: Auto-merge Dependencies
 
 on:
-  push:
-    branches:
-      - "source"
   pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
+  pull-requests: write
+  checks: read
 
 jobs:
-  dependabot:
-    name: "Dependabot"
+  dependabot-auto-merge:
+    name: "Auto-merge Dependabot PRs"
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'}}
+    if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v1.3.1
+        uses: dependabot/fetch-metadata@v1.6.0
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Enable auto-merge for Dependabot PRs
-        run: gh pr merge --auto --merge "$PR_URL"
+
+      - name: Setup Flutter (if needed)
+        if: contains(github.head_ref, 'flutter') || contains(steps.metadata.outputs.directory, 'flutter')
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "stable"
+
+      - name: Setup Node.js (if needed)
+        if: contains(github.head_ref, 'tauri') || contains(steps.metadata.outputs.directory, 'tauri')
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Setup Rust (if needed)
+        if: contains(github.head_ref, 'tauri') || contains(steps.metadata.outputs.directory, 'tauri')
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Test Flutter changes
+        if: contains(github.head_ref, 'flutter') || contains(steps.metadata.outputs.directory, 'flutter')
+        working-directory: hello-grpc-flutter
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+        continue-on-error: true
+
+      - name: Test Tauri changes
+        if: contains(github.head_ref, 'tauri') || contains(steps.metadata.outputs.directory, 'tauri')
+        working-directory: hello-grpc-tauri
+        run: |
+          npm install
+          npm run tauri build --debug
+        continue-on-error: true
+
+      - name: Auto-approve minor and patch updates
+        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch' }}
+        run: gh pr review --approve "$PR_URL"
         env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for safe updates
+        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch' }}
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on major updates
+        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-major' }}
+        run: |
+          gh pr comment "$PR_URL" --body "🚨 **Major version update detected!**
+
+          This PR contains major version updates that may include breaking changes.
+          Please review carefully before merging.
+
+          **Package:** ${{ steps.metadata.outputs.dependency-names }}
+          **Update type:** ${{ steps.metadata.outputs.update-type }}
+
+          Consider:
+          - Checking the changelog for breaking changes
+          - Running additional tests
+          - Manual testing of affected functionality"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  automated-pr-merge:
+    name: "Auto-merge Automated PRs"
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.head_ref, 'deps-update') && github.actor == 'github-actions[bot]' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Wait for checks to complete
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: "build"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success,neutral,skipped
+        continue-on-error: true
+
+      - name: Auto-approve automated PRs
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for automated PRs
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

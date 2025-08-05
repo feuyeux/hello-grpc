@@ -1,0 +1,235 @@
+name: Version Check & Notifications
+
+on:
+  schedule:
+    # Run every day at 8:00 AM UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-versions:
+    name: Check for New Versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check Flutter SDK version
+        id: flutter-sdk
+        run: |
+          CURRENT_VERSION=$(flutter --version | head -n1 | cut -d' ' -f2)
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Get latest stable version from Flutter releases
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/flutter/flutter/releases/latest | jq -r '.tag_name')
+          echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            echo "update_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "update_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Flutter dependencies
+        id: flutter-deps
+        working-directory: hello-grpc-flutter
+        run: |
+          flutter pub get
+          flutter pub outdated --json > outdated.json || true
+          
+          if [ -s outdated.json ] && [ "$(cat outdated.json)" != "{}" ]; then
+            echo "updates_available=true" >> $GITHUB_OUTPUT
+            echo "outdated_info<<EOF" >> $GITHUB_OUTPUT
+            cat outdated.json | jq -r '.packages[] | select(.current != .latest) | "- \(.package): \(.current) → \(.latest)"' >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "updates_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Tauri CLI version
+        id: tauri-cli
+        working-directory: hello-grpc-tauri
+        run: |
+          # Get current Tauri CLI version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').devDependencies['@tauri-apps/cli']" | tr -d '^~')
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Get latest version from npm
+          LATEST_VERSION=$(npm view @tauri-apps/cli version)
+          echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            echo "update_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "update_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Tauri npm dependencies
+        id: tauri-npm
+        working-directory: hello-grpc-tauri
+        run: |
+          npm outdated --json > outdated.json || true
+          
+          if [ -s outdated.json ] && [ "$(cat outdated.json)" != "{}" ]; then
+            echo "updates_available=true" >> $GITHUB_OUTPUT
+            echo "outdated_info<<EOF" >> $GITHUB_OUTPUT
+            cat outdated.json | jq -r 'to_entries[] | "- \(.key): \(.value.current) → \(.value.latest)"' >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "updates_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Tauri Cargo dependencies
+        id: tauri-cargo
+        working-directory: hello-grpc-tauri/src-tauri
+        run: |
+          # Install cargo-outdated if not present
+          cargo install cargo-outdated --quiet || true
+          
+          # Check for outdated dependencies
+          cargo outdated --format json > outdated.json || echo "{}" > outdated.json
+          
+          if [ -s outdated.json ] && [ "$(cat outdated.json | jq '.dependencies | length')" -gt 0 ]; then
+            echo "updates_available=true" >> $GITHUB_OUTPUT
+            echo "outdated_info<<EOF" >> $GITHUB_OUTPUT
+            cat outdated.json | jq -r '.dependencies[]? | "- \(.name): \(.project) → \(.compat)"' >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "updates_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or update version tracking issue
+        if: |
+          steps.flutter-sdk.outputs.update_available == 'true' ||
+          steps.flutter-deps.outputs.updates_available == 'true' ||
+          steps.tauri-cli.outputs.update_available == 'true' ||
+          steps.tauri-npm.outputs.updates_available == 'true' ||
+          steps.tauri-cargo.outputs.updates_available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '📦 Available Updates Report';
+            const date = new Date().toISOString().split('T')[0];
+            
+            let body = `# Available Updates Report - ${date}\n\n`;
+            body += `This issue is automatically updated with available dependency updates.\n\n`;
+            
+            // Flutter SDK updates
+            if ('${{ steps.flutter-sdk.outputs.update_available }}' === 'true') {
+              body += `## 🎯 Flutter SDK Update Available\n`;
+              body += `- Current: ${{ steps.flutter-sdk.outputs.current }}\n`;
+              body += `- Latest: ${{ steps.flutter-sdk.outputs.latest }}\n\n`;
+            }
+            
+            // Flutter dependencies
+            if ('${{ steps.flutter-deps.outputs.updates_available }}' === 'true') {
+              body += `## 📱 Flutter Dependencies Updates\n`;
+              body += `${{ steps.flutter-deps.outputs.outdated_info }}\n\n`;
+            }
+            
+            // Tauri CLI updates
+            if ('${{ steps.tauri-cli.outputs.update_available }}' === 'true') {
+              body += `## 🦀 Tauri CLI Update Available\n`;
+              body += `- Current: ${{ steps.tauri-cli.outputs.current }}\n`;
+              body += `- Latest: ${{ steps.tauri-cli.outputs.latest }}\n\n`;
+            }
+            
+            // Tauri npm dependencies
+            if ('${{ steps.tauri-npm.outputs.updates_available }}' === 'true') {
+              body += `## 📦 Tauri Frontend Dependencies Updates\n`;
+              body += `${{ steps.tauri-npm.outputs.outdated_info }}\n\n`;
+            }
+            
+            // Tauri cargo dependencies
+            if ('${{ steps.tauri-cargo.outputs.updates_available }}' === 'true') {
+              body += `## 🦀 Tauri Backend Dependencies Updates\n`;
+              body += `${{ steps.tauri-cargo.outputs.outdated_info }}\n\n`;
+            }
+            
+            body += `---\n`;
+            body += `**Next Steps:**\n`;
+            body += `- Review the updates above\n`;
+            body += `- Run the "Flutter & Tauri Dependencies Update" workflow manually if needed\n`;
+            body += `- Or wait for the weekly automated update\n\n`;
+            body += `*This issue is automatically managed by GitHub Actions*`;
+            
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['dependencies', 'automated'],
+              state: 'open'
+            });
+            
+            const existingIssue = issues.data.find(issue => issue.title === title);
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: body
+              });
+              console.log(`Updated existing issue #${existingIssue.number}`);
+            } else {
+              // Create new issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['dependencies', 'automated', 'enhancement']
+              });
+              console.log(`Created new issue #${newIssue.data.number}`);
+            }
+
+      - name: Close issue if no updates available
+        if: |
+          steps.flutter-sdk.outputs.update_available != 'true' &&
+          steps.flutter-deps.outputs.updates_available != 'true' &&
+          steps.tauri-cli.outputs.update_available != 'true' &&
+          steps.tauri-npm.outputs.updates_available != 'true' &&
+          steps.tauri-cargo.outputs.updates_available != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '📦 Available Updates Report';
+            
+            // Check if issue exists and close it
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['dependencies', 'automated'],
+              state: 'open'
+            });
+            
+            const existingIssue = issues.data.find(issue => issue.title === title);
+            
+            if (existingIssue) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                state: 'closed',
+                body: existingIssue.body + '\n\n✅ **All dependencies are up to date!** Closing this issue.'
+              });
+              console.log(`Closed issue #${existingIssue.number} - no updates available`);
+            }

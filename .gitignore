@@ -86,7 +86,7 @@ macos/
 windows/
 !android/build.gradle
 !android/app/src/profile/AndroidManifest.xml
-hello_grpc_flutter/build/*
+hello-grpc-flutter/build/*
 
 ## PHP
 hello-grpc-php/common/msg/
@@ -113,3 +113,21 @@ default.etcd
 sync.sh
 *.sln.DotSettings.user
 .next/
+hello-grpc-ts/dist
+*.exe
+
+# Generated app icons (can be regenerated with respective generate_app_icons.sh scripts)
+## Flutter icons
+hello-grpc-flutter/android/app/src/main/res/mipmap-*/ic_launcher.png
+hello-grpc-flutter/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-*.png
+hello-grpc-flutter/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_*.png
+hello-grpc-flutter/assets/images/app_icon.png
+
+## Tauri icons and generated files
+hello-grpc-app/hello-grpc-tauri/src-tauri/icons/*.png
+hello-grpc-app/hello-grpc-tauri/src-tauri/icons/*.ico
+hello-grpc-app/hello-grpc-tauri/src-tauri/icons/*.icns
+hello-grpc-app/hello-grpc-tauri/src-tauri/gen/
+
+# Build output directories
+build_output/

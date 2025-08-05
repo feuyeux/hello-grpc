@@ -1,0 +1,245 @@
+name: Hello gRPC Gateway - Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 08:00 UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch: # Allow manual trigger
+  push:
+    paths:
+      - 'hello-grpc-gateway/go.mod'
+      - 'hello-grpc-gateway/go.sum'
+      - '.github/workflows/gateway-deps.yml'
+
+concurrency:
+  group: gateway-deps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-dependencies:
+    name: Check Gateway Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        check-latest: true
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-gateway-${{ hashFiles('hello-grpc-gateway/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-gateway-
+
+    - name: Check for outdated dependencies
+      id: check-deps
+      working-directory: hello-grpc-gateway
+      run: |
+        echo "Checking for outdated Go dependencies..."
+        
+        # Get current dependencies
+        go list -u -m all > current_deps.txt
+        
+        # Check for updates
+        outdated=$(go list -u -m all | grep -E '\[.*\]' | wc -l)
+        
+        echo "outdated_count=$outdated" >> $GITHUB_OUTPUT
+        
+        if [ $outdated -gt 0 ]; then
+          echo "Found $outdated outdated dependencies"
+          echo "has_updates=true" >> $GITHUB_OUTPUT
+          
+          # Create detailed report
+          echo "## Outdated Dependencies Report" > ../dep_report.md
+          echo "" >> ../dep_report.md
+          echo "| Module | Current | Available |" >> ../dep_report.md
+          echo "|--------|---------|-----------|" >> ../dep_report.md
+          
+          go list -u -m all | grep -E '\[.*\]' | while IFS= read -r line; do
+            module=$(echo "$line" | awk '{print $1}')
+            current=$(echo "$line" | awk '{print $2}')
+            available=$(echo "$line" | grep -o '\[.*\]' | tr -d '[]')
+            echo "| $module | $current | $available |" >> ../dep_report.md
+          done
+        else
+          echo "All dependencies are up to date"
+          echo "has_updates=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Update dependencies
+      if: steps.check-deps.outputs.has_updates == 'true'
+      working-directory: hello-grpc-gateway
+      run: |
+        echo "Updating Go dependencies..."
+        
+        # Update all dependencies
+        go get -u ./...
+        go mod tidy
+        
+        # Verify the build still works
+        echo "Verifying build after updates..."
+        go build -v ./...
+        
+        # Run tests if they exist
+        if go list ./... | grep -q test; then
+          echo "Running tests..."
+          go test -v ./...
+        fi
+
+    - name: Generate update summary
+      if: steps.check-deps.outputs.has_updates == 'true'
+      working-directory: hello-grpc-gateway
+      run: |
+        echo "## Go Dependencies Update Summary" > ../update_summary.md
+        echo "" >> ../update_summary.md
+        echo "**Project**: hello-grpc-gateway" >> ../update_summary.md
+        echo "**Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> ../update_summary.md
+        echo "**Updated Dependencies**: ${{ steps.check-deps.outputs.outdated_count }}" >> ../update_summary.md
+        echo "" >> ../update_summary.md
+        
+        echo "### Changes Made:" >> ../update_summary.md
+        echo "- Updated all Go module dependencies to latest versions" >> ../update_summary.md
+        echo "- Ran \`go mod tidy\` to clean up module files" >> ../update_summary.md
+        echo "- Verified build compatibility" >> ../update_summary.md
+        echo "" >> ../update_summary.md
+        
+        echo "### Updated go.mod:" >> ../update_summary.md
+        echo "\`\`\`go" >> ../update_summary.md
+        cat go.mod >> ../update_summary.md
+        echo "\`\`\`" >> ../update_summary.md
+        
+        # Append the detailed report if it exists
+        if [ -f ../dep_report.md ]; then
+          echo "" >> ../update_summary.md
+          cat ../dep_report.md >> ../update_summary.md
+        fi
+
+    - name: Create Pull Request
+      if: steps.check-deps.outputs.has_updates == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: |
+          gateway: update Go dependencies
+          
+          - Updated ${{ steps.check-deps.outputs.outdated_count }} outdated dependencies
+          - Verified build compatibility
+          - Automated dependency update via GitHub Actions
+        title: "[Gateway] Update Go dependencies"
+        body-path: update_summary.md
+        branch: gateway/update-dependencies-${{ github.run_number }}
+        delete-branch: true
+        labels: |
+          dependencies
+          go
+          gateway
+          automated
+        reviewers: |
+          feuyeux
+        assignees: |
+          feuyeux
+        
+    - name: Check security vulnerabilities
+      working-directory: hello-grpc-gateway
+      run: |
+        echo "Checking for security vulnerabilities..."
+        
+        # Install govulncheck if not present
+        if ! command -v govulncheck &> /dev/null; then
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+        fi
+        
+        # Run vulnerability check
+        govulncheck ./... || echo "Vulnerability check completed with warnings"
+
+    - name: Generate dependency report
+      working-directory: hello-grpc-gateway
+      run: |
+        echo "## Gateway Dependency Analysis" > ../gateway_deps_analysis.md
+        echo "" >> ../gateway_deps_analysis.md
+        echo "**Generated**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> ../gateway_deps_analysis.md
+        echo "" >> ../gateway_deps_analysis.md
+        
+        echo "### Direct Dependencies:" >> ../gateway_deps_analysis.md
+        echo "\`\`\`" >> ../gateway_deps_analysis.md
+        go list -m all | grep -v "hello-grpc/hello-grpc-gateway" | head -20 >> ../gateway_deps_analysis.md
+        echo "\`\`\`" >> ../gateway_deps_analysis.md
+        echo "" >> ../gateway_deps_analysis.md
+        
+        echo "### Module Information:" >> ../gateway_deps_analysis.md
+        echo "\`\`\`" >> ../gateway_deps_analysis.md
+        go version >> ../gateway_deps_analysis.md
+        echo "" >> ../gateway_deps_analysis.md
+        echo "Module: $(go list -m)" >> ../gateway_deps_analysis.md
+        echo "Go version: $(grep '^go ' go.mod | awk '{print $2}')" >> ../gateway_deps_analysis.md
+        echo "\`\`\`" >> ../gateway_deps_analysis.md
+
+    - name: Upload dependency report
+      uses: actions/upload-artifact@v4
+      with:
+        name: gateway-dependency-report-${{ github.run_number }}
+        path: |
+          gateway_deps_analysis.md
+          dep_report.md
+          update_summary.md
+        retention-days: 30
+
+  build-test:
+    name: Build and Test Gateway
+    runs-on: ubuntu-latest
+    needs: check-dependencies
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Build gateway
+      working-directory: hello-grpc-gateway
+      run: |
+        echo "Building hello-grpc-gateway..."
+        go build -v -o grpc-gateway ./...
+        
+        # Check if binary was created
+        if [ -f grpc-gateway ]; then
+          echo "✅ Build successful"
+          ./grpc-gateway --help || echo "Binary created successfully"
+        else
+          echo "❌ Build failed - binary not found"
+          exit 1
+        fi
+
+    - name: Run tests
+      working-directory: hello-grpc-gateway
+      run: |
+        if go list ./... | grep -q test; then
+          echo "Running tests..."
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+        else
+          echo "No tests found"
+        fi
+
+    - name: Upload test coverage
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gateway-coverage-${{ github.run_number }}
+        path: hello-grpc-gateway/coverage.*
+        retention-days: 7

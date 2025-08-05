@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello gRPC Tauri</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="modules/web_grpc_client.js"></script>
+    <script type="module" src="main.js" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="config-card">
+            <div class="config-header">
+                <h2 class="config-title">gRPC Server Configuration -- </h2>
+                <p class="current-config">Current: <span id="current-config">localhost:9996</span></p>
+            </div>
+            <div class="input-row">
+                <div class="input-group host-input">
+                    <div class="material-input">
+                        <input type="text" id="host" value="localhost" placeholder=" ">
+                        <label for="host">Host</label>
+                    </div>
+                </div>
+                <div class="input-group port-input">
+                    <div class="material-input">
+                        <input type="number" id="port" value="9996" placeholder=" ">
+                        <label for="port">Port</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-section">
+            <button id="ask-btn" class="test-button">ASK gRPC Server From Tauri</button>
+        </div>
+
+        <div class="results-section">
+            <div id="results" class="results-container"></div>
+        </div>
+    </div>
+</body>
+</html>

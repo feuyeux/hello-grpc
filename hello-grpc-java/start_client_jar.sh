@@ -7,7 +7,7 @@ SCRIPT_PATH="$(
 # Set JAVA_HOME based on OS
 case "$(uname -s)" in
 Darwin)
-    export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-24.jdk/Contents/Home"
+    export JAVA_HOME="/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home"
     ;;
 Linux)
     echo "Linux"

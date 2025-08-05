@@ -42,6 +42,58 @@ updates:
       interval: "weekly"
   # Enable version updates for Dart in Flutter projects
   - package-ecosystem: "pub"
-    directory: "/hello_grpc_flutter/"
+    directory: "/hello-grpc-flutter/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "flutter"
+      include: "scope"
+  # Enable version updates for npm in Tauri frontend
+  - package-ecosystem: "npm"
+    directory: "/hello-grpc-tauri/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "tauri-frontend"
+      include: "scope"
+  # Enable version updates for Cargo in Tauri backend
+  - package-ecosystem: "cargo"
+    directory: "/hello-grpc-tauri/src-tauri/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "tauri-backend"
+      include: "scope"
+  # Enable version updates for Go modules in hello-grpc-gateway
+  - package-ecosystem: "gomod"
+    directory: "/hello-grpc-gateway/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "maintainer"
+    assignees:
+      - "maintainer"
+    commit-message:
+      prefix: "gateway"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "go"
+      - "gateway"
+    target-branch: "main"
