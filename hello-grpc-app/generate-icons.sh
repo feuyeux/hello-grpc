@@ -4,6 +4,31 @@
 
 set -e
 
+# 允许脚本中使用 alias
+shopt -s expand_aliases
+
+# Windows 下尝试自动加入 ImageMagick 安装目录到 PATH (Git Bash 中)
+if command -v uname >/dev/null 2>&1; then
+  UNAME_OUT="$(uname -s 2>/dev/null || echo '')"
+  case "$UNAME_OUT" in
+    MINGW*|MSYS*|CYGWIN*)
+      for d in \
+        "/c/Program Files/ImageMagick-7.1.2-Q16-HDRI" \
+        "/c/Program Files/ImageMagick-7.1.2-Q16" \
+        "/c/Program Files/ImageMagick" \
+        "/c/Program Files (x86)/ImageMagick-7.1.2-Q16-HDRI"; do
+        if [ -x "$d/magick.exe" ]; then
+          case ":$PATH:" in
+            *:"$d":*) ;; # already
+            *) PATH="$d:$PATH"; export PATH;;
+          esac
+          break
+        fi
+      done
+      ;;
+  esac
+fi
+
 SCRIPT_PATH="$(
     cd "$(dirname "$0")" >/dev/null 2>&1 || exit
     pwd -P
@@ -34,41 +59,35 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# === 新增: 统一转换命令 ===
+CONVERT=""
+select_convert() {
+  if command -v magick >/dev/null 2>&1; then
+    CONVERT="magick convert"
+  elif command -v convert >/dev/null 2>&1; then
+    CONVERT="convert"
+  else
+    log_error "未找到 ImageMagick (magick/convert)。请安装后再试。"
+    exit 1
+  fi
+}
+
 # 检查依赖
 check_dependencies() {
     log_info "检查依赖工具..."
-    
-    # 检查 ImageMagick
-    if ! command -v convert &> /dev/null; then
-        log_error "ImageMagick 未安装。请安装 ImageMagick:"
-        echo "  Ubuntu/Debian: sudo apt-get install imagemagick"
-        echo "  macOS: brew install imagemagick"
-        echo "  Windows: 下载并安装 ImageMagick"
-        exit 1
-    fi
+    select_convert
     
     # 检查 ICNS 生成工具
     if ! command -v iconutil &> /dev/null && ! command -v png2icns &> /dev/null && ! command -v icnsutil &> /dev/null; then
-        log_info "检测到缺少 ICNS 生成工具，将使用 ImageMagick 兼容方案"
-        case "$(uname -s)" in
-            Linux)
-                log_info "建议安装 libicns-utils 以获得更好的 ICNS 支持:"
-                echo "  Ubuntu/Debian: sudo apt-get install libicns-utils"
-                ;;
-            Darwin)
-                log_info "macOS 系统已内置 iconutil 工具"
-                ;;
-        esac
+        log_info "没有专用 ICNS 工具，将使用 ImageMagick 兼容方案"
     fi
     
     # 检查 inkscape (用于 SVG 转换)
     if ! command -v inkscape &> /dev/null; then
-        log_info "Inkscape 未安装，将跳过 SVG 转换功能"
-        echo "  可选安装: Ubuntu/Debian: sudo apt-get install inkscape"
-        echo "           macOS: brew install inkscape"
+        log_info "Inkscape 未安装 (可选)"
     fi
     
-    log_success "依赖检查完成"
+    log_success "依赖检查完成 (使用: $CONVERT)"
 }
 
 # 创建基础图标 (如果不存在)
@@ -80,7 +99,7 @@ create_base_icon() {
         mkdir -p "$SCRIPT_PATH/assets"
         
         # 创建一个简单的 1024x1024 图标
-        convert -size 1024x1024 xc:transparent \
+        $CONVERT -size 1024x1024 xc:transparent \
             -fill "#4A90E2" \
             -draw "roundrectangle 100,100 924,924 100,100" \
             -fill white \
@@ -114,49 +133,34 @@ generate_icns_file() {
         mkdir -p "$iconset_dir"
         
         # 生成各种尺寸 (RGBA格式)
-        convert "$source_icon" -resize "16x16" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_16x16.png"
-        convert "$source_icon" -resize "32x32" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_16x16@2x.png"
-        convert "$source_icon" -resize "32x32" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_32x32.png"
-        convert "$source_icon" -resize "64x64" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_32x32@2x.png"
-        convert "$source_icon" -resize "128x128" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_128x128.png"
-        convert "$source_icon" -resize "256x256" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_128x128@2x.png"
-        convert "$source_icon" -resize "256x256" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_256x256.png"
-        convert "$source_icon" -resize "512x512" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_256x256@2x.png"
-        convert "$source_icon" -resize "512x512" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_512x512.png"
-        convert "$source_icon" -resize "1024x1024" -background transparent -flatten -define png:color-type=6 "$iconset_dir/icon_512x512@2x.png"
-        
-        iconutil -c icns "$iconset_dir" -o "$output_icns"
+        for spec in 16:16 32:16@2x 32:32 64:32@2x 128:128 256:128@2x 256:256 512:256@2x 512:512 1024:512@2x; do
+          size="${spec%%:*}" name="${spec##*:}" base="${name%@*}" suffix="${name#*@}"; [ "$suffix" = "$name" ] && suffix=""; \
+          out="$iconset_dir/icon_${name/./x}.png"; \
+          $CONVERT "$source_icon" -resize "${size}x${size}" -background transparent -flatten -define png:color-type=6 "$out";
+        done
+        iconutil -c icns "$iconset_dir" -o "$output_icns" || log_warning "iconutil 失败，可能需要手工检查"
         rm -rf "$iconset_dir"
-        log_info "使用 iconutil 生成 ICNS 文件"
+        log_info "使用 iconutil 生成 ICNS"
     elif command -v png2icns &> /dev/null; then
         # 使用 png2icns 工具 (需要安装 libicns-utils)
-        png2icns "$output_icns" "$source_icon"
-        log_info "使用 png2icns 生成 ICNS 文件"
+        png2icns "$output_icns" "$source_icon"; log_info "使用 png2icns 生成 ICNS"
     elif command -v icnsutil &> /dev/null; then
         # 使用 icnsutil 工具
-        icnsutil -c icns "$output_icns" "$source_icon"
-        log_info "使用 icnsutil 生成 ICNS 文件"
+        icnsutil -c icns "$output_icns" "$source_icon"; log_info "使用 icnsutil 生成 ICNS"
     else
         # 使用 ImageMagick 直接转换 (兼容性方案)
         # 创建多尺寸图标并合并为 ICNS
-        local temp_dir=$(mktemp -d)
+        local temp_dir; temp_dir=$(mktemp -d)
         
         # 生成多个尺寸
-        convert "$source_icon" -resize "16x16" -background transparent -flatten "$temp_dir/icon_16.png"
-        convert "$source_icon" -resize "32x32" -background transparent -flatten "$temp_dir/icon_32.png"
-        convert "$source_icon" -resize "128x128" -background transparent -flatten "$temp_dir/icon_128.png"
-        convert "$source_icon" -resize "256x256" -background transparent -flatten "$temp_dir/icon_256.png"
-        convert "$source_icon" -resize "512x512" -background transparent -flatten "$temp_dir/icon_512.png"
-        
-        # 尝试使用 ImageMagick 创建 ICNS
-        if convert "$temp_dir/icon_16.png" "$temp_dir/icon_32.png" "$temp_dir/icon_128.png" "$temp_dir/icon_256.png" "$temp_dir/icon_512.png" "$output_icns" 2>/dev/null; then
-            log_info "使用 ImageMagick 生成 ICNS 文件"
+        for s in 16 32 128 256 512; do $CONVERT "$source_icon" -resize "${s}x${s}" -background transparent -flatten "$temp_dir/icon_$s.png"; done
+        if $CONVERT "$temp_dir"/icon_*.png "$output_icns" 2>/dev/null; then
+          log_info "使用 ImageMagick 生成 ICNS(兼容)"
         else
-            # 最后的备选方案：复制最大尺寸的PNG并重命名为ICNS
-            convert "$source_icon" -resize "512x512" -background transparent -flatten "$output_icns"
-            log_info "生成 ICNS 兼容文件 (PNG格式)"
+          # 最后的备选方案：复制最大尺寸的PNG并重命名为ICNS
+          $CONVERT "$source_icon" -resize 512x512 -background transparent -flatten "$output_icns"
+          log_info "生成 ICNS 兼容 PNG"
         fi
-        
         rm -rf "$temp_dir"
     fi
 }
@@ -172,16 +176,16 @@ generate_tauri_icons() {
     # Tauri 需要的图标尺寸
     local sizes=(32 128 256 512)
     
-    for size in "${sizes[@]}"; do
-        convert "$base_icon" -resize "${size}x${size}" -background transparent -flatten -define png:color-type=6 "$tauri_icons_dir/${size}x${size}.png"
-        log_info "生成 Tauri 图标: ${size}x${size}.png"
+    for s in "${sizes[@]}"; do
+        $CONVERT "$base_icon" -resize ${s}x${s} -background transparent -flatten -define png:color-type=6 "$tauri_icons_dir/${s}x${s}.png"
+        log_info "生成 Tauri 图标: ${s}x${s}.png"
     done
     
     # 生成高分辨率图标
-    convert "$base_icon" -resize "256x256" -background transparent -flatten -define png:color-type=6 "$tauri_icons_dir/128x128@2x.png"
+    $CONVERT "$base_icon" -resize 256x256 -background transparent -flatten -define png:color-type=6 "$tauri_icons_dir/128x128@2x.png"
     
     # 生成 Windows ICO 文件
-    convert "$base_icon" \
+    $CONVERT "$base_icon" \
         \( -clone 0 -resize 16x16 \) \
         \( -clone 0 -resize 32x32 \) \
         \( -clone 0 -resize 48x48 \) \
@@ -207,11 +211,11 @@ generate_flutter_icons() {
     local android_res_dir="$flutter_dir/android/app/src/main/res"
     mkdir -p "$android_res_dir"/{mipmap-hdpi,mipmap-mdpi,mipmap-xhdpi,mipmap-xxhdpi,mipmap-xxxhdpi}
     
-    convert "$base_icon" -resize "72x72" -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-hdpi/ic_launcher.png"
-    convert "$base_icon" -resize "48x48" -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-mdpi/ic_launcher.png"
-    convert "$base_icon" -resize "96x96" -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-xhdpi/ic_launcher.png"
-    convert "$base_icon" -resize "144x144" -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-xxhdpi/ic_launcher.png"
-    convert "$base_icon" -resize "192x192" -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-xxxhdpi/ic_launcher.png"
+    $CONVERT "$base_icon" -resize 72x72 -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-hdpi/ic_launcher.png"
+    $CONVERT "$base_icon" -resize 48x48 -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-mdpi/ic_launcher.png"
+    $CONVERT "$base_icon" -resize 96x96 -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-xhdpi/ic_launcher.png"
+    $CONVERT "$base_icon" -resize 144x144 -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-xxhdpi/ic_launcher.png"
+    $CONVERT "$base_icon" -resize 192x192 -background transparent -flatten -define png:color-type=6 "$android_res_dir/mipmap-xxxhdpi/ic_launcher.png"
     
     # iOS 图标
     local ios_assets_dir="$flutter_dir/ios/Runner/Assets.xcassets/AppIcon.appiconset"
@@ -231,11 +235,8 @@ generate_flutter_icons() {
         "1024:1024x1024"
     )
     
-    for size_info in "${ios_sizes[@]}"; do
-        IFS=':' read -r size filename <<< "$size_info"
-        # iOS 图标不能有透明度，使用白色背景
-        convert "$base_icon" -resize "${size}x${size}" -background white -flatten -define png:color-type=2 "$ios_assets_dir/Icon-App-${filename}.png"
-    done
+    for spec in "${ios_sizes[@]}"; do
+      IFS=':' read -r sz fname <<<"$spec"; $CONVERT "$base_icon" -resize ${sz}x${sz} -background white -flatten -define png:color-type=2 "$ios_assets_dir/Icon-App-${fname}.png"; done
     
     # 创建 Contents.json
     cat > "$ios_assets_dir/Contents.json" << 'EOF'
@@ -301,22 +302,20 @@ EOF
     # PWA 需要的图标尺寸
     local web_sizes=(16 32 96 128 192 512)
     
-    for size in "${web_sizes[@]}"; do
-        convert "$base_icon" -resize "${size}x${size}" -background transparent -flatten -define png:color-type=6 "$web_dir/icons/Icon-${size}.png"
+    for s in "${web_sizes[@]}"; do
+        $CONVERT "$base_icon" -resize ${s}x${s} -background transparent -flatten -define png:color-type=6 "$web_dir/icons/Icon-${s}.png"
     done
-    
-    # 生成 favicon
-    convert "$base_icon" -resize "32x32" -background transparent -flatten -define png:color-type=6 "$web_dir/favicon.png"
+    $CONVERT "$base_icon" -resize 32x32 -background transparent -flatten -define png:color-type=6 "$web_dir/favicon.png"
     
     # Linux 桌面图标
     local linux_assets_dir="$flutter_dir/linux/assets"
     mkdir -p "$linux_assets_dir"
-    convert "$base_icon" -resize "128x128" -background transparent -flatten -define png:color-type=6 "$linux_assets_dir/icon.png"
+    $CONVERT "$base_icon" -resize 128x128 -background transparent -flatten -define png:color-type=6 "$linux_assets_dir/icon.png"
     
     # Windows 桌面图标
     local windows_assets_dir="$flutter_dir/windows/runner/resources"
     mkdir -p "$windows_assets_dir"
-    convert "$base_icon" \
+    $CONVERT "$base_icon" \
         \( -clone 0 -resize 16x16 \) \
         \( -clone 0 -resize 32x32 \) \
         \( -clone 0 -resize 48x48 \) \
@@ -330,8 +329,8 @@ EOF
     # macOS 应用图标尺寸 (RGBA格式)
     local macos_sizes=(16 32 64 128 256 512 1024)
     
-    for size in "${macos_sizes[@]}"; do
-        convert "$base_icon" -resize "${size}x${size}" -background transparent -flatten -define png:color-type=6 "$macos_assets_dir/app_icon_${size}.png"
+    for s in "${macos_sizes[@]}"; do
+        $CONVERT "$base_icon" -resize ${s}x${s} -background transparent -flatten -define png:color-type=6 "$macos_assets_dir/app_icon_${s}.png"
     done
     
     log_success "Flutter 图标生成完成"
