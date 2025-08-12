@@ -22,7 +22,7 @@ require (
 	// https://github.com/grpc/grpc-go/tags
 	google.golang.org/grpc v1.74.2
 	// https://github.com/protocolbuffers/protobuf-go/tags
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7 // indirect
 )
 
 require github.com/prometheus/client_golang v1.23.0
