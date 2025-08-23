@@ -423,18 +423,6 @@ For questions and discussions, please use the GitHub Discussions feature. Bug re
 
 ---
 
-<div align="center">
-
-### Thank You for Visiting!
-
-**Star this repository** if it helps you learn gRPC!  
-**Share** it with your team and contribute to the community.  
-**Report issues** or **suggest features** via [GitHub Issues](https://github.com/feuyeux/hello-grpc/issues)
-
-**Made with care for the developer community**
-
----
-
 ### Quick Navigation
 
 - [Documentation](https://github.com/feuyeux/hello-grpc/wiki) - Detailed guides and API references
