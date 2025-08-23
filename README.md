@@ -1,7 +1,5 @@
 <!-- markdownlint-disable MD033 MD045 -->
 
-<div align="center">
-
 # Hello gRPC - Complete Multi-Language gRPC Tutorial & Examples Collection
 
 **Comprehensive gRPC examples and tutorials across 12+ programming languages**
@@ -444,8 +442,6 @@ For questions and discussions, please use the GitHub Discussions feature. Bug re
 - [Discussions](https://github.com/feuyeux/hello-grpc/discussions) - Community Q&A
 - [Issues](https://github.com/feuyeux/hello-grpc/issues) - Bug reports and feature requests
 - [Releases](https://github.com/feuyeux/hello-grpc/releases) - Version history and updates
-
-</div>
 
 [1]: <https://maven.apache.org/>
 [2]: <https://junit.org/junit5/>
