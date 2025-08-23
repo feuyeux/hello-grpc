@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:fixnum/fixnum.dart';
 import '../common/landing.pb.dart';
-import '../common/common.dart';
 
 class WebGrpcClient {
   final String baseUrl;
