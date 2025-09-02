@@ -12,7 +12,7 @@ require (
 	// https://github.com/sirupsen/logrus/tags
 	github.com/sirupsen/logrus v1.9.3
 	// https://github.com/stretchr/testify/tags
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
 	go.etcd.io/etcd/client/v3 v3.6.4
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
