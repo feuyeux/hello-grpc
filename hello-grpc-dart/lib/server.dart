@@ -6,7 +6,7 @@ import 'package:grpc/grpc.dart' as grpc;
 import 'package:logging/logging.dart';
 
 import 'common/common.dart';
-import 'src/generated/landing.pbgrpc.dart';
+import 'common/landing.pbgrpc.dart';
 import 'conn/conn.dart';
 
 /// Available greetings in different languages
@@ -70,9 +70,30 @@ class Server {
       // Set up signal handling for graceful shutdown
       _setupSignalHandling(server);
 
-      // Start server in insecure mode (ignoring TLS for now)
-      _logger.info("Starting server in insecure mode");
-      await server.serve(address: '0.0.0.0', port: serverPort);
+      // Start server with TLS if configured
+      if (Conn.isSecure) {
+        _logger.info("Starting server in secure mode (TLS)");
+        _logger.info("Certificate path: ${Conn.certPath}");
+        _logger.info("Key path: ${Conn.keyPath}");
+        
+        // Read certificate files
+        final certificate = await File(Conn.certPath).readAsBytes();
+        final privateKey = await File(Conn.keyPath).readAsBytes();
+        
+        final credentials = grpc.ServerTlsCredentials(
+          certificate: certificate,
+          privateKey: privateKey,
+        );
+        
+        await server.serve(
+          address: '0.0.0.0',
+          port: serverPort,
+          security: credentials,
+        );
+      } else {
+        _logger.info("Starting server in insecure mode");
+        await server.serve(address: '0.0.0.0', port: serverPort);
+      }
 
       _logger.info("Server listening on port ${server.port}...");
       _logger.info("Version: ${Utils.getVersion()}");
@@ -118,14 +139,16 @@ class Server {
       });
     });
 
-    // Handle SIGTERM
-    ProcessSignal.sigterm.watch().listen((_) {
-      _logger.info('Received SIGTERM signal, shutting down server...');
-      server.shutdown().then((_) {
-        _logger.info('Server shutdown complete');
-        exit(0);
+    // Handle SIGTERM (not supported on Windows)
+    if (!io.Platform.isWindows) {
+      ProcessSignal.sigterm.watch().listen((_) {
+        _logger.info('Received SIGTERM signal, shutting down server...');
+        server.shutdown().then((_) {
+          _logger.info('Server shutdown complete');
+          exit(0);
+        });
       });
-    });
+    }
   }
 }
 

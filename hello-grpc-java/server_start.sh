@@ -189,14 +189,14 @@ detect_java_home() {
             ;;
             
         "linux")
-            # Linux 检测顺序
+            # Linux 检测顺序 - 优先使用 Java 21
             local linux_paths=(
-                "/usr/lib/jvm/default-java"
                 "/usr/lib/jvm/java-21-openjdk-amd64"
-                "/usr/lib/jvm/java-17-openjdk-amd64"
-                "/usr/lib/jvm/java-11-openjdk-amd64"
                 "/usr/lib/jvm/java-21-openjdk"
+                "/usr/lib/jvm/java-17-openjdk-amd64"
                 "/usr/lib/jvm/java-17-openjdk"
+                "/usr/lib/jvm/default-java"
+                "/usr/lib/jvm/java-11-openjdk-amd64"
                 "/usr/lib/jvm/java-11-openjdk"
                 "/opt/java/openjdk"
                 "/usr/java/latest"

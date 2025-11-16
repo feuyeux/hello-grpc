@@ -7,6 +7,11 @@ SCRIPT_PATH="$(
 )"
 cd "$SCRIPT_PATH" || exit
 
+# Add Maven to PATH if not already there
+if [ -d "/mnt/d/zoo/apache-maven-3.9.7/bin" ]; then
+    export PATH="/mnt/d/zoo/apache-maven-3.9.7/bin:$PATH"
+fi
+
 echo "Building Java gRPC project..."
 
 # Set JAVA_HOME based on OS
@@ -22,7 +27,11 @@ Darwin)
     fi
     ;;
 Linux)
-    if [ -d "/usr/lib/jvm/default-java" ]; then
+    if [ -d "/usr/lib/jvm/java-21-openjdk-amd64" ]; then
+        export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+    elif [ -d "/usr/lib/jvm/java-21-openjdk" ]; then
+        export JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
+    elif [ -d "/usr/lib/jvm/default-java" ]; then
         export JAVA_HOME="/usr/lib/jvm/default-java"
     elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
         export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
@@ -52,10 +61,17 @@ if [ -n "$JAVA_HOME" ] && [ ! -d "$JAVA_HOME" ]; then
     exit 1
 fi
 
-# Check for Maven
+# Check for Maven (after PATH is set)
 if ! command -v mvn &> /dev/null; then
-    echo "Maven is not installed. Please install Maven before continuing."
-    exit 1
+    # Try to find Maven in common locations
+    if [ -f "/mnt/d/zoo/apache-maven-3.9.7/bin/mvn" ]; then
+        export PATH="/mnt/d/zoo/apache-maven-3.9.7/bin:$PATH"
+    elif [ -f "/usr/share/maven/bin/mvn" ]; then
+        export PATH="/usr/share/maven/bin:$PATH"
+    else
+        echo "Maven is not installed. Please install Maven before continuing."
+        exit 1
+    fi
 fi
 
 echo "Using Java from: $JAVA_HOME"
@@ -63,7 +79,7 @@ mvn -v
 
 # Check if we need to clean
 CLEAN_BUILD=false
-if [ "$1" == "--clean" ]; then
+if [ "$1" = "--clean" ]; then
     CLEAN_BUILD=true
     shift
 fi

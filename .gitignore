@@ -4,6 +4,7 @@
 # IDE and editor files
 .idea
 .vscode
+.kiro
 .settings
 .classpath
 .project
@@ -131,3 +132,5 @@ hello-grpc-app/hello-grpc-tauri/src-tauri/gen/
 
 # Build output directories
 build_output/
+*.pid
+.github/docs

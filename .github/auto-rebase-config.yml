@@ -1,0 +1,88 @@
+# Auto-Rebase Configuration File
+# 
+# This file allows you to customize the behavior of the auto-rebase workflow.
+# All settings are optional - if not specified, defaults will be used.
+
+# Enable or disable the auto-rebase system
+enabled: true
+
+# Trigger configuration - control when auto-rebase runs
+triggers:
+  # Trigger on push to main/master branches
+  on_push: true
+  
+  # Trigger on PR comments (e.g., /rebase command)
+  on_comment: true
+  
+  # Trigger on schedule (daily at midnight UTC)
+  on_schedule: true
+
+# PR filtering configuration
+filters:
+  # Labels that PRs must have to be eligible for auto-rebase
+  # PRs must have at least one of these labels
+  required_labels:
+    - dependencies
+  
+  # Authors whose PRs are eligible for auto-rebase
+  # Only PRs from these authors will be considered
+  allowed_authors:
+    - dependabot[bot]
+    - github-actions[bot]
+  
+  # Labels that exclude PRs from auto-rebase
+  # PRs with any of these labels will be skipped
+  exclude_labels:
+    - no-rebase
+    - wip
+    - do-not-merge
+    - hold
+
+# Rate limiting and frequency control
+limits:
+  # Minimum time (in hours) between rebase attempts for the same PR
+  # This prevents excessive rebasing and CI runs
+  min_interval_hours: 1
+  
+  # Maximum number of retry attempts for failed rebase operations
+  max_retries: 3
+  
+  # Exponential backoff multiplier for retries (in seconds)
+  # Retry delays: base_delay * (2^attempt)
+  retry_base_delay: 60
+
+# Notification settings
+notifications:
+  # Post a comment when rebase starts
+  comment_on_start: true
+  
+  # Post a comment when rebase succeeds
+  comment_on_success: true
+  
+  # Post a comment when rebase fails
+  comment_on_failure: true
+  
+  # Post a comment when rebase is skipped (optional, can be noisy)
+  comment_on_skip: false
+
+# Conflict handling
+conflict_handling:
+  # Label to add when a PR has rebase conflicts
+  conflict_label: rebase-conflict
+  
+  # Automatically remove conflict label when PR is successfully rebased
+  auto_remove_conflict_label: true
+
+# Advanced settings
+advanced:
+  # Wait for CI checks to complete before rebasing
+  wait_for_ci: true
+  
+  # Skip PRs that are already up-to-date with base branch
+  skip_if_up_to_date: true
+  
+  # Use --force-with-lease instead of --force for safer pushes
+  use_force_with_lease: true
+  
+  # Git fetch depth (0 = full history, useful for accurate rebase)
+  fetch_depth: 0

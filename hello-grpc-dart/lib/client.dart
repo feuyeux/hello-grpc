@@ -3,7 +3,7 @@ import 'dart:io' as io show Platform;
 import 'dart:math';
 import 'package:grpc/grpc.dart';
 import 'common/common.dart';
-import 'src/generated/landing.pbgrpc.dart';
+import 'common/landing.pbgrpc.dart';
 import 'package:logging/logging.dart';
 
 import 'conn/conn.dart';
@@ -28,10 +28,27 @@ class Client {
     String? GRPC_SERVER = envVars['GRPC_SERVER'];
     String connectTo = GRPC_SERVER ?? "127.0.0.1";
     logger.info("GRPC_SERVER:${connectTo}");
+    
+    // Configure channel with TLS if enabled
+    final ChannelCredentials credentials;
+    if (Conn.isSecure) {
+      logger.info("Using secure connection (TLS)");
+      logger.info("Root cert path: ${Conn.rootCertPath}");
+      
+      // Read root certificate
+      final rootCert = await File(Conn.rootCertPath).readAsBytes();
+      credentials = ChannelCredentials.secure(
+        certificates: rootCert,
+        authority: 'hello.grpc.io',
+      );
+    } else {
+      logger.info("Using insecure connection");
+      credentials = ChannelCredentials.insecure();
+    }
+    
     final channel = ClientChannel(connectTo,
-        port: Conn.port,
-        options:
-            const ChannelOptions(credentials: ChannelCredentials.insecure()));
+        port: Conn.getServerPort(),
+        options: ChannelOptions(credentials: credentials));
     stub = LandingServiceClient(channel,
         options: CallOptions(timeout: Duration(seconds: 30)));
     // Run all of the demos in order.

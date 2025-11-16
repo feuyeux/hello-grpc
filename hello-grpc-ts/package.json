@@ -25,8 +25,8 @@
     "typescript": "^5.6.2"
   },
   "engines": {
-    "npm": ">=11.0.0",
-    "node": ">=23.0.0"
+    "npm": ">=10.0.0",
+    "node": ">=18.0.0"
   },
   "license": "Apache-2.0"
 }

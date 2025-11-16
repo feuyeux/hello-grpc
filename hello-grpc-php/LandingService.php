@@ -31,8 +31,6 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/common/msg/Hello/TalkRequest.php';
 require_once __DIR__ . '/common/msg/Hello/TalkResponse.php';
 require_once __DIR__ . '/common/msg/Hello/TalkResult.php';
-require_once __DIR__ . '/common/svc/Hello/LandingServiceStub.php';
-require_once __DIR__ . '/common/svc/Hello/LandingServiceInterface.php';
 
 /**
  * Translation responses for different greetings
@@ -98,9 +96,7 @@ $log->info("======= PHP gRPC服务端启动，日志系统初始化完成 ======
  * @author Hello gRPC Team
  */
 
-use Hello\LandingServiceInterface;
-
-class LandingService implements LandingServiceInterface
+class LandingService
 {
     /**
      * Backend client for proxy mode

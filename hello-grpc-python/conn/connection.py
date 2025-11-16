@@ -44,7 +44,7 @@ logger.setLevel(logging.INFO)
 console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.INFO)
 console_formatter = logging.Formatter(
-    '%(asctime)s %(message)s', '%H:%M:%S.%03d')
+    '%(asctime)s %(message)s', '%H:%M:%S')
 console.setFormatter(console_formatter)
 
 # File handler

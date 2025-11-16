@@ -81,9 +81,13 @@ To enable TLS, you need to prepare certificates and configure environment variab
    ```bash
    # Terminal 1: Start the server with TLS
    GRPC_HELLO_SECURE=Y java -jar target/hello-grpc-java-server.jar
-   
+   # Or using sh script:
+   sh server_start.sh --tls
+
    # Terminal 2: Start the client with TLS
    GRPC_HELLO_SECURE=Y java -jar target/hello-grpc-java-client.jar
+   # Or using sh script:
+   sh client_start.sh --tls
    ```
 
 3. **TLS with Proxy**

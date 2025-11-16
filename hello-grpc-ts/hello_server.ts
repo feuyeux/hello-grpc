@@ -713,7 +713,6 @@ function startSecureServer(server: grpc.Server, serverAddress: string): void {
                     // If TLS binding fails, fall back to insecure mode
                     startInsecureServer(server, serverAddress)
                 } else {
-                    server.start()
                     logger.info("TLS server started on port %s [version: %s]", bindPort, getVersion())
                 }
             }
@@ -742,7 +741,6 @@ function startInsecureServer(server: grpc.Server, serverAddress: string): void {
                 logger.error("Failed to start insecure server on port %s: %s", port, error.message)
                 process.exit(1)
             } else {
-                server.start()
                 logger.info("Insecure server started on port %s [version: %s]", port, getVersion())
             }
         }

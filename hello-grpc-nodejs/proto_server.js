@@ -69,10 +69,9 @@ function getCertBasePath() {
 const certBasePath = getCertBasePath();
 
 // Define certificate paths
-const cert = path.join(certBasePath, "cert.pem");
-const certKey = path.join(certBasePath, "private.key");
-const certChain = path.join(certBasePath, "full_chain.pem");
-const rootCert = path.join(certBasePath, "myssl_root.cer");
+const certPath = path.join(certBasePath, "cert.pem");
+const certKeyPath = path.join(certBasePath, "private.key");
+const certChainPath = path.join(certBasePath, "full_chain.pem");
 
 /**
  * Starts an RPC server that receives requests for the LandingService
@@ -161,34 +160,27 @@ function startSecureServer(server, address) {
         logger.info("TLS is enabled, configuring secure server");
 
         // Validate certificate files
-        if (!fs.existsSync(cert)) {
-            logger.error(`Certificate file not found: ${cert}`);
-            throw new Error(`Certificate file not found: ${cert}`);
+        if (!fs.existsSync(certPath)) {
+            logger.error(`Certificate file not found: ${certPath}`);
+            throw new Error(`Certificate file not found: ${certPath}`);
         }
 
-        if (!fs.existsSync(certKey)) {
-            logger.error(`Private key file not found: ${certKey}`);
-            throw new Error(`Private key file not found: ${certKey}`);
+        if (!fs.existsSync(certKeyPath)) {
+            logger.error(`Private key file not found: ${certKeyPath}`);
+            throw new Error(`Private key file not found: ${certKeyPath}`);
         }
 
-        // Read certificates
-        const certContent = fs.readFileSync(cert);
-        const privateKeyContent = fs.readFileSync(certKey);
+        // Read certificates - use full_chain.pem for complete certificate chain
+        const certChainContent = fs.existsSync(certChainPath) ? fs.readFileSync(certChainPath) : fs.readFileSync(certPath);
+        const privateKeyContent = fs.readFileSync(certKeyPath);
 
-        // Check for root certificate (optional)
-        let rootCertContent = null;
-        if (fs.existsSync(rootCert)) {
-            rootCertContent = fs.readFileSync(rootCert);
-            logger.info("Using root certificate for client verification");
-        } else {
-            logger.info("Root certificate not found, client verification disabled");
-        }
+        logger.info("Using certificate chain from: %s", fs.existsSync(certChainPath) ? certChainPath : certPath);
 
         // Create TLS credentials - don't require client certificates (false)
         const credentials = grpc.ServerCredentials.createSsl(
-            rootCertContent,  // Root certificates (can be null)
+            null,  // Root certificates for client verification (null = don't verify client)
             [{
-                cert_chain: certContent,
+                cert_chain: certChainContent,
                 private_key: privateKeyContent
             }],
             false // Don't require client certificate
@@ -200,7 +192,6 @@ function startSecureServer(server, address) {
                 logger.info("Falling back to insecure server");
                 startInsecureServer(server, address);
             } else {
-                server.start();
                 logger.info("Start GRPC TLS Server on port %s [%s]", port, utils.getVersion());
             }
         });
@@ -224,7 +215,6 @@ function startInsecureServer(server, address) {
             logger.error("Failed to bind insecure server:", err);
             process.exit(1);
         }
-        server.start();
         logger.info("Start GRPC Server on port %s [%s]", port, utils.getVersion());
     });
 }

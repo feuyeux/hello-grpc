@@ -1,0 +1,386 @@
+name: Auto Rebase PRs
+
+on:
+  # Trigger when main branch is updated
+  push:
+    branches:
+      - main
+      - master
+  
+  # Trigger on PR comments for manual /rebase command
+  issue_comment:
+    types: [created]
+  
+  # Scheduled trigger - daily at midnight UTC
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to rebase (optional, leave empty to rebase all eligible PRs)'
+        required: false
+        type: string
+
+# Set required permissions
+permissions:
+  contents: write
+  pull-requests: write
+
+# Concurrency control to avoid concurrent rebases on the same PR
+concurrency:
+  group: auto-rebase-${{ github.event.pull_request.number || github.event.issue.number || 'all' }}
+  cancel-in-progress: false
+
+jobs:
+  auto-rebase:
+    name: Auto Rebase PRs
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Install yq for config parsing
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x .github/scripts/filter-prs.sh
+          chmod +x .github/scripts/rebase-pr.sh
+          chmod +x .github/scripts/notify-rebase.sh
+          chmod +x .github/scripts/load-config.sh
+          chmod +x .github/scripts/security-validation.sh
+      
+      - name: Validate configuration
+        run: |
+          chmod +x .github/scripts/validate-config.sh
+          .github/scripts/validate-config.sh || echo "⚠️  Configuration validation failed, but continuing with defaults"
+      
+      - name: Validate security and permissions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔒 Performing security validation..."
+          if .github/scripts/security-validation.sh validate-token; then
+            echo "✅ Security validation passed"
+          else
+            echo "❌ Security validation failed"
+            exit 1
+          fi
+      
+      - name: Display configuration
+        run: |
+          source .github/scripts/load-config.sh
+          display_config
+      
+      - name: Determine PR to process
+        id: determine_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Source security validation functions
+          source .github/scripts/security-validation.sh
+          
+          # Determine which PR(s) to process based on trigger type
+          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            # Check if comment contains /rebase command
+            COMMENT_BODY="${{ github.event.comment.body }}"
+            if echo "$COMMENT_BODY" | grep -q "^/rebase"; then
+              # Verify that the issue is actually a PR
+              if [[ "${{ github.event.issue.pull_request }}" == "" ]]; then
+                echo "mode=skip" >> $GITHUB_OUTPUT
+                echo "⏭️  Comment is on an issue, not a PR. Skipping."
+                exit 0
+              fi
+              
+              # Sanitize and validate commenter username
+              COMMENTER="${{ github.event.comment.user.login }}"
+              COMMENTER=$(sanitize_input "$COMMENTER" "username") || {
+                echo "mode=skip" >> $GITHUB_OUTPUT
+                echo "❌ Invalid commenter username format"
+                exit 0
+              }
+              
+              # Sanitize and validate PR number
+              PR_NUMBER="${{ github.event.issue.number }}"
+              PR_NUMBER=$(sanitize_input "$PR_NUMBER" "pr_number") || {
+                echo "mode=skip" >> $GITHUB_OUTPUT
+                echo "❌ Invalid PR number format"
+                exit 0
+              }
+              
+              echo "🔒 Performing security validation for manual trigger..."
+              echo "🔍 Verifying permissions for user: $COMMENTER"
+              
+              # Use security validation script to verify commenter permissions
+              if verify_commenter_permissions "$COMMENTER" "write"; then
+                # Verify PR author identity
+                if verify_pr_author "$PR_NUMBER"; then
+                  echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+                  echo "mode=single" >> $GITHUB_OUTPUT
+                  echo "✅ Security validation passed. Manual rebase requested for PR #$PR_NUMBER by $COMMENTER"
+                else
+                  echo "mode=skip" >> $GITHUB_OUTPUT
+                  echo "❌ PR author verification failed for PR #$PR_NUMBER"
+                  
+                  # Post a comment explaining the author verification failure
+                  gh pr comment "$PR_NUMBER" --body "❌ Sorry @$COMMENTER, this PR cannot be rebased automatically. The PR author is not in the allowed list for auto-rebase."
+                fi
+              else
+                echo "mode=skip" >> $GITHUB_OUTPUT
+                echo "❌ User $COMMENTER does not have permission to trigger rebase"
+                
+                # Post a comment explaining the permission denial
+                gh pr comment "$PR_NUMBER" --body "❌ Sorry @$COMMENTER, only repository maintainers can trigger the \`/rebase\` command."
+              fi
+            else
+              echo "mode=skip" >> $GITHUB_OUTPUT
+              echo "⏭️  Comment does not contain /rebase command, skipping"
+            fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]] && [[ -n "${{ inputs.pr_number }}" ]]; then
+            # Manual workflow dispatch with specific PR
+            # Sanitize and validate PR number
+            PR_NUMBER="${{ inputs.pr_number }}"
+            PR_NUMBER=$(sanitize_input "$PR_NUMBER" "pr_number") || {
+              echo "mode=skip" >> $GITHUB_OUTPUT
+              echo "❌ Invalid PR number format: ${{ inputs.pr_number }}"
+              exit 1
+            }
+            
+            # Verify PR author identity for manual dispatch
+            echo "🔒 Verifying PR author for manual dispatch..."
+            if verify_pr_author "$PR_NUMBER"; then
+              echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+              echo "mode=single" >> $GITHUB_OUTPUT
+              echo "📝 Manual workflow dispatch for PR #$PR_NUMBER (security validated)"
+            else
+              echo "mode=skip" >> $GITHUB_OUTPUT
+              echo "❌ PR author verification failed for PR #$PR_NUMBER"
+              exit 1
+            fi
+          else
+            # Process all eligible PRs (push, schedule, or workflow_dispatch without PR number)
+            echo "mode=all" >> $GITHUB_OUTPUT
+            echo "🔄 Processing all eligible PRs"
+          fi
+      
+      - name: Filter PRs
+        id: filter_prs
+        if: steps.determine_pr.outputs.mode != 'skip'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Run the filter script
+          if [[ "${{ steps.determine_pr.outputs.mode }}" == "single" ]]; then
+            # Filter single PR
+            ELIGIBLE_PRS=$(.github/scripts/filter-prs.sh --pr "${{ steps.determine_pr.outputs.pr_number }}" --verbose)
+          else
+            # Filter all PRs
+            ELIGIBLE_PRS=$(.github/scripts/filter-prs.sh --verbose)
+          fi
+          
+          # Save eligible PRs to output
+          if [[ -n "$ELIGIBLE_PRS" ]]; then
+            # Convert to JSON array
+            ELIGIBLE_PRS_JSON=$(echo "$ELIGIBLE_PRS" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "eligible_prs=$ELIGIBLE_PRS_JSON" >> $GITHUB_OUTPUT
+            echo "has_eligible_prs=true" >> $GITHUB_OUTPUT
+            
+            PR_COUNT=$(echo "$ELIGIBLE_PRS" | wc -l)
+            echo "✅ Found $PR_COUNT eligible PR(s) for rebase"
+          else
+            echo "eligible_prs=[]" >> $GITHUB_OUTPUT
+            echo "has_eligible_prs=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No eligible PRs found for rebase"
+          fi
+      
+      - name: Execute rebase for eligible PRs
+        if: steps.filter_prs.outputs.has_eligible_prs == 'true'
+        id: rebase_execution
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          # Parse eligible PRs from JSON array
+          ELIGIBLE_PRS='${{ steps.filter_prs.outputs.eligible_prs }}'
+          
+          # Initialize results tracking
+          REBASE_RESULTS="[]"
+          SUCCESS_COUNT=0
+          FAILURE_COUNT=0
+          
+          echo "🚀 Starting rebase execution for eligible PRs"
+          echo "================================================"
+          
+          # Process each PR
+          echo "$ELIGIBLE_PRS" | jq -r '.[]' | while IFS= read -r pr_number; do
+            if [[ -z "$pr_number" ]]; then
+              continue
+            fi
+            
+            echo ""
+            echo "📦 Processing PR #$pr_number"
+            echo "----------------------------------------"
+            
+            # Get PR details
+            PR_DATA=$(gh pr view "$pr_number" --json baseRefName,headRefName,title)
+            BASE_BRANCH=$(echo "$PR_DATA" | jq -r '.baseRefName')
+            HEAD_BRANCH=$(echo "$PR_DATA" | jq -r '.headRefName')
+            PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+            
+            # Validate branch names for security
+            echo "🔒 Validating branch names..."
+            if ! BASE_BRANCH=$(.github/scripts/security-validation.sh validate-branch "$BASE_BRANCH" 2>&1); then
+              echo "❌ Invalid base branch name: $BASE_BRANCH"
+              FAILURE_COUNT=$((FAILURE_COUNT + 1))
+              continue
+            fi
+            
+            if ! HEAD_BRANCH=$(.github/scripts/security-validation.sh validate-branch "$HEAD_BRANCH" 2>&1); then
+              echo "❌ Invalid head branch name: $HEAD_BRANCH"
+              FAILURE_COUNT=$((FAILURE_COUNT + 1))
+              continue
+            fi
+            
+            echo "Title: $PR_TITLE"
+            echo "Base: $BASE_BRANCH"
+            echo "Head: $HEAD_BRANCH"
+            echo ""
+            
+            # Send start notification
+            echo "📢 Sending start notification..."
+            .github/scripts/notify-rebase.sh --type start --pr "$pr_number" || echo "⚠️  Failed to send start notification"
+            
+            # Execute rebase and capture both stdout and exit code
+            set +e  # Temporarily disable exit on error
+            RESULT=$(.github/scripts/rebase-pr.sh \
+              --pr "$pr_number" \
+              --base "$BASE_BRANCH" \
+              --head "$HEAD_BRANCH" \
+              --verbose)
+            EXIT_CODE=$?
+            set -e  # Re-enable exit on error
+            
+            if [[ $EXIT_CODE -eq 0 ]]; then
+              echo "✅ Rebase succeeded for PR #$pr_number"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              
+              # Parse and store success result
+              if [[ -n "$RESULT" ]]; then
+                REBASE_RESULTS=$(echo "$REBASE_RESULTS" | jq --argjson result "$RESULT" '. + [$result]')
+              fi
+              
+              # Send success notification
+              echo "📢 Sending success notification..."
+              .github/scripts/notify-rebase.sh --type success --pr "$pr_number" || echo "⚠️  Failed to send success notification"
+            else
+              echo "❌ Rebase failed for PR #$pr_number (exit code: $EXIT_CODE)"
+              FAILURE_COUNT=$((FAILURE_COUNT + 1))
+              
+              # Parse error result from script output or create default
+              if [[ -n "$RESULT" ]] && echo "$RESULT" | jq -e . >/dev/null 2>&1; then
+                # Script returned valid JSON error
+                REBASE_RESULTS=$(echo "$REBASE_RESULTS" | jq --argjson result "$RESULT" '. + [$result]')
+                
+                # Log detailed error information
+                ERROR_TYPE=$(echo "$RESULT" | jq -r '.error_type // "unknown"')
+                ERROR_MESSAGE=$(echo "$RESULT" | jq -r '.error_message // "Unknown error"')
+                USER_MESSAGE=$(echo "$RESULT" | jq -r '.user_message // ""')
+                
+                echo "Error Type: $ERROR_TYPE"
+                echo "Error Message: $ERROR_MESSAGE"
+                if [[ -n "$USER_MESSAGE" ]]; then
+                  echo "User Message: $USER_MESSAGE"
+                fi
+                
+                # Send failure notification with error details
+                echo "📢 Sending failure notification..."
+                NOTIFY_ARGS="--type failure --pr $pr_number --error-type $ERROR_TYPE --error-msg \"$ERROR_MESSAGE\""
+                if [[ -n "$USER_MESSAGE" ]]; then
+                  NOTIFY_ARGS="$NOTIFY_ARGS --user-msg \"$USER_MESSAGE\""
+                fi
+                
+                # Add conflict label for conflict errors
+                if [[ "$ERROR_TYPE" == "rebase_conflict" ]] || [[ "$ERROR_TYPE" == "conflict" ]]; then
+                  NOTIFY_ARGS="$NOTIFY_ARGS --add-conflict-label"
+                fi
+                
+                eval ".github/scripts/notify-rebase.sh $NOTIFY_ARGS" || echo "⚠️  Failed to send failure notification"
+              else
+                # Create fallback error result
+                FAILURE_RESULT=$(cat <<EOF
+{
+  "pr_number": $pr_number,
+  "success": false,
+  "error_type": "unknown",
+  "error_code": $EXIT_CODE,
+  "error_message": "Rebase failed with exit code $EXIT_CODE",
+  "user_message": "An unexpected error occurred. Check workflow logs for details.",
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+)
+                REBASE_RESULTS=$(echo "$REBASE_RESULTS" | jq --argjson result "$FAILURE_RESULT" '. + [$result]')
+                
+                # Send generic failure notification
+                echo "📢 Sending failure notification..."
+                .github/scripts/notify-rebase.sh \
+                  --type failure \
+                  --pr "$pr_number" \
+                  --error-type "unknown" \
+                  --error-msg "Rebase failed with exit code $EXIT_CODE" \
+                  --user-msg "An unexpected error occurred. Check workflow logs for details." \
+                  || echo "⚠️  Failed to send failure notification"
+              fi
+            fi
+          done
+          
+          echo ""
+          echo "================================================"
+          echo "📊 Rebase Execution Summary"
+          echo "================================================"
+          echo "✅ Successful: $SUCCESS_COUNT"
+          echo "❌ Failed: $FAILURE_COUNT"
+          echo "📝 Total: $((SUCCESS_COUNT + FAILURE_COUNT))"
+          echo ""
+          
+          # Log detailed results
+          if [[ $FAILURE_COUNT -gt 0 ]]; then
+            echo "Failed PRs Details:"
+            echo "$REBASE_RESULTS" | jq -r '.[] | select(.success == false) | "  PR #\(.pr_number): \(.error_type) - \(.error_message)"'
+          fi
+          
+          # Save results to output
+          echo "rebase_results=$REBASE_RESULTS" >> $GITHUB_OUTPUT
+          echo "success_count=$SUCCESS_COUNT" >> $GITHUB_OUTPUT
+          echo "failure_count=$FAILURE_COUNT" >> $GITHUB_OUTPUT
+      
+      - name: Summary
+        if: steps.filter_prs.outputs.has_eligible_prs == 'true'
+        run: |
+          echo "## 📊 Auto-Rebase Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Successful:** ${{ steps.rebase_execution.outputs.success_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Failed:** ${{ steps.rebase_execution.outputs.failure_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Total:** $((${{ steps.rebase_execution.outputs.success_count }} + ${{ steps.rebase_execution.outputs.failure_count }}))" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Show failed PRs if any
+          if [[ ${{ steps.rebase_execution.outputs.failure_count }} -gt 0 ]]; then
+            echo "### ❌ Failed PRs" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.rebase_execution.outputs.rebase_results }}' | jq -r '.[] | select(.success == false) | "- PR #\(.pr_number): `\(.error_type)` - \(.error_message)"' >> $GITHUB_STEP_SUMMARY
+          fi

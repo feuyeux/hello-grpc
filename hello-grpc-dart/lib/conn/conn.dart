@@ -29,6 +29,30 @@ class Conn {
     }
   }
   
+  /// Gets the client certificate base path (for root CA)
+  static String get clientCertBasePath {
+    // For client, we need the server's root cert to verify the server
+    // So we use server_certs path
+    final envPath = io.Platform.environment['CERT_BASE_PATH'];
+    if (envPath != null && envPath.isNotEmpty) {
+      // If it points to client_certs, redirect to server_certs
+      if (envPath.contains('client_certs')) {
+        return envPath.replaceAll('client_certs', 'server_certs');
+      }
+      return envPath;
+    }
+    
+    // Use platform-specific default paths
+    if (io.Platform.isWindows) {
+      return r'd:\garden\var\hello_grpc\server_certs';
+    } else if (io.Platform.isMacOS) {
+      return '/var/hello_grpc/server_certs';
+    } else {
+      // Linux and others
+      return '/var/hello_grpc/server_certs';
+    }
+  }
+  
   /// Path to the server certificate
   static String get certPath => path.join(certBasePath, 'cert.pem');
   
@@ -38,8 +62,8 @@ class Conn {
   /// Path to the certificate chain
   static String get chainPath => path.join(certBasePath, 'full_chain.pem');
   
-  /// Path to the root certificate
-  static String get rootCertPath => path.join(certBasePath, 'myssl_root.cer');
+  /// Path to the root certificate (for client to verify server)
+  static String get rootCertPath => path.join(clientCertBasePath, 'full_chain.pem');
   
   /// Backend host for proxy mode, null if not configured
   static String? get backendHost => io.Platform.environment['GRPC_HELLO_BACKEND'];

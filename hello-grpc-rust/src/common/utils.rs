@@ -46,8 +46,8 @@ pub fn thanks(key: &str) -> &str {
 }
 
 pub fn random_id(max: i32) -> String {
-    let mut rng = rand::thread_rng(); // Using the latest rand crate
-    let random_value = rng.gen_range(0..max); // Using the range syntax supported in rand 0.8.5
+    let mut rng = rand::rng(); // Using rand 0.9.x API
+    let random_value = rng.random_range(0..max); // Using rand 0.9.x API
     let id_string = format!("{}", random_value);
     id_string
 }

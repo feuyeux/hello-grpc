@@ -25,29 +25,26 @@ function getCertBasePath() {
 
 // Get certificate path
 const certPath = getCertBasePath();
-const cert = path.join(certPath, "cert.pem")
-const certKey = path.join(certPath, "private.key")
-const certChain = path.join(certPath, "full_chain.pem")
-const rootCert = path.join(certPath, "myssl_root.cer")
-const serverName = process.env.TLS_SERVER_NAME || "hello.grpc.io"
+const rootCert = path.join(certPath, "myssl_root.cer");
+const serverName = process.env.TLS_SERVER_NAME || "hello.grpc.io";
 
-// 确保日志目录存在
+// Ensure log directory exists
 try {
-  fs.mkdirSync('log', { recursive: true })
+  fs.mkdirSync('log', { recursive: true });
 } catch (e) {
-  // 目录已存在或无法创建
+  // Directory already exists or cannot be created
 }
 
-// 创建自定义日志格式
+// Create custom log formats
 const consoleFormat = format.printf(({ timestamp, message }) => {
-  return `${timestamp} ${message}`
-})
+  return `${timestamp} ${message}`;
+});
 
 const fileFormat = format.printf(({ timestamp, level, message }) => {
-  return `${timestamp} [${process.pid}] ${level.toUpperCase()} Server - ${message}`
-})
+  return `${timestamp} [${process.pid}] ${level.toUpperCase()} Server - ${message}`;
+});
 
-// 创建日志记录器
+// Create logger instance
 const logger = createLogger({
   level: 'info',
   format: format.combine(
@@ -58,7 +55,7 @@ const logger = createLogger({
     fileFormat
   ),
   transports: [
-    // 控制台输出
+    // Console output
     new transports.Console({
       format: format.combine(
         format.colorize(),
@@ -68,115 +65,82 @@ const logger = createLogger({
         consoleFormat
       )
     }),
-    // 文件输出
+    // File output
     new transports.File({
       filename: path.join('log', 'hello-grpc.log'),
       maxsize: 19500 * 1024,
       maxFiles: 5
     })
   ]
-})
+});
 
 /**
  * Creates a gRPC client with proper connection settings
  * @returns {LandingServiceClient} The configured gRPC client
  */
 function getClient() {
-    let backend = process.env.GRPC_HELLO_BACKEND
-    let connectTo
-    if (typeof backend !== 'undefined' && backend !== null) {
-        connectTo = backend
-    } else {
-        connectTo = grpcServerHost()
-    }
+    const backend = process.env.GRPC_HELLO_BACKEND;
+    const connectTo = backend || grpcServerHost();
 
-    let backPort = process.env.GRPC_HELLO_BACKEND_PORT
-    let port
-    if (typeof backPort !== 'undefined' && backPort !== null) {
-        port = backPort
-    } else {
-        let serverPort = process.env.GRPC_SERVER_PORT
-        if (typeof serverPort !== 'undefined' && serverPort !== null) {
-            port = serverPort
-        } else {
-            port = "9996"
-        }
-    }
-    let address = connectTo + ":" + port
-    let secure = process.env.GRPC_HELLO_SECURE
+    const backPort = process.env.GRPC_HELLO_BACKEND_PORT;
+    const serverPort = process.env.GRPC_SERVER_PORT;
+    const port = backPort || serverPort || "9996";
     
-    if (typeof secure !== 'undefined' && secure !== null && secure === "Y") {
+    const address = `${connectTo}:${port}`;
+    const secure = process.env.GRPC_HELLO_SECURE;
+    
+    if (secure === "Y") {
         try {
-            logger.info("Connect With TLS to %s", address)
+            logger.info("Connect With TLS to %s", address);
             
-            // For testing purposes, we'll use insecure credentials to verify basic connectivity
-            // This skips TLS completely but helps us verify the gRPC functionality
-            logger.info("Using insecure channel for testing TLS communication - TESTING ONLY")
-            return new LandingServiceClient(address, grpc.credentials.createInsecure())
-            
-            // The following code would be used in a production environment with proper certificates:
-            /*
             // Check if root certificate file exists
             if (!fs.existsSync(rootCert)) {
-                logger.error("Root certificate file not found: %s", rootCert)
-                throw new Error(`Root certificate file not found: ${rootCert}`)
+                logger.error("Root certificate file not found: %s", rootCert);
+                throw new Error(`Root certificate file not found: ${rootCert}`);
             }
             
             // Read root certificate
-            const rootCertContent = fs.readFileSync(rootCert)
+            const rootCertContent = fs.readFileSync(rootCert);
+            logger.info("Loaded root certificate from: %s", rootCert);
+            logger.info("Using server-only TLS (no client certificate)");
             
-            // Optional client certificates
-            let privateKeyContent = null
-            let certChainContent = null
-            
-            // If client certificate and key files exist, use them
-            if (fs.existsSync(cert) && fs.existsSync(certKey)) {
-                logger.info("Using client certificate for mutual TLS")
-                privateKeyContent = fs.readFileSync(certKey)
-                certChainContent = fs.readFileSync(cert)
-            }
-            
-            // Create TLS credentials
+            // Create TLS credentials without client certificates
             const credentials = grpc.credentials.createSsl(
                 rootCertContent,
-                privateKeyContent,
-                certChainContent
-            )
+                null,  // No client private key
+                null   // No client certificate
+            );
             
             // Configure channel options
             const options = {
                 "grpc.ssl_target_name_override": serverName,
                 "grpc.default_authority": serverName,
+                "grpc.enable_http_proxy": 0,
                 "grpc.keepalive_time_ms": 120000,
                 "grpc.keepalive_timeout_ms": 20000,
                 "grpc.keepalive_permit_without_calls": 1,
                 "grpc.http2.min_time_between_pings_ms": 120000,
-                "grpc.http2.max_pings_without_data": 0
-            }
+                "grpc.http2.max_pings_without_data": 0,
+                "grpc.ssl_check_call_host": 0
+            };
             
-            logger.info("TLS connection configured with server name: %s", serverName)
-            return new LandingServiceClient(address, credentials, options)
-            */
+            logger.info("TLS connection configured with server name: %s", serverName);
+            return new LandingServiceClient(address, credentials, options);
         } catch (error) {
-            logger.error("TLS connection failed: %s. Falling back to insecure.", error.message)
-            logger.info("Connect With InSecure fallback to %s", address)
-            return new LandingServiceClient(address, grpc.credentials.createInsecure())
+            logger.error("TLS connection failed: %s. Falling back to insecure.", error.message);
+            logger.info("Connect With InSecure fallback to %s", address);
+            return new LandingServiceClient(address, grpc.credentials.createInsecure());
         }
     } else {
-        logger.info("Connect With InSecure to %s", address)
-        return new LandingServiceClient(address, grpc.credentials.createInsecure())
+        logger.info("Connect With InSecure to %s", address);
+        return new LandingServiceClient(address, grpc.credentials.createInsecure());
     }
 }
 
 function grpcServerHost() {
-    let server = process.env.GRPC_SERVER
-    if (typeof server !== 'undefined' && server !== null) {
-        return server
-    } else {
-        return "localhost"
-    }
+    return process.env.GRPC_SERVER || "localhost";
 }
 
-exports.logger = logger
-exports.getClient = getClient
-exports.grpcServerHost = grpcServerHost
+exports.logger = logger;
+exports.getClient = getClient;
+exports.grpcServerHost = grpcServerHost;

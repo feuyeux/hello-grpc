@@ -90,6 +90,9 @@ try {
     
     $server = new RpcServer();
     
+    $port = '0.0.0.0:' . $conn->port;
+    $actuallySecure = false;
+    
     // Configure server with TLS if enabled
     if ($conn->isSecure) {
         $log->info("TLS is enabled, configuring secure server");
@@ -97,50 +100,37 @@ try {
         // Validate certificates
         if (!$conn->validateCertificates()) {
             $log->warning("Invalid certificate configuration, falling back to insecure server");
-            $server->addHttp2Port('0.0.0.0:' . $conn->port);
+            $server->addHttp2Port($port);
         } else {
             try {
                 // Read certificate files
                 $serverKey = file_get_contents($conn->keyPath);
                 $serverCert = file_get_contents($conn->certPath);
                 
-                // Create secure server
-                $server->addHttp2Port(
-                    '0.0.0.0:' . $conn->port,
-                    ServerCredentials::createSsl(
-                        null,  // Root certificates for client authentication (null for no client auth)
-                        [['private_key' => $serverKey, 'cert_chain' => $serverCert]]
-                    )
+                // Create SSL credentials
+                // PHP gRPC ServerCredentials::createSsl signature:
+                // createSsl(string $pem_root_certs, string $pem_private_key, string $pem_cert_chain)
+                // For server-only auth (no client cert verification), use null for root certs
+                $serverCredentials = ServerCredentials::createSsl(
+                    null,           // Root certificate for client verification (null = no client auth)
+                    $serverKey,     // Server private key
+                    $serverCert     // Server certificate chain
                 );
                 
-                $log->info("TLS configuration successful");
+                // Add secure port
+                $server->addHttp2Port($port, $serverCredentials);
+                
+                $actuallySecure = true;
+                $log->info("TLS configuration successful - server is SECURE");
             } catch (Exception $e) {
                 $log->error("Error setting up TLS: " . $e->getMessage(), ['exception' => $e]);
-                $log->info("Starting insecure server instead");
-                $server->addHttp2Port('0.0.0.0:' . $conn->port);
+                $log->warning("Falling back to INSECURE server");
+                $server->addHttp2Port($port);
             }
         }
     } else {
-        $log->info("TLS is disabled, starting insecure gRPC server");
-        $server->addHttp2Port('0.0.0.0:' . $conn->port);
-    }
-    
-    // Try to explicitly bind to the port
-    try {
-        $port = '0.0.0.0:' . $conn->port;
-        $log->info("Attempting to bind to: " . $port);
-        
-        if ($conn->isSecure && $conn->validateCertificates()) {
-            // Create secure server with certificates
-            // ...existing secure code...
-        } else {
-            $log->info("Using insecure port binding");
-            $result = $server->addHttp2Port($port);
-            $log->info("Port binding result: " . $result . " (should be non-zero if successful)");
-        }
-    } catch (Exception $e) {
-        $log->error("Failed to bind to port: " . $e->getMessage());
-        exit(1);
+        $log->info("TLS is disabled, starting INSECURE gRPC server");
+        $server->addHttp2Port($port);
     }
 
     // Create backend client if proxy is enabled
@@ -189,12 +179,13 @@ try {
     // Register service handler
     $server->handle($service);
     
-    // Log server startup information
-    if ($conn->isSecure) {
-        $log->info(sprintf("Starting secure gRPC server on port %s [%s]", $conn->port, getVersion()));
-    } else {
-        $log->info(sprintf("Starting insecure gRPC server on port %s [%s]", $conn->port, getVersion()));
-    }
+    // Log server startup information with actual security status
+    $securityStatus = $actuallySecure ? "SECURE (TLS enabled)" : "INSECURE (no TLS)";
+    $log->info(sprintf("========================================"));
+    $log->info(sprintf("Starting gRPC server: %s", $securityStatus));
+    $log->info(sprintf("Port: %s", $conn->port));
+    $log->info(sprintf("Version: %s", getVersion()));
+    $log->info(sprintf("========================================"));
     
     // Enable signal polling if pcntl extension is available
     if (function_exists('pcntl_signal_dispatch')) {

@@ -8,6 +8,8 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jdk.version>21</jdk.version>
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
         <grpc.version>1.75.0</grpc.version>
@@ -259,6 +261,16 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/exec-maven-plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.2</version>
+                <configuration>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                    <daemonThreadJoinTimeout>0</daemonThreadJoinTimeout>
+                </configuration>
             </plugin>
         </plugins>
     </build>
