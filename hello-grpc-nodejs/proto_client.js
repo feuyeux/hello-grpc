@@ -15,7 +15,7 @@ const grpc = require('@grpc/grpc-js');
 const { TalkRequest } = require('./common/landing_pb');
 const conn = require('./common/connection');
 const utils = require('./common/utils');
-const errorMapper = require('./common/errorMapper');
+const errorMapper = require('./common/error_mapper');
 
 // Configuration constants
 const RETRY_ATTEMPTS = 3;

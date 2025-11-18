@@ -79,13 +79,8 @@ const logger = createLogger({
  * @returns {LandingServiceClient} The configured gRPC client
  */
 function getClient() {
-    const backend = process.env.GRPC_HELLO_BACKEND;
-    const connectTo = backend || grpcServerHost();
-
-    const backPort = process.env.GRPC_HELLO_BACKEND_PORT;
-    const serverPort = process.env.GRPC_SERVER_PORT;
-    const port = backPort || serverPort || "9996";
-    
+    const connectTo = process.env.GRPC_HELLO_BACKEND || grpcServerHost();
+    const port = process.env.GRPC_HELLO_BACKEND_PORT || process.env.GRPC_SERVER_PORT || "9996";
     const address = `${connectTo}:${port}`;
     const secure = process.env.GRPC_HELLO_SECURE;
     

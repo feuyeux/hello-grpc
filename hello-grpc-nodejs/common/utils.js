@@ -44,4 +44,5 @@ function getVersion() {
 exports.hellos = hellos;
 exports.ans = getAns;
 exports.buildLinkRequests = buildLinkRequests;
+exports.randomId = randomId;
 exports.getVersion = getVersion;
