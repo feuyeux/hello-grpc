@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"hello-grpc/common/pb"
-	"hello-grpc/server/tracing"
 	"io"
 	"strings"
 	"testing"
@@ -242,8 +241,8 @@ func TestTalkBidirectional(t *testing.T) {
 	}
 }
 
-// TestPrintHeaders tests the printHeaders function with metadata
-func TestPrintHeaders(t *testing.T) {
+// TestLogHeaders tests the logHeaders function with metadata
+func TestLogHeaders(t *testing.T) {
 	// Create a context with metadata
 	md := metadata.Pairs(
 		"x-request-id", "test-request-id",
@@ -252,11 +251,11 @@ func TestPrintHeaders(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	// Call the function - it only logs, so we're just ensuring it doesn't panic
-	printHeaders(ctx)
+	logHeaders(ctx)
 }
 
-// TestBuildTracing tests tracing data extraction
-func TestBuildTracing(t *testing.T) {
+// TestExtractTracing tests tracing data extraction
+func TestExtractTracing(t *testing.T) {
 	// Create a context with complete tracing metadata
 	md := metadata.Pairs(
 		"x-request-id", "test-request-id",
@@ -270,7 +269,7 @@ func TestBuildTracing(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	// Call the function
-	tracingData := buildTracing(ctx)
+	tracingData := extractTracing(ctx)
 
 	// Validate the extracted tracing data
 	assert.NotNil(t, tracingData)
@@ -289,44 +288,46 @@ func TestBuildTracing(t *testing.T) {
 	ctx = metadata.NewIncomingContext(context.Background(), md)
 
 	// Call the function with incomplete metadata
-	tracingData = buildTracing(ctx)
+	tracingData = extractTracing(ctx)
 
 	// Should return nil when request ID is missing
 	assert.Nil(t, tracingData)
 }
 
-// TestBuildContext tests context creation for outgoing requests
-func TestBuildContext(t *testing.T) {
-	// Create a HelloTracing instance
-	tracingData := &tracing.HelloTracing{
-		RequestId:      "test-request-id",
-		B3TraceId:      "test-trace-id",
-		B3SpanId:       "test-span-id",
-		B3ParentSpanId: "test-parent-span-id",
-		B3Sampled:      "1",
-		B3Flags:        "0",
-		OtSpanContext:  "test-span-context",
-	}
+// TestCreateContextWithTracing tests context creation for outgoing requests
+func TestCreateContextWithTracing(t *testing.T) {
+	// Create a context with tracing metadata
+	md := metadata.Pairs(
+		"x-request-id", "test-request-id",
+		"x-b3-traceid", "test-trace-id",
+		"x-b3-spanid", "test-span-id",
+		"x-b3-parentspanid", "test-parent-span-id",
+		"x-b3-sampled", "1",
+		"x-b3-flags", "0",
+		"x-ot-span-context", "test-span-context",
+	)
+	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	// Build a context with the tracing data
-	ctx := buildContext(tracingData)
+	outgoingCtx := createContextWithTracing(ctx)
 
 	// Extract the metadata and verify the values were added
-	md, ok := metadata.FromOutgoingContext(ctx)
+	outgoingMd, ok := metadata.FromOutgoingContext(outgoingCtx)
 	assert.True(t, ok)
-	assert.Equal(t, []string{"test-request-id"}, md.Get("x-request-id"))
-	assert.Equal(t, []string{"test-trace-id"}, md.Get("x-b3-traceid"))
-	assert.Equal(t, []string{"test-span-id"}, md.Get("x-b3-spanid"))
-	assert.Equal(t, []string{"test-parent-span-id"}, md.Get("x-b3-parentspanid"))
-	assert.Equal(t, []string{"1"}, md.Get("x-b3-sampled"))
-	assert.Equal(t, []string{"0"}, md.Get("x-b3-flags"))
-	assert.Equal(t, []string{"test-span-context"}, md.Get("x-ot-span-context"))
+	assert.Equal(t, []string{"test-request-id"}, outgoingMd.Get("x-request-id"))
+	assert.Equal(t, []string{"test-trace-id"}, outgoingMd.Get("x-b3-traceid"))
+	assert.Equal(t, []string{"test-span-id"}, outgoingMd.Get("x-b3-spanid"))
+	assert.Equal(t, []string{"test-parent-span-id"}, outgoingMd.Get("x-b3-parentspanid"))
+	assert.Equal(t, []string{"1"}, outgoingMd.Get("x-b3-sampled"))
+	assert.Equal(t, []string{"0"}, outgoingMd.Get("x-b3-flags"))
+	assert.Equal(t, []string{"test-span-context"}, outgoingMd.Get("x-ot-span-context"))
 
-	// Test with nil tracing
-	ctx = buildContext(nil)
+	// Test with context without tracing metadata
+	ctx = context.Background()
+	outgoingCtx = createContextWithTracing(ctx)
 
 	// Should return a blank context
-	md, ok = metadata.FromOutgoingContext(ctx)
+	_, ok = metadata.FromOutgoingContext(outgoingCtx)
 	assert.False(t, ok)
 }
 

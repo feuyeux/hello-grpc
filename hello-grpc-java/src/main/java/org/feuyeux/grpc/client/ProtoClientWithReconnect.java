@@ -1,10 +1,9 @@
 package org.feuyeux.grpc.client;
 
-import static org.feuyeux.grpc.client.ProtoClient.printResponse;
+import static org.feuyeux.grpc.client.ProtoClient.logResponse;
 import static org.feuyeux.grpc.common.HelloUtils.buildLinkRequests;
 
 import io.grpc.*;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import org.feuyeux.grpc.common.Connection;
@@ -13,6 +12,12 @@ import org.feuyeux.grpc.proto.TalkResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * gRPC client with automatic reconnection support.
+ *
+ * <p>This client wraps ProtoClient and adds exponential backoff reconnection logic for handling
+ * connection failures.
+ */
 public class ProtoClientWithReconnect {
   private static final Logger log = LoggerFactory.getLogger("ProtoClientWithReconnect");
   private final int maxReconnectBackoffMillis;
@@ -65,20 +70,21 @@ public class ProtoClientWithReconnect {
         log.info("Unary RPC");
         TalkRequest talkRequest = TalkRequest.newBuilder().setMeta("JAVA").setData("0").build();
         log.info("Request data:{},meta:{}", talkRequest.getData(), talkRequest.getMeta());
-        TalkResponse response = protoClient.talk(talkRequest);
-        printResponse(response);
+        TalkResponse response = protoClient.executeUnaryCall(talkRequest);
+        logResponse(response);
 
         log.info("Server streaming RPC");
         talkRequest = TalkRequest.newBuilder().setMeta("JAVA").setData("0,1,2").build();
         log.info("Request data:{},meta:{}", talkRequest.getData(), talkRequest.getMeta());
-        List<TalkResponse> talkResponses = protoClient.talkOneAnswerMore(talkRequest);
-        talkResponses.forEach(ProtoClient::printResponse);
+        protoClient.executeServerStreamingCall(talkRequest);
 
         log.info("Client streaming RPC");
-        protoClient.talkMoreAnswerOne(buildLinkRequests());
+        TalkResponse clientStreamResponse =
+            protoClient.executeClientStreamingCall(buildLinkRequests());
+        logResponse(clientStreamResponse);
 
         log.info("Bidirectional streaming RPC");
-        protoClient.talkBidirectional(buildLinkRequests());
+        protoClient.executeBidirectionalStreamingCall(buildLinkRequests());
         log.info("==========");
         TimeUnit.SECONDS.sleep(3);
       } while (reconnectAttempts < maxReconnectAttempts);

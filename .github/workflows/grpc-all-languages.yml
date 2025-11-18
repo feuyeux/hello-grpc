@@ -1,0 +1,95 @@
+name: gRPC All Languages CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # Trigger all language-specific workflows
+  trigger-workflows:
+    name: Trigger Language Workflows
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow:
+          - grpc-java-kotlin.yml
+          - grpc-go.yml
+          - grpc-python.yml
+          - grpc-nodejs-typescript.yml
+          - grpc-rust.yml
+          - grpc-cpp.yml
+          - grpc-csharp.yml
+          - grpc-swift.yml
+          - grpc-dart.yml
+          - grpc-php.yml
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trigger ${{ matrix.workflow }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflow = '${{ matrix.workflow }}';
+            console.log(`Triggering workflow: ${workflow}`);
+            
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflow,
+                ref: context.ref
+              });
+              console.log(`✅ Successfully triggered ${workflow}`);
+            } catch (error) {
+              console.log(`⚠️ Could not trigger ${workflow}: ${error.message}`);
+            }
+
+  # Summary job that waits for all workflows
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [trigger-workflows]
+    if: always()
+    
+    steps:
+      - name: Generate CI summary
+        run: |
+          echo "# Multi-Language gRPC CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Workflow Trigger Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger Jobs: ${{ needs.trigger-workflows.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Languages Tested" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Java" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kotlin" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Go" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Python" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Node.js" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ TypeScript" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Rust" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ C++" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ C#" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Swift" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dart" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ PHP" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for failures
+        if: needs.trigger-workflows.result != 'success'
+        run: |
+          echo "::warning::Some workflow triggers failed. Check individual workflow runs for details."

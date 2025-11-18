@@ -1,0 +1,67 @@
+name: gRPC Swift
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-swift/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-swift.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-swift/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  swift-build-test:
+    name: Swift Build & Test
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '5.9'
+
+      - name: Resolve Swift dependencies
+        working-directory: hello-grpc-swift
+        run: swift package resolve
+
+      - name: Build Swift project
+        working-directory: hello-grpc-swift
+        run: swift build -c release
+
+      - name: Run Swift tests
+        working-directory: hello-grpc-swift
+        run: swift test --enable-code-coverage
+
+      - name: Generate coverage report
+        working-directory: hello-grpc-swift
+        run: |
+          xcrun llvm-cov export -format="lcov" \
+            .build/debug/hello-grpc-swiftPackageTests.xctest/Contents/MacOS/hello-grpc-swiftPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov || true
+
+      - name: Upload Swift build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-artifacts
+          path: hello-grpc-swift/.build/release/
+          retention-days: 7
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-coverage
+          path: hello-grpc-swift/coverage.lcov
+          retention-days: 7

@@ -30,14 +30,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * gRPC server implementation for the Landing Service. Supports both secure (TLS) and insecure
- * connections.
+ * gRPC server implementation for the Landing Service.
+ *
+ * <p>This server follows the standardized structure:
+ *
+ * <ol>
+ *   <li>Configuration constants
+ *   <li>Logger initialization
+ *   <li>Certificate path initialization
+ *   <li>Server creation with appropriate options
+ *   <li>Service registration
+ *   <li>Graceful shutdown handling
+ * </ol>
+ *
+ * <p>Supports both secure (TLS) and insecure connections based on environment configuration.
  */
 public class ProtoServer {
+  private static final Logger log = LoggerFactory.getLogger("ProtoServer");
+
+  // Configuration constants
+  private static final long GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS = 10;
+  private static final String METRICS_PORT = "9100";
+
   private static ManagedChannel channel;
   private final Server server;
-
-  private static final Logger log = LoggerFactory.getLogger("ProtoServer");
 
   // Certificate file paths
   private static final String certPath;
@@ -45,13 +61,19 @@ public class ProtoServer {
   private static final String certChainPath;
   private static final String rootCertPath;
 
-  // Initialize certificate paths
+  // Initialize certificate paths based on environment or OS
   static {
     String basePath = getCertBasePath();
     certPath = Paths.get(basePath, "cert.pem").toString();
     certKeyPath = Paths.get(basePath, "private.pkcs8.key").toString();
     certChainPath = Paths.get(basePath, "full_chain.pem").toString();
     rootCertPath = Paths.get(basePath, "myssl_root.cer").toString();
+
+    log.debug(
+        "Certificate paths initialized: key={}, chain={}, root={}",
+        certKeyPath,
+        certChainPath,
+        rootCertPath);
   }
 
   /**
@@ -98,22 +120,46 @@ public class ProtoServer {
    */
   public static void main(String[] args)
       throws InterruptedException, IOException, ExecutionException {
-    try {
-      LandingServiceImpl landingService = new LandingServiceImpl();
+    log.info("Starting gRPC server [version: {}]", getVersion());
 
-      // Configure backend connection if needed
-      if (Connection.hasBackend()) {
-        setupBackendConnection(landingService);
-      }
+    try {
+      // Initialize server implementation
+      LandingServiceImpl landingService = createServiceImplementation();
 
       // Create and start server
       ProtoServer server = new ProtoServer(landingService);
       log.info("Server started successfully");
+
+      // Setup shutdown hook for graceful shutdown
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    log.warn("Shutting down gRPC server due to JVM shutdown");
+                    server.stop();
+                  }));
+
       server.blockUntilShutdown();
     } catch (Exception e) {
       log.error("Failed to start server", e);
       System.exit(1);
     }
+  }
+
+  /**
+   * Creates and initializes the gRPC service implementation.
+   *
+   * @return Initialized LandingServiceImpl instance
+   */
+  private static LandingServiceImpl createServiceImplementation() {
+    LandingServiceImpl landingService = new LandingServiceImpl();
+
+    // Configure backend connection if needed
+    if (Connection.hasBackend()) {
+      setupBackendConnection(landingService);
+    }
+
+    return landingService;
   }
 
   /**
@@ -222,25 +268,26 @@ public class ProtoServer {
       throws IOException, ExecutionException, InterruptedException {
     server.start();
     register(service);
-
-    // Register shutdown hook
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  log.warn("Shutting down gRPC server due to JVM shutdown");
-                  ProtoServer.this.stop();
-                }));
   }
 
-  /** Stops the server and releases resources. */
+  /** Stops the server and releases resources with graceful shutdown. */
   public void stop() {
+    log.info("Initiating graceful shutdown...");
+
     if (server != null) {
       try {
-        server.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        // Attempt graceful shutdown
+        server.shutdown();
+        if (!server.awaitTermination(GRACEFUL_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+          log.warn("Graceful shutdown timed out, forcing server stop");
+          server.shutdownNow();
+        } else {
+          log.info("Server stopped gracefully");
+        }
       } catch (InterruptedException e) {
-        log.warn("Server shutdown interrupted", e);
+        log.warn("Server shutdown interrupted, forcing stop");
         server.shutdownNow();
+        Thread.currentThread().interrupt();
       }
     }
 
@@ -248,12 +295,13 @@ public class ProtoServer {
       try {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
-        log.warn("Channel shutdown interrupted", e);
+        log.warn("Channel shutdown interrupted");
         channel.shutdownNow();
+        Thread.currentThread().interrupt();
       }
     }
 
-    log.info("Server shut down complete");
+    log.info("Server shutdown complete");
   }
 
   /**

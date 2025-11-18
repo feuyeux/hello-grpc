@@ -1,0 +1,101 @@
+name: gRPC Node.js & TypeScript
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-nodejs/**'
+      - 'hello-grpc-ts/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-nodejs-typescript.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-nodejs/**'
+      - 'hello-grpc-ts/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  nodejs-build-test:
+    name: Node.js Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18', '20']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: hello-grpc-nodejs/package-lock.json
+
+      - name: Install Node.js dependencies
+        working-directory: hello-grpc-nodejs
+        run: npm ci
+
+      - name: Run Node.js tests
+        working-directory: hello-grpc-nodejs
+        run: npm test
+
+      - name: Upload Node.js test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nodejs-test-results-${{ matrix.node-version }}
+          path: hello-grpc-nodejs/test-results/
+          retention-days: 7
+
+  typescript-build-test:
+    name: TypeScript Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18', '20']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: hello-grpc-ts/package-lock.json
+
+      - name: Install TypeScript dependencies
+        working-directory: hello-grpc-ts
+        run: npm ci
+
+      - name: Build TypeScript project
+        working-directory: hello-grpc-ts
+        run: npm run build
+
+      - name: Run TypeScript tests
+        working-directory: hello-grpc-ts
+        run: npm test
+
+      - name: Upload TypeScript build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-artifacts-${{ matrix.node-version }}
+          path: hello-grpc-ts/dist/
+          retention-days: 7
+
+      - name: Upload TypeScript test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-test-results-${{ matrix.node-version }}
+          path: hello-grpc-ts/test-results/
+          retention-days: 7

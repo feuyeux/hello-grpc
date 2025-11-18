@@ -229,8 +229,7 @@ namespace HelloServer
         private static void Main()
         {
             // Configure log4net
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly() ?? throw new InvalidOperationException());
-            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+            ConfigureLogging();
 
             // Log runtime environment information
             Logger.Info($"Operating System: {RuntimeInformation.OSDescription}");
@@ -267,6 +266,15 @@ namespace HelloServer
                 Logger.Error($"Server startup failed: {ex}");
                 Environment.Exit(1);
             }
+        }
+
+        /// <summary>
+        /// Configures log4net logging framework.
+        /// </summary>
+        private static void ConfigureLogging()
+        {
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly() ?? throw new InvalidOperationException());
+            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
         }
     }
 }

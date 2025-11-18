@@ -27,6 +27,7 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 - [Quick Start Guide - Learn gRPC in 5 Minutes](#-quick-start-guide---learn-grpc-in-5-minutes)
 - [Multi-Language Container Examples](#multi-language-container-example)
 - [Cross-Platform Applications](#-cross-platform-applications)
+- [Documentation](#-documentation)
 - [Learning Resources & Tutorials](#-learning-resources--tutorials)
 - [Contributing & Community](#-contributing--community)
 - [Project Statistics & Popularity](#-project-statistics--popularity)
@@ -146,7 +147,37 @@ git clone https://github.com/feuyeux/hello-grpc.git
 cd hello-grpc
 ```
 
-### 2. Choose Your Language & Run Examples
+### 2. Quick Setup with Consolidated Scripts
+
+**NEW**: Use our consolidated scripts for a streamlined experience across all languages!
+
+```bash
+# Set up the entire repository (checks dependencies, generates certificates, builds all)
+./scripts/utilities/setup-environment.sh
+
+# Or set up specific languages only
+./scripts/utilities/setup-environment.sh --languages go,java,python
+
+# Build a specific language
+./scripts/build/build-language.sh --language go
+
+# Start a server
+./scripts/deployment/start-server.sh --language go
+
+# Start a client (in another terminal)
+./scripts/deployment/start-client.sh --language go
+```
+
+**Benefits of consolidated scripts:**
+- ✅ Consistent interface across all 12+ languages
+- ✅ Automatic dependency checking
+- ✅ Built-in certificate management
+- ✅ Better error messages and logging
+- ✅ No need to navigate to language directories
+
+See [scripts/README.md](scripts/README.md) for complete documentation and [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for migration from old scripts.
+
+### 3. Choose Your Language & Run Examples (Traditional Method)
 
 Pick any language directory and follow the README:
 
@@ -286,6 +317,39 @@ export GRPC_TRACE=all
 **Communication Patterns:**
 - **Web Apps**: Browser → [hello-grpc-gateway](grpc-web-gateway) → gRPC Services  
 - **Native Apps**: Direct gRPC → gRPC Services
+
+## 🔷 Documentation
+
+### Core Documentation
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System architecture and component relationships
+- **[Contributing](docs/CONTRIBUTING.md)** - Development guidelines, coding standards, and contribution process
+- **[Validation](docs/VALIDATION.md)** - Validation framework documentation and testing guide
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Scripts](scripts/README.md)** - Consolidated scripts documentation
+
+### Language-Specific Documentation
+
+Each language implementation has comprehensive documentation:
+
+- [Go](hello-grpc-go/README.md) - Go implementation guide
+- [Java](hello-grpc-java/README.md) - Java implementation guide
+- [Python](hello-grpc-python/README.md) - Python implementation guide
+- [C++](hello-grpc-cpp/README.md) - C++ implementation guide
+- [C#](hello-grpc-csharp/README.md) - C# implementation guide
+- [Dart](hello-grpc-dart/README.md) - Dart implementation guide
+- [Kotlin](hello-grpc-kotlin/README.md) - Kotlin implementation guide
+- [Node.js](hello-grpc-nodejs/README.md) - Node.js implementation guide
+- [PHP](hello-grpc-php/README.md) - PHP implementation guide
+- [Rust](hello-grpc-rust/README.md) - Rust implementation guide
+- [Swift](hello-grpc-swift/README.md) - Swift implementation guide
+- [TypeScript](hello-grpc-ts/README.md) - TypeScript implementation guide
+
+### Additional Resources
+
+- **[Scripts Migration Guide](docs/SCRIPTS_MIGRATION.md)** - Guide for migrating to consolidated scripts
+- **[Logging Specification](docs/LOGGING_SPECIFICATION.md)** - Logging standards and configuration
+- **[Logging Quick Start](docs/LOGGING_QUICK_START.md)** - Quick start guide for logging
 
 ## 🔷 Learning Resources & Tutorials
 

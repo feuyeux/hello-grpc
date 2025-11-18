@@ -1,0 +1,197 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Detecting the operating system and CPU architecture
+[INFO] ------------------------------------------------------------------------
+[INFO] os.detected.name: osx
+[INFO] os.detected.arch: aarch_64
+[INFO] os.detected.bitness: 64
+[INFO] os.detected.version: 26.1
+[INFO] os.detected.version.major: 26
+[INFO] os.detected.version.minor: 1
+[INFO] os.detected.classifier: osx-aarch_64
+[INFO] 
+[INFO] ------------------< org.feuyeux.grpc:hello-grpc-java >------------------
+[INFO] Building hello-grpc-java 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> dependency:3.7.0:analyze (default-cli) > test-compile @ hello-grpc-java >>>
+Downloading from allow-http: http://nexus.logan.xiaopeng.local:8081/nexus/content/groups/public/junit/junit-dep/maven-metadata.xml
+Progress (1): 754 B                   Downloaded from allow-http: http://nexus.logan.xiaopeng.local:8081/nexus/content/groups/public/junit/junit-dep/maven-metadata.xml (754 B at 4.7 kB/s)
+[INFO] 
+[INFO] --- protobuf:0.6.1:compile (default) @ hello-grpc-java ---
+[INFO] Compiling 1 proto file(s) to /Users/han/coding/hello-grpc/hello-grpc-java/target/generated-sources/protobuf/java
+[INFO] 
+[INFO] --- protobuf:0.6.1:compile-custom (default) @ hello-grpc-java ---
+[INFO] Compiling 1 proto file(s) to /Users/han/coding/hello-grpc/hello-grpc-java/target/generated-sources/protobuf/grpc-java
+[INFO] 
+[INFO] --- fmt:2.29:format (default) @ hello-grpc-java ---
+[INFO] Skipping reflowing long strings
+[info] Processed 18 files (2 reformatted).
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ hello-grpc-java ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 1 resource from src/main/proto to target/classes
+[INFO] Copying 1 resource from src/main/proto to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ hello-grpc-java ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 26 source files with javac [debug target 21] to target/classes
+[INFO] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/Connection.java: Some input files use or override a deprecated API.
+[INFO] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/Connection.java: Recompile with -Xlint:deprecation for details.
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING : 
+[INFO] -------------------------------------------------------------
+[WARNING] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[65,23] sun.misc.Signal is internal proprietary API and may be removed in a future release
+[WARNING] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[64,15] sun.misc.Signal is internal proprietary API and may be removed in a future release
+[WARNING] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java: sun.misc.Signal is internal proprietary API and may be removed in a future release
+[WARNING] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[73,23] sun.misc.Signal is internal proprietary API and may be removed in a future release
+[WARNING] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[72,15] sun.misc.Signal is internal proprietary API and may be removed in a future release
+[WARNING] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java: sun.misc.Signal is internal proprietary API and may be removed in a future release
+[INFO] 6 warnings 
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[10,27] package lombok.extern.slf4j does not exist
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[16,2] cannot find symbol
+  symbol: class Slf4j
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[11,27] package lombok.extern.slf4j does not exist
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[14,2] cannot find symbol
+  symbol: class Slf4j
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[178,18] cannot find symbol
+  symbol:   method logError(java.lang.Exception,java.lang.String,java.lang.String)
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[214,18] cannot find symbol
+  symbol:   method logError(java.lang.Exception,java.lang.String,java.lang.String)
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[245,24] cannot find symbol
+  symbol:   method logError(java.lang.Throwable,java.lang.String,java.lang.String)
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[323,24] cannot find symbol
+  symbol:   method logError(java.lang.Throwable,java.lang.String,java.lang.String)
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[180,7] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[182,7] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[203,9] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[221,11] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[228,11] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[242,5] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[67,13] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[75,13] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[79,7] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[103,5] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[115,11] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[123,9] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[129,9] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[131,9] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[136,7] cannot find symbol
+  symbol:   variable log
+  location: class org.feuyeux.grpc.common.ShutdownHandler
+[INFO] 23 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.101 s
+[INFO] Finished at: 2025-11-17T19:44:18+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project hello-grpc-java: Compilation failure: Compilation failure: 
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[10,27] package lombok.extern.slf4j does not exist
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[16,2] cannot find symbol
+[ERROR]   symbol: class Slf4j
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[11,27] package lombok.extern.slf4j does not exist
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[14,2] cannot find symbol
+[ERROR]   symbol: class Slf4j
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[178,18] cannot find symbol
+[ERROR]   symbol:   method logError(java.lang.Exception,java.lang.String,java.lang.String)
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[214,18] cannot find symbol
+[ERROR]   symbol:   method logError(java.lang.Exception,java.lang.String,java.lang.String)
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[245,24] cannot find symbol
+[ERROR]   symbol:   method logError(java.lang.Throwable,java.lang.String,java.lang.String)
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/client/ProtoClient.java:[323,24] cannot find symbol
+[ERROR]   symbol:   method logError(java.lang.Throwable,java.lang.String,java.lang.String)
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[180,7] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[182,7] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[203,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[221,11] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[228,11] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ErrorMapper.java:[242,5] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ErrorMapper
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[67,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[75,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[79,7] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[103,5] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[115,11] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[123,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[129,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[131,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] /Users/han/coding/hello-grpc/hello-grpc-java/src/main/java/org/feuyeux/grpc/common/ShutdownHandler.java:[136,7] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class org.feuyeux.grpc.common.ShutdownHandler
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

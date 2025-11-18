@@ -17,7 +17,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 // Configuration constants
@@ -172,7 +171,7 @@ func runGrpcCalls(ctx context.Context, client pb.LandingServiceClient, delay tim
 			}
 			return fmt.Errorf("client streaming call failed: %w", err)
 		}
-		logResponse(response)
+		common.LogResponse(response)
 
 		// 4. Bidirectional streaming RPC
 		log.Infof("----- Executing bidirectional streaming RPC -----")
@@ -207,8 +206,9 @@ func executeUnaryCall(ctx context.Context, client pb.LandingServiceClient, reque
 	defer cancel()
 
 	// Add metadata to outgoing context
+	requestID := fmt.Sprintf("unary-%d", time.Now().UnixNano())
 	callCtx = addMetadata(callCtx, map[string]string{
-		"request-id": fmt.Sprintf("unary-%d", time.Now().UnixNano()),
+		"request-id": requestID,
 		"client":     "go-client",
 	})
 
@@ -219,12 +219,12 @@ func executeUnaryCall(ctx context.Context, client pb.LandingServiceClient, reque
 	duration := time.Since(startTime)
 
 	if err != nil {
-		logGRPCError("Unary call", err)
+		common.HandleRPCError(err, "Talk", map[string]interface{}{"requestID": requestID})
 		return err
 	}
 
 	log.Infof("Unary call successful in %v", duration)
-	logResponse(response)
+	common.LogResponse(response)
 	return nil
 }
 
@@ -235,8 +235,9 @@ func executeServerStreamingCall(ctx context.Context, client pb.LandingServiceCli
 	defer cancel()
 
 	// Add metadata to outgoing context
+	requestID := fmt.Sprintf("server-stream-%d", time.Now().UnixNano())
 	callCtx = addMetadata(callCtx, map[string]string{
-		"request-id": fmt.Sprintf("server-stream-%d", time.Now().UnixNano()),
+		"request-id": requestID,
 		"client":     "go-client",
 	})
 
@@ -245,7 +246,7 @@ func executeServerStreamingCall(ctx context.Context, client pb.LandingServiceCli
 
 	stream, err := client.TalkOneAnswerMore(callCtx, request)
 	if err != nil {
-		logGRPCError("Server streaming setup", err)
+		common.HandleRPCError(err, "TalkOneAnswerMore", map[string]interface{}{"requestID": requestID})
 		return err
 	}
 
@@ -265,13 +266,13 @@ func executeServerStreamingCall(ctx context.Context, client pb.LandingServiceCli
 			break
 		}
 		if err != nil {
-			logGRPCError("Server stream receive", err)
+			common.HandleRPCError(err, "TalkOneAnswerMore.Recv", map[string]interface{}{"requestID": requestID})
 			return err
 		}
 
 		responseCount++
 		log.Infof("Received server streaming response #%d:", responseCount)
-		logResponse(response)
+		common.LogResponse(response)
 	}
 
 	return nil
@@ -284,8 +285,9 @@ func executeClientStreamingCall(ctx context.Context, client pb.LandingServiceCli
 	defer cancel()
 
 	// Add metadata to outgoing context
+	requestID := fmt.Sprintf("client-stream-%d", time.Now().UnixNano())
 	callCtx = addMetadata(callCtx, map[string]string{
-		"request-id": fmt.Sprintf("client-stream-%d", time.Now().UnixNano()),
+		"request-id": requestID,
 		"client":     "go-client",
 	})
 
@@ -294,7 +296,7 @@ func executeClientStreamingCall(ctx context.Context, client pb.LandingServiceCli
 
 	stream, err := client.TalkMoreAnswerOne(callCtx)
 	if err != nil {
-		logGRPCError("Client streaming setup", err)
+		common.HandleRPCError(err, "TalkMoreAnswerOne", map[string]interface{}{"requestID": requestID})
 		return nil, err
 	}
 
@@ -312,7 +314,7 @@ func executeClientStreamingCall(ctx context.Context, client pb.LandingServiceCli
 
 		log.Infof("Sending client streaming request #%d: %+v", requestCount, request)
 		if err := stream.Send(request); err != nil {
-			logGRPCError("Client stream send", err)
+			common.HandleRPCError(err, "TalkMoreAnswerOne.Send", map[string]interface{}{"requestID": requestID})
 			return nil, err
 		}
 
@@ -325,7 +327,7 @@ func executeClientStreamingCall(ctx context.Context, client pb.LandingServiceCli
 	duration := time.Since(startTime)
 
 	if err != nil {
-		logGRPCError("Client streaming close", err)
+		common.HandleRPCError(err, "TalkMoreAnswerOne.CloseAndRecv", map[string]interface{}{"requestID": requestID})
 		return nil, err
 	}
 
@@ -340,8 +342,9 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 	defer cancel()
 
 	// Add metadata to outgoing context
+	requestID := fmt.Sprintf("bidirectional-%d", time.Now().UnixNano())
 	callCtx = addMetadata(callCtx, map[string]string{
-		"request-id": fmt.Sprintf("bidirectional-%d", time.Now().UnixNano()),
+		"request-id": requestID,
 		"client":     "go-client",
 	})
 
@@ -350,7 +353,7 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 
 	stream, err := client.TalkBidirectional(callCtx)
 	if err != nil {
-		logGRPCError("Bidirectional streaming setup", err)
+		common.HandleRPCError(err, "TalkBidirectional", map[string]interface{}{"requestID": requestID})
 		return err
 	}
 
@@ -385,7 +388,7 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 			if err != nil {
 				// Don't log if cancelled - that's expected
 				if streamCtx.Err() == nil {
-					logGRPCError("Bidirectional stream receive", err)
+					common.HandleRPCError(err, "TalkBidirectional.Recv", map[string]interface{}{"requestID": requestID})
 					errChan <- err
 				}
 				return
@@ -393,7 +396,7 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 
 			responseCount++
 			log.Infof("Received bidirectional streaming response #%d:", responseCount)
-			logResponse(response)
+			common.LogResponse(response)
 		}
 	}()
 
@@ -418,7 +421,7 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 		if err := stream.Send(request); err != nil {
 			// Cancel the receive goroutine
 			streamCancel()
-			logGRPCError("Bidirectional stream send", err)
+			common.HandleRPCError(err, "TalkBidirectional.Send", map[string]interface{}{"requestID": requestID})
 			return err
 		}
 
@@ -429,7 +432,7 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 	// Close sending side of stream
 	log.Info("Closing send side of bidirectional stream")
 	if err := stream.CloseSend(); err != nil {
-		logGRPCError("Bidirectional stream close", err)
+		common.HandleRPCError(err, "TalkBidirectional.CloseSend", map[string]interface{}{"requestID": requestID})
 		return err
 	}
 
@@ -460,47 +463,4 @@ func addMetadata(ctx context.Context, md map[string]string) context.Context {
 		pairs = append(pairs, k, v)
 	}
 	return metadata.AppendToOutgoingContext(ctx, pairs...)
-}
-
-// logGRPCError logs detailed information about a gRPC error
-func logGRPCError(operation string, err error) {
-	if err == nil {
-		return
-	}
-
-	st, ok := status.FromError(err)
-	if ok {
-		log.Errorf("%s failed: code=%s message=%s details=%+v",
-			operation, st.Code(), st.Message(), st.Details())
-	} else {
-		log.Errorf("%s failed: %v", operation, err)
-	}
-}
-
-// logResponse logs the status and results of a response
-func logResponse(response *pb.TalkResponse) {
-	if response == nil {
-		log.Warn("Received nil response")
-		return
-	}
-
-	resultsCount := len(response.Results)
-	log.Infof("Response status: %d, results: %d", response.Status, resultsCount)
-
-	for i, result := range response.Results {
-		kv := result.Kv
-		if kv == nil {
-			log.Infof("  Result #%d: id=%d, type=%d, kv=nil",
-				i+1, result.Id, result.Type)
-			continue
-		}
-
-		meta, _ := kv["meta"]
-		id, _ := kv["id"]
-		idx, _ := kv["idx"]
-		data, _ := kv["data"]
-
-		log.Infof("  Result #%d: id=%d, type=%d, meta=%s, id=%s, idx=%s, data=%s",
-			i+1, result.Id, result.Type, meta, id, idx, data)
-	}
 }

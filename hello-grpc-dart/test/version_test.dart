@@ -1,11 +1,14 @@
 import 'package:hello_grpc_dart/common/utils.dart';
+import 'package:logging/logging.dart';
 
 void main() async {
-  // 测试异步版本
+  final logger = Logger('VersionTest');
+
+  // Test async version
   final asyncVersion = await Utils.getVersion();
-  print('Async version: $asyncVersion');
-  
-  // 测试同步版本
+  logger.info('Async version: $asyncVersion');
+
+  // Test sync version
   final syncVersion = Utils.getVersionSync();
-  print('Sync version: $syncVersion');
+  logger.info('Sync version: $syncVersion');
 }

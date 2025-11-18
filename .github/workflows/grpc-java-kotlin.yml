@@ -1,0 +1,99 @@
+name: gRPC Java & Kotlin
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-java/**'
+      - 'hello-grpc-kotlin/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-java-kotlin.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-java/**'
+      - 'hello-grpc-kotlin/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  java-build-test:
+    name: Java Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build Java project
+        working-directory: hello-grpc-java
+        run: mvn clean compile -DskipTests
+
+      - name: Run Java tests
+        working-directory: hello-grpc-java
+        run: mvn test
+
+      - name: Package Java artifacts
+        working-directory: hello-grpc-java
+        run: mvn package -DskipTests
+
+      - name: Upload Java build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artifacts
+          path: hello-grpc-java/target/*.jar
+          retention-days: 7
+
+  kotlin-build-test:
+    name: Kotlin Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Build Kotlin project
+        working-directory: hello-grpc-kotlin
+        run: ./gradlew build -x test
+
+      - name: Run Kotlin tests
+        working-directory: hello-grpc-kotlin
+        run: ./gradlew test
+
+      - name: Upload Kotlin build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-artifacts
+          path: |
+            hello-grpc-kotlin/client/build/libs/*.jar
+            hello-grpc-kotlin/server/build/libs/*.jar
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-test-results
+          path: hello-grpc-kotlin/**/build/test-results/**/*.xml
+          retention-days: 7

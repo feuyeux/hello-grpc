@@ -3,5 +3,8 @@ pub mod landing {
 }
 
 pub mod conn;
+pub mod error_mapper;
+pub mod logging_config;
+pub mod shutdown_handler;
 pub mod trans;
 pub mod utils;

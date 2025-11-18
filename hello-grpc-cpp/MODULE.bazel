@@ -9,7 +9,8 @@ module(
 ## 1 hello_cc_grpc dependencies !! Keep the order !!
 
 # https://registry.bazel.build/modules/rules_cc
-bazel_dep(name = "rules_cc", version = "0.0.17", repo_name = "rules_cc")
+# Using 0.1.1 as suggested by Bazel warning
+bazel_dep(name = "rules_cc", version = "0.1.1", repo_name = "rules_cc")
 
 # https://registry.bazel.build/modules/rules_proto
 bazel_dep(name = "rules_proto", version = "7.0.2")

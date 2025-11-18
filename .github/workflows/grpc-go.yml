@@ -1,0 +1,72 @@
+name: gRPC Go
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-go/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-go.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-go/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  go-build-test:
+    name: Go Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: hello-grpc-go/go.sum
+
+      - name: Get Go dependencies
+        working-directory: hello-grpc-go
+        run: go mod download
+
+      - name: Verify Go dependencies
+        working-directory: hello-grpc-go
+        run: go mod verify
+
+      - name: Build Go project
+        working-directory: hello-grpc-go
+        run: |
+          go build -o bin/hello_server ./server/proto_server.go
+          go build -o bin/hello_client ./client/proto_client.go
+
+      - name: Run Go tests
+        working-directory: hello-grpc-go
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Generate coverage report
+        working-directory: hello-grpc-go
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload Go build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-artifacts
+          path: hello-grpc-go/bin/*
+          retention-days: 7
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: |
+            hello-grpc-go/coverage.out
+            hello-grpc-go/coverage.html
+          retention-days: 7

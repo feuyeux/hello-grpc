@@ -23,7 +23,13 @@ public class HelloConn: Connection {
     public init() {
         // Get backend configuration from environment
         if let envHost = ProcessInfo.processInfo.environment["GRPC_SERVER"], !envHost.isEmpty {
-            host = envHost
+            // Convert "localhost" to "127.0.0.1" for Swift gRPC compatibility
+            if envHost.lowercased() == "localhost" {
+                host = "127.0.0.1"
+                logger.info("GRPC_SERVER 设置为 localhost，转换为 127.0.0.1")
+            } else {
+                host = envHost
+            }
         } else {
             // 检测是否为 docker 环境
             let dockerHost: String = {
@@ -53,7 +59,14 @@ public class HelloConn: Connection {
         }
 
         // Get backend configuration from environment
-        backendHost = ProcessInfo.processInfo.environment["GRPC_HELLO_BACKEND"]
+        if let envBackendHost = ProcessInfo.processInfo.environment["GRPC_HELLO_BACKEND"], !envBackendHost.isEmpty {
+            // Convert "localhost" to "127.0.0.1" for Swift gRPC compatibility
+            if envBackendHost.lowercased() == "localhost" {
+                backendHost = "127.0.0.1"
+            } else {
+                backendHost = envBackendHost
+            }
+        }
 
         if let backendPortStr = ProcessInfo.processInfo.environment["GRPC_HELLO_BACKEND_PORT"] {
             if let port = Int(backendPortStr) {

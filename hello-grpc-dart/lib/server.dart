@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'dart:async';
+import 'dart:io';
 import 'dart:io' as io show Platform;
 
 import 'package:grpc/grpc.dart' as grpc;
@@ -11,23 +11,23 @@ import 'conn/conn.dart';
 
 /// Available greetings in different languages
 const List<String> greetings = [
-  "Hello", // English
-  "Bonjour", // French
-  "Hola", // Spanish
-  "こんにちは", // Japanese
-  "Ciao", // Italian
-  "안녕하세요", // Korean
+  'Hello', // English
+  'Bonjour', // French
+  'Hola', // Spanish
+  'こんにちは', // Japanese
+  'Ciao', // Italian
+  '안녕하세요', // Korean
 ];
 
 /// Translation responses for different greetings
 final Map<String, String> translations = {
-  "你好": "非常感谢",
-  "Hello": "Thank you very much",
-  "Bonjour": "Merci beaucoup",
-  "Hola": "Muchas Gracias",
-  "こんにちは": "どうも ありがとう ございます",
-  "Ciao": "Mille Grazie",
-  "안녕하세요": "대단히 감사합니다",
+  '你好': '非常感谢',
+  'Hello': 'Thank you very much',
+  'Bonjour': 'Merci beaucoup',
+  'Hola': 'Muchas Gracias',
+  'こんにちは': 'どうも ありがとう ございます',
+  'Ciao': 'Mille Grazie',
+  '안녕하세요': '대단히 감사합니다',
 };
 
 /// Tracing headers that should be forwarded to backend services
@@ -57,49 +57,54 @@ class Server {
 
     try {
       // Get environment variables
-      final Map<String, String> envVars = io.Platform.environment;
-      final String? user = envVars['USER'];
-      _logger.info("User: $user");
+      final envVars = io.Platform.environment;
+      final user = envVars['USER'];
+      _logger.info('User: $user');
 
       // Configure server port
-      final int serverPort = Conn.getServerPort();
+      final serverPort = Conn.getServerPort();
 
       // Create server with service implementation
-      final server = grpc.Server([LandingService(logger: _logger)]);
+      final server = grpc.Server.create(
+        services: [LandingService(logger: _logger)],
+      );
 
       // Set up signal handling for graceful shutdown
       _setupSignalHandling(server);
 
       // Start server with TLS if configured
       if (Conn.isSecure) {
-        _logger.info("Starting server in secure mode (TLS)");
-        _logger.info("Certificate path: ${Conn.certPath}");
-        _logger.info("Key path: ${Conn.keyPath}");
-        
+        _logger
+          ..info('Starting server in secure mode (TLS)')
+          ..info('Certificate path: ${Conn.certPath}')
+          ..info('Key path: ${Conn.keyPath}');
+
         // Read certificate files
         final certificate = await File(Conn.certPath).readAsBytes();
         final privateKey = await File(Conn.keyPath).readAsBytes();
-        
+
         final credentials = grpc.ServerTlsCredentials(
           certificate: certificate,
           privateKey: privateKey,
         );
-        
+
         await server.serve(
           address: '0.0.0.0',
           port: serverPort,
           security: credentials,
         );
       } else {
-        _logger.info("Starting server in insecure mode");
+        _logger.info('Starting server in insecure mode');
         await server.serve(address: '0.0.0.0', port: serverPort);
       }
 
-      _logger.info("Server listening on port ${server.port}...");
-      _logger.info("Version: ${Utils.getVersion()}");
-    } catch (e, stackTrace) {
-      _logger.severe("Server failed to start: $e");
-      _logger.fine("Stack trace: $stackTrace");
+      _logger
+        ..info('Server listening on port ${server.port}...')
+        ..info('Version: ${Utils.getVersion()}');
+    } on Exception catch (e, stackTrace) {
+      _logger
+        ..severe('Server failed to start: $e')
+        ..fine('Stack trace: $stackTrace');
       exit(1);
     }
   }
@@ -116,13 +121,13 @@ class Server {
 
     // Configure root logger
     Logger.root.level = Level.ALL;
-    Logger.root.onRecord.listen((LogRecord rec) {
-      // Print to console
-      print('${rec.level.name}: ${rec.time}: ${rec.message}');
+    Logger.root.onRecord.listen((rec) {
+      // Log to console using logger instead of print
+      _logger.info('${rec.level.name}: ${rec.time}: ${rec.message}');
 
       // Write to log file
       outputFile.writeAsStringSync(
-        "${rec.time} | ${rec.level} | ${rec.message}\n",
+        '${rec.time} | ${rec.level} | ${rec.message}\n',
         mode: FileMode.append,
       );
     });
@@ -154,14 +159,14 @@ class Server {
 
 /// Implementation of the gRPC LandingService
 class LandingService extends LandingServiceBase {
+  /// Constructor
+  LandingService({required this.logger});
+
   /// Logger instance
   final Logger logger;
 
   /// Backend client for proxy mode (not implemented in this version)
   // final LandingServiceClient? _backendClient;
-
-  /// Constructor
-  LandingService({required this.logger});
 
   /// Create response result with appropriate data
   ///
@@ -176,16 +181,16 @@ class LandingService extends LandingServiceBase {
       if (index < 0 || index >= greetings.length) {
         index = 0;
       }
-    } catch (e) {
+    } on Exception {
       // Default to first greeting on parsing error
       index = 0;
     }
 
     // Get the greeting for this index
-    final String hello = greetings[index];
+    final hello = greetings[index];
 
     // Create key-value map for response
-    final Map<String, String> kv = {
+    final kv = {
       'id': Utils.getUuid(),
       'idx': id,
       'data': '$hello,${translations[hello]!}',
@@ -205,17 +210,24 @@ class LandingService extends LandingServiceBase {
   /// Implements the unary RPC method
   @override
   Future<TalkResponse> talk(grpc.ServiceCall call, TalkRequest request) async {
-    logMetadata("Talk", call);
+    final requestId = 'unary-${DateTime.now().millisecondsSinceEpoch}';
+    _logMetadata('Talk', call, requestId);
 
     logger.info(
-      "Unary call received - data: ${request.data}, meta: ${request.meta}",
+      'REQUEST: method=Talk, request_id=$requestId, data=${request.data}, meta=${request.meta}',
     );
 
-    // Create response
-    final response = TalkResponse()..status = 200;
-    response.results.add(createResponse(request.data));
+    try {
+      // Create response
+      final response = TalkResponse()..status = 200;
+      response.results.add(createResponse(request.data));
 
-    return response;
+      logger.info('RESPONSE: method=Talk, request_id=$requestId, status=200');
+      return response;
+    } on Exception catch (e) {
+      logger.severe('ERROR: method=Talk, request_id=$requestId, error=$e');
+      rethrow;
+    }
   }
 
   /// Implements the server streaming RPC method
@@ -224,20 +236,32 @@ class LandingService extends LandingServiceBase {
     grpc.ServiceCall call,
     TalkRequest request,
   ) async* {
-    logMetadata("TalkOneAnswerMore", call);
+    final requestId = 'server-stream-${DateTime.now().millisecondsSinceEpoch}';
+    _logMetadata('TalkOneAnswerMore', call, requestId);
 
     logger.info(
-      "Server streaming call received - data: ${request.data}, meta: ${request.meta}",
+      'REQUEST: method=TalkOneAnswerMore, request_id=$requestId, data=${request.data}, meta=${request.meta}',
     );
 
-    // Split input data by comma
-    final List<String> items = request.data.split(",");
+    try {
+      // Split input data by comma
+      final items = request.data.split(',');
 
-    // Generate a response for each item
-    for (String item in items) {
-      final response = TalkResponse()..status = 200;
-      response.results.add(createResponse(item));
-      yield response;
+      // Generate a response for each item
+      for (final item in items) {
+        final response = TalkResponse()..status = 200;
+        response.results.add(createResponse(item));
+        yield response;
+      }
+
+      logger.info(
+        'RESPONSE: method=TalkOneAnswerMore, request_id=$requestId, items=${items.length}',
+      );
+    } on Exception catch (e) {
+      logger.severe(
+        'ERROR: method=TalkOneAnswerMore, request_id=$requestId, error=$e',
+      );
+      rethrow;
     }
   }
 
@@ -247,22 +271,35 @@ class LandingService extends LandingServiceBase {
     grpc.ServiceCall call,
     Stream<TalkRequest> requests,
   ) async {
-    logMetadata("TalkMoreAnswerOne", call);
+    final requestId = 'client-stream-${DateTime.now().millisecondsSinceEpoch}';
+    _logMetadata('TalkMoreAnswerOne', call, requestId);
 
-    logger.info("Client streaming call received");
+    logger.info('REQUEST: method=TalkMoreAnswerOne, request_id=$requestId');
 
-    // Create response
-    final response = TalkResponse()..status = 200;
+    try {
+      // Create response
+      final response = TalkResponse()..status = 200;
+      var requestCount = 0;
 
-    // Process all incoming requests
-    await for (final request in requests) {
+      // Process all incoming requests
+      await for (final request in requests) {
+        requestCount++;
+        logger.info(
+          'Client stream item #$requestCount - data=${request.data}, meta=${request.meta}',
+        );
+        response.results.add(createResponse(request.data));
+      }
+
       logger.info(
-        "Client stream item - data: ${request.data}, meta: ${request.meta}",
+        'RESPONSE: method=TalkMoreAnswerOne, request_id=$requestId, requests=$requestCount',
       );
-      response.results.add(createResponse(request.data));
+      return response;
+    } on Exception catch (e) {
+      logger.severe(
+        'ERROR: method=TalkMoreAnswerOne, request_id=$requestId, error=$e',
+      );
+      rethrow;
     }
-
-    return response;
   }
 
   /// Implements the bidirectional streaming RPC method
@@ -271,19 +308,33 @@ class LandingService extends LandingServiceBase {
     grpc.ServiceCall call,
     Stream<TalkRequest> requests,
   ) async* {
-    logMetadata("TalkBidirectional", call);
+    final requestId = 'bidirectional-${DateTime.now().millisecondsSinceEpoch}';
+    _logMetadata('TalkBidirectional', call, requestId);
 
-    logger.info("Bidirectional streaming call received");
+    logger.info('REQUEST: method=TalkBidirectional, request_id=$requestId');
 
-    // Process each request and yield a response
-    await for (final request in requests) {
+    try {
+      var requestCount = 0;
+      // Process each request and yield a response
+      await for (final request in requests) {
+        requestCount++;
+        logger.info(
+          'Bidirectional stream item #$requestCount - data=${request.data}, meta=${request.meta}',
+        );
+
+        final response = TalkResponse()..status = 200;
+        response.results.add(createResponse(request.data));
+        yield response;
+      }
+
       logger.info(
-        "Bidirectional stream item - data: ${request.data}, meta: ${request.meta}",
+        'RESPONSE: method=TalkBidirectional, request_id=$requestId, requests=$requestCount',
       );
-
-      final response = TalkResponse()..status = 200;
-      response.results.add(createResponse(request.data));
-      yield response;
+    } on Exception catch (e) {
+      logger.severe(
+        'ERROR: method=TalkBidirectional, request_id=$requestId, error=$e',
+      );
+      rethrow;
     }
   }
 
@@ -291,16 +342,23 @@ class LandingService extends LandingServiceBase {
   ///
   /// [methodName] Name of the RPC method
   /// [call] The service call containing metadata
-  void logMetadata(String methodName, grpc.ServiceCall call) {
+  /// [requestId] Unique identifier for this request
+  void _logMetadata(
+    String methodName,
+    grpc.ServiceCall call,
+    String requestId,
+  ) {
     final clientMetadata = call.clientMetadata;
 
     if (clientMetadata == null || clientMetadata.isEmpty) {
-      logger.info("$methodName - No metadata present");
+      logger.fine('$methodName - request_id=$requestId - No metadata present');
       return;
     }
 
     for (final entry in clientMetadata.entries) {
-      logger.info("$methodName - header: ${entry.key}: ${entry.value}");
+      logger.fine(
+        '$methodName - request_id=$requestId - header: ${entry.key}=${entry.value}',
+      );
     }
   }
 }

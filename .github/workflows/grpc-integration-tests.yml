@@ -1,0 +1,106 @@
+name: gRPC Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-*/**'
+      - 'integration-tests/**'
+      - 'proto/**'
+      - 'docker/**'
+      - '.github/workflows/grpc-integration-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  integration-tests:
+    name: Multi-Language Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
+        working-directory: docker
+        run: |
+          echo "Building Docker images for all languages..."
+          ./build_image.sh
+
+      - name: Start integration test environment
+        working-directory: integration-tests
+        run: |
+          docker-compose up -d
+          sleep 30  # Wait for services to be ready
+
+      - name: Run RPC modes tests
+        working-directory: integration-tests
+        run: |
+          chmod +x test-rpc-modes.sh
+          ./test-rpc-modes.sh
+
+      - name: Run TLS tests
+        working-directory: integration-tests
+        run: |
+          chmod +x test-tls.sh
+          ./test-tls.sh
+
+      - name: Run metadata propagation tests
+        working-directory: integration-tests
+        run: |
+          chmod +x test-metadata.sh
+          ./test-metadata.sh
+
+      - name: Validate logs
+        working-directory: integration-tests
+        run: |
+          python3 validate-logs.py
+
+      - name: Collect service logs
+        if: always()
+        working-directory: integration-tests
+        run: |
+          mkdir -p logs
+          docker-compose logs > logs/all-services.log
+          docker-compose logs java-server > logs/java-server.log || true
+          docker-compose logs go-server > logs/go-server.log || true
+          docker-compose logs python-server > logs/python-server.log || true
+          docker-compose logs node-server > logs/node-server.log || true
+          docker-compose logs rust-server > logs/rust-server.log || true
+
+      - name: Upload integration test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-logs
+          path: integration-tests/logs/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        working-directory: integration-tests
+        run: docker-compose down -v
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: always()
+    
+    steps:
+      - name: Generate test summary
+        run: |
+          echo "# Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY

@@ -9,6 +9,14 @@ This module implements a gRPC server that supports:
 4. Bidirectional Streaming RPC (TalkBidirectional)
 
 The server can act as an endpoint or proxy requests to a backend service.
+
+This server follows the standardized structure:
+1. Configuration constants
+2. Logger initialization
+3. Service implementation
+4. Helper functions
+5. Main server function
+6. Cleanup and shutdown
 """
 
 import os
@@ -17,6 +25,7 @@ import logging
 import time
 import uuid
 import platform
+import signal
 from concurrent import futures
 from pathlib import Path
 import grpc
@@ -24,16 +33,25 @@ import grpc
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from conn import connection, utils, landing_pb2, landing_pb2_grpc
+from conn import connection, utils, landing_pb2, landing_pb2_grpc, error_mapper
+
+# Configuration constants
+MAX_WORKERS = os.cpu_count() or 4
+DEFAULT_PORT = "9996"
+SHUTDOWN_GRACE_PERIOD_SECONDS = 30
 
 # Configure logging
 logger = logging.getLogger('grpc-server')
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(message)s')
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
+                              datefmt='%Y-%m-%d %H:%M:%S.%f')
 console.setFormatter(formatter)
 logger.addHandler(console)
+
+# Global flag for graceful shutdown
+shutdown_requested = False
 
 # Define tracing headers to propagate
 TRACING_HEADERS = [
@@ -45,6 +63,19 @@ TRACING_HEADERS = [
     "x-b3-flags",
     "x-ot-span-context"
 ]
+
+
+def signal_handler(signum, frame):
+    """
+    Handle shutdown signals for graceful termination.
+    
+    Args:
+        signum: Signal number
+        frame: Current stack frame
+    """
+    global shutdown_requested
+    logger.info("Received shutdown signal, initiating graceful shutdown")
+    shutdown_requested = True
 
 
 def get_certificate_paths():
@@ -175,6 +206,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Returns:
             landing_pb2.TalkResponse: Response to send back to the client
         """
+        request_id = f"unary-{time.time_ns()}"
         logger.info("Unary call - data: %s, meta: %s", request.data, request.meta)
         
         if self.backend_service:
@@ -184,8 +216,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
                 return self.backend_service.Talk(request=request, metadata=headers)
             except Exception as e:
                 logger.error("Error forwarding unary request: %s", e)
-                context.set_code(grpc.StatusCode.INTERNAL)
-                context.set_details(str(e))
+                error_mapper.set_error_status(context, e, request_id)
                 return landing_pb2.TalkResponse()
         else:
             # Process request locally
@@ -206,6 +237,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Yields:
             landing_pb2.TalkResponse: Multiple responses to send back to the client
         """
+        request_id = f"server-stream-{time.time_ns()}"
         logger.info("Server streaming call - data: %s, meta: %s", request.data, request.meta)
         
         if self.backend_service:
@@ -218,7 +250,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
                     yield response
             except Exception as e:
                 logger.error("Error in server streaming: %s", e)
-                context.abort(grpc.StatusCode.INTERNAL, str(e))
+                error_mapper.abort_with_error(context, e, request_id)
         else:
             # Process request locally
             log_request_headers("TalkOneAnswerMore", context)
@@ -241,6 +273,8 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Returns:
             landing_pb2.TalkResponse: A single response for all requests
         """
+        request_id = f"client-stream-{time.time_ns()}"
+        
         if self.backend_service:
             # Forward requests to backend service
             headers = extract_tracing_headers("TalkMoreAnswerOne", context)
@@ -249,7 +283,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
                     request_iterator=request_iterator, metadata=headers)
             except Exception as e:
                 logger.error("Error in client streaming: %s", e)
-                context.abort(grpc.StatusCode.INTERNAL, str(e))
+                error_mapper.abort_with_error(context, e, request_id)
                 return landing_pb2.TalkResponse()
         else:
             # Process requests locally
@@ -275,6 +309,8 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Yields:
             landing_pb2.TalkResponse: Multiple responses, one for each request
         """
+        request_id = f"bidirectional-{time.time_ns()}"
+        
         if self.backend_service:
             # Forward requests to backend service
             headers = extract_tracing_headers("TalkBidirectional", context)
@@ -285,7 +321,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
                     yield response
             except Exception as e:
                 logger.error("Error in bidirectional streaming: %s", e)
-                context.abort(grpc.StatusCode.INTERNAL, str(e))
+                error_mapper.abort_with_error(context, e, request_id)
         else:
             # Process requests locally
             log_request_headers("TalkBidirectional", context)
@@ -309,23 +345,27 @@ def serve():
     - GRPC_SERVER_PORT: Port to listen on (default: 9996)
     - GRPC_HELLO_SECURE: Whether to use TLS ('Y' for TLS)
     """
+    # Setup signal handling for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     # Set up backend connection if configured
     backend_host = os.getenv("GRPC_HELLO_BACKEND")
     backend_service = None
     channel = None
     
     if backend_host:
+        logger.info("Configuring backend service: %s", backend_host)
         channel = connection.build_channel()
         backend_service = landing_pb2_grpc.LandingServiceStub(channel)
     
     # Create and configure gRPC server
     server_impl = LandingServiceServer(backend_service)
-    max_workers = os.cpu_count() or 4  # More efficient worker determination
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=MAX_WORKERS))
     landing_pb2_grpc.add_LandingServiceServicer_to_server(server_impl, server)
     
     # Configure server port and optional TLS
-    port = os.getenv("GRPC_SERVER_PORT", "9996")
+    port = os.getenv("GRPC_SERVER_PORT", DEFAULT_PORT)
     address = f"[::]:{port}"
     secure_mode = os.getenv("GRPC_HELLO_SECURE") == "Y"
     
@@ -362,17 +402,24 @@ def serve():
         
     # Start server
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    logger.info("Python gRPC server version: %s (Python %s)", utils.get_version(), python_version)
+    logger.info("Python gRPC server [version: %s] (Python %s)", utils.get_version(), python_version)
     server.start()
     
     try:
+        logger.info("Server started successfully, waiting for requests...")
         server.wait_for_termination()
     except KeyboardInterrupt:
-        logger.info("Server shutting down...")
-        server.stop(0)
+        logger.info("Received interrupt signal, shutting down...")
     finally:
+        # Graceful shutdown
+        logger.info("Initiating graceful shutdown (grace period: %ds)...", SHUTDOWN_GRACE_PERIOD_SECONDS)
+        server.stop(SHUTDOWN_GRACE_PERIOD_SECONDS)
+        
         if channel:
+            logger.debug("Closing backend channel")
             channel.close()
+        
+        logger.info("Server shutdown complete")
 
 
 if __name__ == '__main__':

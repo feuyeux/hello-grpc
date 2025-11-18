@@ -169,8 +169,19 @@ export function createClientCredentials(serverName: string = "hello.grpc.io"): {
     
     logger.info("Creating client TLS credentials");
     
-    // Create credentials with root cert only for simplicity
-    const credentials = grpc.credentials.createSsl(certs.rootCert);
+    // Use full chain if available, otherwise use root cert
+    // This fixes the "unable to verify the first certificate" error
+    const rootCertToUse = certs.chain || certs.rootCert;
+    
+    if (certs.chain) {
+        logger.info("Using full certificate chain for client TLS");
+    } else {
+        logger.info("Using root certificate only for client TLS");
+    }
+    
+    // Create credentials with root cert or full chain
+    // For now, only use root cert for server verification (not mutual TLS)
+    const credentials = grpc.credentials.createSsl(rootCertToUse);
     
     // Channel options for the client
     const options = {

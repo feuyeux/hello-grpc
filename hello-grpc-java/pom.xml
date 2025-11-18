@@ -29,9 +29,18 @@
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <log4j-slf4j-impl.version>2.25.1</log4j-slf4j-impl.version>
         <nacos.version>3.1.0</nacos.version>
+        <lombok.version>1.18.36</lombok.version>
     </properties>
 
     <dependencies>
+        <!-- Lombok for code generation -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/io.grpc/grpc-netty -->
         <dependency>
             <groupId>io.grpc</groupId>

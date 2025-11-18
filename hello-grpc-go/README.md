@@ -1,67 +1,160 @@
 # Go gRPC Implementation
 
-This project implements a gRPC client and server using Go, demonstrating four communication patterns:
-1. Unary RPC
-2. Server Streaming RPC
-3. Client Streaming RPC
-4. Bidirectional Streaming RPC
+## Overview
+
+This directory contains the Go implementation of the Hello gRPC project, demonstrating all four gRPC communication patterns with production-ready features including TLS security, proxy support, and structured logging.
+
+**Communication Patterns:**
+1. **Unary RPC**: Simple request-response
+2. **Server Streaming RPC**: Single request, multiple responses
+3. **Client Streaming RPC**: Multiple requests, single response
+4. **Bidirectional Streaming RPC**: Full-duplex communication
+
+**Key Features:**
+- ✅ All four gRPC communication models
+- ✅ TLS/SSL secure communication
+- ✅ Proxy mode for request forwarding
+- ✅ Structured logging with logrus
+- ✅ Graceful shutdown handling
+- ✅ Retry logic with exponential backoff
+- ✅ Docker support
+- ✅ Environment-based configuration
 
 ## Prerequisites
 
-- Go 1.16 or higher
-- Protocol Buffers compiler (protoc)
+**Required:**
+- Go 1.21 or higher
+- Protocol Buffers compiler (protoc) 3.x
 - Go protocol buffers plugins
 
-## Building the Project
+**Optional:**
+- Docker (for containerized deployment)
+- Make (for build automation)
 
-### 1. Install Required Tools
+**Installation:**
 
 ```bash
-go mod tidy
+# Install Go (if not already installed)
+# Visit: https://golang.org/doc/install
 
-# Install protocol buffer compiler plugins for Go
+# Install protoc
+# macOS:
+brew install protobuf
+
+# Linux:
+apt-get install -y protobuf-compiler
+
+# Windows:
+# Download from: https://github.com/protocolbuffers/protobuf/releases
+
+# Install Go plugins
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
 
-### 2. Generate gRPC Code from Proto Files
+## Building
+
+### Using Consolidated Scripts (Recommended)
+
+The easiest way to build is using the consolidated scripts:
 
 ```bash
-# First, create the pb directory inside common
+# Build Go implementation
+../scripts/build/build-language.sh --language go
+
+# Or with options
+../scripts/build/build-language.sh --language go --clean --test --verbose
+```
+
+### Using Local Build Script
+
+```bash
+# Simple build
+./build.sh
+
+# Clean build
+./build.sh --clean
+
+# Build with tests
+./build.sh --test
+```
+
+### Manual Build Steps
+
+If you need to build manually:
+
+```bash
+# 1. Install dependencies
+go mod tidy
+
+# 2. Create output directory
 mkdir -p ./common/pb
 
-# Generate Go code from proto files
+# 3. Generate Protocol Buffer code
 protoc -I ../proto \
   --go_out=./common/pb --go_opt=paths=source_relative \
   --go-grpc_out=./common/pb --go-grpc_opt=paths=source_relative \
   ../proto/landing.proto
-```
 
-> **IMPORTANT**: The Protocol Buffer files must be generated in the `common/pb` directory with the correct package name. If you generate them directly in the `common` directory, you'll encounter package naming conflicts.
-
-### 3. Build the Project
-
-```bash
-# Build server
+# 4. Build binaries
 go build -o bin/server ./server
-
-# Build client
 go build -o bin/client ./client
-
-# Or use the build script
-./build.sh
 ```
 
-## Running the Application
+**Important Notes:**
+- Protocol Buffer files must be generated in `common/pb/` directory
+- Generating in `common/` directly will cause package naming conflicts
+- The build script handles all these steps automatically
 
-### Basic Communication
+**Build Output:**
+- Server binary: `bin/server`
+- Client binary: `bin/client`
+- Generated code: `common/pb/*.pb.go`
+
+## Running
+
+### Using Consolidated Scripts (Recommended)
 
 ```bash
-# Terminal 1: Start the server
+# Terminal 1: Start server
+../scripts/deployment/start-server.sh --language go
+
+# Terminal 2: Start client
+../scripts/deployment/start-client.sh --language go
+```
+
+### Using Local Scripts
+
+```bash
+# Terminal 1: Start server
+./server_start.sh
+
+# Terminal 2: Start client
+./client_start.sh
+```
+
+### Direct Execution
+
+```bash
+# Terminal 1: Start server
 go run server/main.go
 
-# Terminal 2: Start the client
+# Terminal 2: Start client
 go run client/main.go
+```
+
+**Expected Output:**
+
+Server:
+```
+[2025-01-15 10:30:45] [INFO] [ProtoServer] Starting gRPC server on port 9996
+[2025-01-15 10:30:50] [INFO] [ProtoServer] Received unary request
+```
+
+Client:
+```
+[2025-01-15 10:30:50] [INFO] [ProtoClient] Starting unary RPC call
+[2025-01-15 10:30:50] [INFO] [ProtoClient] Received response: Hello from Go
 ```
 
 ### Proxy Mode
@@ -122,69 +215,318 @@ To enable TLS, you need to prepare certificates and configure environment variab
 
 ## Testing
 
+### Using Consolidated Scripts
+
 ```bash
-# Run all tests in the project
+# Run tests for Go implementation
+../scripts/testing/run-tests.sh --language go
+```
+
+### Using Go Test
+
+```bash
+# Run all tests
 go test ./...
 
-# Run tests for a specific package
+# Run tests with verbose output
+go test -v ./...
+
+# Run tests for specific package
 go test ./common
 
-# Run a specific test
+# Run specific test
 go test -v ./common -run TestGetAnswerMap
+
+# Run tests with coverage
+go test -cover ./...
+
+# Generate coverage report
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+### Test Structure
+
+```
+tests/
+├── client_test.go      # Client tests
+├── server_test.go      # Server tests
+└── utils_test.go       # Utility tests
 ```
 
 
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default | Example |
+|:---------|:------------|:--------|:--------|
+| `GRPC_SERVER` | Server address (client) | `localhost` | `192.168.1.100` |
+| `GRPC_SERVER_PORT` | Server port | `9996` | `8080` |
+| `GRPC_HELLO_SECURE` | Enable TLS | `N` | `Y` |
+| `GRPC_HELLO_BACKEND` | Backend server (proxy) | - | `localhost` |
+| `GRPC_HELLO_BACKEND_PORT` | Backend port (proxy) | - | `9997` |
+| `GRPC_GO_LOG_SEVERITY_LEVEL` | Log severity | `info` | `debug` |
+| `GRPC_GO_LOG_VERBOSITY_LEVEL` | Log verbosity | `0` | `2` |
+
+### Configuration Files
+
+- `common/logging_config.go`: Logging configuration
+- `common/connection.go`: Connection settings
+- `common/error_mapper.go`: Error handling configuration
+
+### TLS Certificates
+
+Certificate locations:
+- Server: `/var/hello_grpc/server_certs/`
+- Client: `/var/hello_grpc/client_certs/`
+
+Required files:
+- `cert.pem`: Certificate
+- `private.key`: Private key
+- `full_chain.pem`: Certificate chain
+- `myssl_root.cer`: Root CA certificate
+
+Generate certificates:
+```bash
+../scripts/certificates/generate-certificates.sh
+../scripts/certificates/copy-certificates.sh --language go
+```
+
 ## Troubleshooting
 
-1. **Port Already in Use**
-   ```bash
-   # Find and kill processes using specific ports
-   kill $(lsof -t -i:9996) 2>/dev/null || true
-   kill $(lsof -t -i:9997) 2>/dev/null || true
-   ```
+### Common Issues
 
-2. **Check Service Logs**
-   ```bash
-   # View log files
-   tail -f log/hello-grpc.log
-   ```
+**1. Port Already in Use**
 
-3. **Go Module Issues**
-   ```bash
-   # Reset and update modules
-   go mod tidy
-   ```
+```bash
+# Using consolidated script
+../scripts/utilities/kill-port.sh 9996
 
-## Environment Variables
+# Or manually
+lsof -ti:9996 | xargs kill -9
+```
 
-| Environment Variable       | Description                               | Default Value |
-|---------------------------|-------------------------------------------|--------------|
-| GRPC_HELLO_SECURE         | Enable TLS encryption                     | N            |
-| GRPC_SERVER               | Server address (client side)              | localhost    |
-| GRPC_SERVER_PORT          | Server port (client side)                 | 9996         |
-| GRPC_HELLO_BACKEND        | Backend server address (proxy mode)       | N/A          |
-| GRPC_HELLO_BACKEND_PORT   | Backend server port (proxy mode)          | Same as GRPC_SERVER_PORT |
-| GRPC_HELLO_ETCD_ENDPOINTS | ETCD service discovery endpoints          | N/A          |
-| GRPC_GO_LOG_SEVERITY_LEVEL| Go gRPC log severity level                | info         |
-| GRPC_GO_LOG_VERBOSITY_LEVEL| Go gRPC log verbosity level              | 0            |
+**2. Build Failures**
 
-## Features
+```bash
+# Check dependencies
+../scripts/utilities/check-dependencies.sh --language go
 
-- ✅ Four gRPC communication models
-- ✅ TLS secure communication
-- ✅ Proxy functionality
-- ✅ Docker compatibility
-- ✅ ETCD service discovery
-- ✅ Structured logging with zap
-- ✅ Header propagation
-- ✅ Middleware/interceptor support
-- ✅ Environment variable configuration
+# Clean and rebuild
+./build.sh --clean
+go mod tidy
+go mod download
+```
 
-## Contributor Notes
+**3. Protocol Buffer Generation Errors**
 
-When modifying or extending this implementation, please:
-1. Follow Go coding standards and project structure
-2. Add appropriate tests for new functionality
-3. Update documentation as needed
-4. Ensure compatibility with the multi-language chaining demonstrated in the root README
-5. Always generate Protocol Buffer files in the correct directory structure (common/pb)
+```bash
+# Verify protoc installation
+protoc --version
+
+# Verify Go plugins
+which protoc-gen-go
+which protoc-gen-go-grpc
+
+# Reinstall plugins if needed
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
+
+**4. Connection Errors**
+
+```bash
+# Check if server is running
+lsof -i:9996
+
+# Check logs
+tail -f logs/hello_server.log
+
+# Test connectivity
+telnet localhost 9996
+```
+
+**5. TLS Certificate Errors**
+
+```bash
+# Verify certificate files exist
+ls -la /var/hello_grpc/server_certs/
+ls -la /var/hello_grpc/client_certs/
+
+# Check certificate validity
+openssl x509 -in /var/hello_grpc/server_certs/cert.pem -text -noout
+
+# Regenerate certificates
+../scripts/certificates/generate-certificates.sh
+```
+
+**6. Module/Import Errors**
+
+```bash
+# Clear module cache
+go clean -modcache
+
+# Update dependencies
+go get -u ./...
+go mod tidy
+```
+
+### Debugging
+
+Enable debug logging:
+```bash
+export GRPC_GO_LOG_SEVERITY_LEVEL=debug
+export GRPC_GO_LOG_VERBOSITY_LEVEL=2
+export GRPC_VERBOSITY=DEBUG
+export GRPC_TRACE=all
+```
+
+View logs:
+```bash
+# Server logs
+tail -f logs/hello_server.log
+
+# Client logs
+tail -f logs/hello_client.log
+
+# All logs
+tail -f logs/*.log
+```
+
+### Getting Help
+
+1. Check [main documentation](../docs/)
+2. Review [troubleshooting guide](../docs/TROUBLESHOOTING.md)
+3. Search [existing issues](https://github.com/feuyeux/hello-grpc/issues)
+4. Ask in [discussions](https://github.com/feuyeux/hello-grpc/discussions)
+
+## Project Structure
+
+```
+hello-grpc-go/
+├── client/
+│   └── proto_client.go      # Client implementation
+├── server/
+│   ├── proto_server.go      # Server implementation
+│   └── service_impl.go      # Service implementation
+├── common/
+│   ├── pb/                  # Generated protobuf code
+│   ├── connection.go        # Connection management
+│   ├── error_mapper.go      # Error handling
+│   ├── log_formatter.go     # Logging configuration
+│   ├── logging_config.go    # Logger setup
+│   ├── shutdown.go          # Graceful shutdown
+│   ├── utils.go             # Utility functions
+│   └── utils_test.go        # Utility tests
+├── logs/                    # Log files
+├── bin/                     # Compiled binaries
+├── build.sh                 # Build script
+├── server_start.sh          # Server startup
+├── client_start.sh          # Client startup
+├── go.mod                   # Go module definition
+├── go.sum                   # Dependency checksums
+└── README.md                # This file
+```
+
+## Docker Support
+
+### Build Docker Image
+
+```bash
+# Using consolidated script
+cd ..
+docker build -f docker/go_grpc.dockerfile -t hello-grpc-go:latest .
+
+# Or manually
+docker build -t hello-grpc-go:latest .
+```
+
+### Run in Docker
+
+```bash
+# Start server
+docker run -p 9996:9996 hello-grpc-go:latest server
+
+# Start client
+docker run --network host hello-grpc-go:latest client
+```
+
+## Advanced Usage
+
+### Proxy Mode
+
+Forward requests through a proxy server:
+
+```bash
+# Terminal 1: Backend server
+./server_start.sh
+
+# Terminal 2: Proxy server
+GRPC_SERVER_PORT=9997 \
+GRPC_HELLO_BACKEND=localhost \
+GRPC_HELLO_BACKEND_PORT=9996 \
+./server_start.sh
+
+# Terminal 3: Client
+GRPC_SERVER_PORT=9997 ./client_start.sh
+```
+
+### Service Discovery
+
+Integration with etcd for service discovery:
+
+```bash
+# Start with etcd
+GRPC_HELLO_ETCD_ENDPOINTS=localhost:2379 ./server_start.sh
+GRPC_HELLO_ETCD_ENDPOINTS=localhost:2379 ./client_start.sh
+```
+
+## Performance Tuning
+
+### Connection Pooling
+
+Adjust connection pool settings in `common/connection.go`:
+
+```go
+const (
+    MaxConnectionIdle = 5 * time.Minute
+    MaxConnectionAge = 10 * time.Minute
+    KeepAliveTime = 30 * time.Second
+    KeepAliveTimeout = 10 * time.Second
+)
+```
+
+### Concurrency
+
+Configure server concurrency:
+
+```go
+grpc.NewServer(
+    grpc.MaxConcurrentStreams(100),
+    grpc.NumStreamWorkers(10),
+)
+```
+
+## Contributing
+
+When contributing to this implementation:
+
+1. **Follow Go conventions**: Use `gofmt`, `golint`, and `go vet`
+2. **Add tests**: Maintain test coverage above 80%
+3. **Document code**: Use GoDoc comments for public APIs
+4. **Update README**: Document new features or changes
+5. **Test compatibility**: Ensure cross-language compatibility
+
+See [CONTRIBUTING.md](../docs/CONTRIBUTING.md) for detailed guidelines.
+
+## References
+
+- [Go gRPC Documentation](https://grpc.io/docs/languages/go/)
+- [Protocol Buffers Go Tutorial](https://protobuf.dev/getting-started/gotutorial/)
+- [Go Modules Reference](https://go.dev/ref/mod)
+- [Logrus Documentation](https://github.com/sirupsen/logrus)
+
+## License
+
+This project is part of the Hello gRPC repository. See [LICENSE](../LICENSE) for details.

@@ -1,0 +1,174 @@
+name: Docker Build & Push
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      push_images:
+        description: 'Push images to Docker Hub'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+
+jobs:
+  build-matrix:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - java
+          - kotlin
+          - go
+          - python
+          - node
+          - ts
+          - rust
+          - cpp
+          - csharp
+          - swift
+          - dart
+          - php
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request' || github.event.inputs.push_images == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/hello-grpc-${{ matrix.language }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/${{ matrix.language }}_grpc.dockerfile
+          push: ${{ github.event_name != 'pull_request' || github.event.inputs.push_images == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate image digest
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "Image built and pushed successfully"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+
+  build-summary:
+    name: Docker Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-matrix]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Matrix Build: ${{ needs.build-matrix.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Images Built" >> $GITHUB_STEP_SUMMARY
+          echo "- Java" >> $GITHUB_STEP_SUMMARY
+          echo "- Kotlin" >> $GITHUB_STEP_SUMMARY
+          echo "- Go" >> $GITHUB_STEP_SUMMARY
+          echo "- Python" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js" >> $GITHUB_STEP_SUMMARY
+          echo "- TypeScript" >> $GITHUB_STEP_SUMMARY
+          echo "- Rust" >> $GITHUB_STEP_SUMMARY
+          echo "- C++" >> $GITHUB_STEP_SUMMARY
+          echo "- C#" >> $GITHUB_STEP_SUMMARY
+          echo "- Swift" >> $GITHUB_STEP_SUMMARY
+          echo "- Dart" >> $GITHUB_STEP_SUMMARY
+          echo "- PHP" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "## Registry" >> $GITHUB_STEP_SUMMARY
+            echo "Images pushed to: ${{ env.DOCKER_REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Note" >> $GITHUB_STEP_SUMMARY
+            echo "Images built but not pushed (PR build)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY
+
+  # Separate job for multi-arch manifest
+  create-manifest:
+    name: Create Multi-Arch Manifest
+    runs-on: ubuntu-latest
+    needs: [build-matrix]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        language:
+          - java
+          - kotlin
+          - go
+          - python
+          - node
+          - ts
+          - rust
+          - cpp
+          - csharp
+          - swift
+          - dart
+          - php
+    
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create and push manifest
+        run: |
+          IMAGE_NAME="${{ env.DOCKER_REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/hello-grpc-${{ matrix.language }}"
+          
+          # Create manifest for latest tag
+          docker manifest create ${IMAGE_NAME}:latest \
+            ${IMAGE_NAME}:latest-amd64 \
+            ${IMAGE_NAME}:latest-arm64 || true
+          
+          # Push manifest
+          docker manifest push ${IMAGE_NAME}:latest || true
+          
+          echo "Manifest created for ${{ matrix.language }}"

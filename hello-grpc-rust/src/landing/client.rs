@@ -1,5 +1,16 @@
+/// gRPC Client implementation for the Landing service (Rust).
+///
+/// This client demonstrates all four gRPC communication patterns:
+/// 1. Unary RPC
+/// 2. Server streaming RPC
+/// 3. Client streaming RPC
+/// 4. Bidirectional streaming RPC
+///
+/// The implementation follows standardized patterns for error handling,
+/// logging, and graceful shutdown.
+
 use std::error::Error;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures::stream;
 use log::{error, info};
@@ -10,214 +21,302 @@ use tonic::Request;
 use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
-use hello_grpc_rust::common::utils::{build_link_requests, random_id};
+use hello_grpc_rust::common::utils::{build_link_requests, get_version, random_id};
 
-/// Client application entry point for demonstrating the gRPC calls.
-/// Executes all four RPC patterns in sequence.
+// Configuration constants
+const RETRY_ATTEMPTS: u32 = 3;
+const RETRY_DELAY_SECONDS: u64 = 2;
+const ITERATION_COUNT: u32 = 3;
+const REQUEST_DELAY_MS: u64 = 200;
+const SEND_DELAY_MS: u64 = 2;
+const REQUEST_TIMEOUT_SECONDS: u64 = 5;
+const DEFAULT_BATCH_SIZE: usize = 5;
+
+/// Client application entry point
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
-    info!("Starting gRPC client");
+    
+    info!("Starting gRPC client [version: {}]", get_version());
 
-    // Build the client connection
-    // build_client() returns the client directly, not a Result
+    // Retry logic for connection
+    for attempt in 1..=RETRY_ATTEMPTS {
+        match connect_and_run(attempt).await {
+            Ok(success) => {
+                if success {
+                    break;
+                }
+            }
+            Err(e) => {
+                error!("Connection attempt {} failed: {}", attempt, e);
+                if attempt < RETRY_ATTEMPTS {
+                    info!("Retrying in {} seconds...", RETRY_DELAY_SECONDS);
+                    time::sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                }
+            }
+        }
+    }
+
+    info!("Client execution completed successfully");
+    Ok(())
+}
+
+/// Connect to server and run all gRPC patterns
+async fn connect_and_run(attempt: u32) -> Result<bool, Box<dyn Error>> {
+    info!("Connection attempt {}/{}", attempt, RETRY_ATTEMPTS);
+
     let mut client = build_client().await;
     info!("Successfully connected to gRPC server");
 
-    // Execute all four gRPC RPC patterns sequentially
-    info!("Executing all gRPC communication patterns...");
-    
-    // 1. Unary RPC
-    if let Err(error) = talk(&mut client).await {
-        error!("Unary RPC failed: {}", error);
-    }
-
-    // 2. Server Streaming RPC
-    if let Err(error) = talk_one_answer_more(&mut client).await {
-        error!("Server Streaming RPC failed: {}", error);
-    }
-
-    // 3. Client Streaming RPC
-    if let Err(error) = talk_more_answer_one(&mut client).await {
-        error!("Client Streaming RPC failed: {}", error);
-    }
-
-    // 4. Bidirectional Streaming RPC
-    if let Err(error) = talk_bidirectional(&mut client).await {
-        error!("Bidirectional Streaming RPC failed: {}", error);
-    }
-
-    info!("All gRPC operations completed");
-    Ok(())
+    run_grpc_calls(&mut client, REQUEST_DELAY_MS, ITERATION_COUNT).await
 }
 
-/// Performs a bidirectional streaming RPC call.
-/// Client streams multiple requests while receiving multiple responses.
-async fn talk_bidirectional(
+/// Run all gRPC call patterns multiple times
+async fn run_grpc_calls(
+    client: &mut LandingServiceClient<Channel>,
+    delay_ms: u64,
+    iterations: u32,
+) -> Result<bool, Box<dyn Error>> {
+    for iteration in 1..=iterations {
+        info!("====== Starting iteration {}/{} ======", iteration, iterations);
+
+        // 1. Unary RPC
+        info!("----- Executing unary RPC -----");
+        execute_unary_call(client).await?;
+
+        // 2. Server streaming RPC
+        info!("----- Executing server streaming RPC -----");
+        execute_server_streaming_call(client).await?;
+
+        // 3. Client streaming RPC
+        info!("----- Executing client streaming RPC -----");
+        let response = execute_client_streaming_call(client).await?;
+        log_response(&response);
+
+        // 4. Bidirectional streaming RPC
+        info!("----- Executing bidirectional streaming RPC -----");
+        execute_bidirectional_streaming_call(client).await?;
+
+        if iteration < iterations {
+            info!("Waiting {}ms before next iteration...", delay_ms);
+            time::sleep(Duration::from_millis(delay_ms)).await;
+        }
+    }
+
+    info!("All gRPC calls completed successfully");
+    Ok(true)
+}
+
+/// Execute unary RPC call
+async fn execute_unary_call(
     client: &mut LandingServiceClient<Channel>,
 ) -> Result<(), Box<dyn Error>> {
-    info!("Executing Bidirectional Streaming RPC (TalkBidirectional)");
+    let request_id = format!("unary-{}", uuid::Uuid::new_v4());
     
-    // Configure how many requests to send with a delay between each
-    let mut interval = time::interval(Duration::from_secs(1));
-    let request_count = 3;
-    let mut remaining = request_count;
-    
-    // Create an outbound stream of requests
-    let outbound = async_stream::stream! {
-        while remaining > 0 {
-            // Wait for the next interval tick
-            interval.tick().await;
-            
-            // Create a new request with random data
-            let request = TalkRequest { 
-                data: random_id(5), 
-                meta: "RUST".to_string() 
-            };
-            
-            info!("Sending bidirectional request #{}: data={}, meta=RUST", 
-                 request_count - remaining + 1, request.data);
-                 
-            yield request;
-            remaining -= 1;
-        }
+    let message = TalkRequest {
+        data: "0".to_string(),
+        meta: "RUST".to_string(),
     };
 
-    // Add headers to the request
-    let mut request = Request::new(outbound);
-    request.metadata_mut().insert("request-id", format!("bid-{}", uuid::Uuid::new_v4()).parse()?);
-    
-    // Send the stream of requests
-    let response = client.talk_bidirectional(request).await?;
-    let mut inbound = response.into_inner();
-    
-    // Process each response as it arrives
-    let mut response_count = 0;
-    while let Some(response_item) = inbound.message().await? {
-        response_count += 1;
-        info!("Received bidirectional response #{}", response_count);
-        print_response(&response_item);
-    }
-    
-    info!("Bidirectional streaming completed: sent {} requests, received {} responses", 
-          request_count, response_count);
-    
-    Ok(())
-}
+    info!("Sending unary request: data={}, meta=RUST", message.data);
+    let start_time = Instant::now();
 
-/// Performs a client streaming RPC call.
-/// Client sends multiple requests and receives a single response.
-async fn talk_more_answer_one(
-    client: &mut LandingServiceClient<Channel>,
-) -> Result<(), Box<dyn Error>> {
-    info!("Executing Client Streaming RPC (TalkMoreAnswerOne)");
-    
-    // Build a list of requests to send
-    let requests = build_link_requests();
-    let request_count = requests.len();
-    
-    info!("Sending {} requests in client streaming mode", request_count);
-    
-    // Add headers to the request stream
-    let mut request = Request::new(stream::iter(requests));
-    request.metadata_mut().insert("request-id", format!("cs-{}", uuid::Uuid::new_v4()).parse()?);
-    
-    // Send the requests and process the response
-    match client.talk_more_answer_one(request).await {
+    let mut request = Request::new(message);
+    request.metadata_mut().insert("request-id", request_id.parse()?);
+    request.metadata_mut().insert("client", "rust-client".parse()?);
+    request.set_timeout(Duration::from_secs(REQUEST_TIMEOUT_SECONDS));
+
+    match client.talk(request).await {
         Ok(response) => {
-            let response_inner = response.into_inner();
-            info!("Received response for client streaming call: status={}", response_inner.status);
-            print_response(&response_inner);
+            let duration = start_time.elapsed();
+            info!("Unary call successful in {}ms", duration.as_millis());
+            log_response(response.get_ref());
             Ok(())
-        },
+        }
         Err(status) => {
-            error!("Client streaming call failed: {}", status);
+            log_error(&status, &request_id, "Talk");
             Err(status.into())
         }
     }
 }
 
-/// Performs a server streaming RPC call.
-/// Client sends a single request and receives multiple responses.
-async fn talk_one_answer_more(
+/// Execute server streaming RPC call
+async fn execute_server_streaming_call(
     client: &mut LandingServiceClient<Channel>,
 ) -> Result<(), Box<dyn Error>> {
-    info!("Executing Server Streaming RPC (TalkOneAnswerMore)");
+    let request_id = format!("server-stream-{}", uuid::Uuid::new_v4());
     
-    // Create a request with multiple indices to process
-    let mut request = Request::new(TalkRequest {
+    let message = TalkRequest {
         data: "0,1,2".to_string(),
         meta: "RUST".to_string(),
-    });
-    
-    info!("Sending request with data=\"0,1,2\", meta=\"RUST\"");
-    
-    // Add headers to the request
-    request.metadata_mut().insert("request-id", format!("ss-{}", uuid::Uuid::new_v4()).parse()?);
-    
-    // Send the request and get a stream of responses
-    let mut stream = client.talk_one_answer_more(request).await?.into_inner();
-    
-    // Process each response in the stream
-    let mut response_count = 0;
-    while let Some(response) = stream.message().await? {
-        response_count += 1;
-        info!("Received server streaming response #{}", response_count);
-        print_response(&response);
-    }
-    
-    info!("Server streaming completed: received {} responses", response_count);
-    Ok(())
-}
-
-/// Performs a unary RPC call.
-/// Client sends a single request and receives a single response.
-async fn talk(client: &mut LandingServiceClient<Channel>) -> Result<(), Box<dyn Error>> {
-    info!("Executing Unary RPC (Talk)");
-    
-    // Create a simple request
-    let message = TalkRequest {
-        data: "0".to_string(),
-        meta: "RUST".to_string(),
     };
-    
-    info!("Sending unary request: data=\"0\", meta=\"RUST\"");
-    
-    // Add headers to the request
+
+    info!("Starting server streaming with request: data={}, meta=RUST", message.data);
+    let start_time = Instant::now();
+
     let mut request = Request::new(message);
-    request.metadata_mut().insert("request-id", format!("unary-{}", uuid::Uuid::new_v4()).parse()?);
-    
-    // Send the request
-    let response = client.talk(request).await?;
-    
-    info!("Received unary response: status={}", response.get_ref().status);
-    print_response(response.get_ref());
-    
-    Ok(())
+    request.metadata_mut().insert("request-id", request_id.parse()?);
+    request.metadata_mut().insert("client", "rust-client".parse()?);
+
+    match client.talk_one_answer_more(request).await {
+        Ok(response) => {
+            let mut stream = response.into_inner();
+            let mut response_count = 0;
+
+            while let Some(response) = stream.message().await? {
+                response_count += 1;
+                info!("Received server streaming response #{}:", response_count);
+                log_response(&response);
+            }
+
+            let duration = start_time.elapsed();
+            info!(
+                "Server streaming completed: received {} responses in {}ms",
+                response_count,
+                duration.as_millis()
+            );
+            Ok(())
+        }
+        Err(status) => {
+            log_error(&status, &request_id, "TalkOneAnswerMore");
+            Err(status.into())
+        }
+    }
 }
 
-/// Formats and logs a TalkResponse object, extracting key fields from the result map.
-fn print_response(response: &TalkResponse) {
+/// Execute client streaming RPC call
+async fn execute_client_streaming_call(
+    client: &mut LandingServiceClient<Channel>,
+) -> Result<TalkResponse, Box<dyn Error>> {
+    let request_id = format!("client-stream-{}", uuid::Uuid::new_v4());
+    
+    let requests = build_link_requests();
+    let request_count = requests.len();
+
+    info!("Starting client streaming with {} requests", request_count);
+    let start_time = Instant::now();
+
+    let mut request = Request::new(stream::iter(requests));
+    request.metadata_mut().insert("request-id", request_id.parse()?);
+    request.metadata_mut().insert("client", "rust-client".parse()?);
+
+    match client.talk_more_answer_one(request).await {
+        Ok(response) => {
+            let duration = start_time.elapsed();
+            info!(
+                "Client streaming completed: sent {} requests in {}ms",
+                request_count,
+                duration.as_millis()
+            );
+            Ok(response.into_inner())
+        }
+        Err(status) => {
+            log_error(&status, &request_id, "TalkMoreAnswerOne");
+            Err(status.into())
+        }
+    }
+}
+
+/// Execute bidirectional streaming RPC call
+async fn execute_bidirectional_streaming_call(
+    client: &mut LandingServiceClient<Channel>,
+) -> Result<(), Box<dyn Error>> {
+    let request_id = format!("bidirectional-{}", uuid::Uuid::new_v4());
+    
+    info!("Starting bidirectional streaming with {} requests", DEFAULT_BATCH_SIZE);
+    let start_time = Instant::now();
+
+    // Create an outbound stream of requests
+    let mut interval = time::interval(Duration::from_millis(SEND_DELAY_MS));
+    let mut remaining = DEFAULT_BATCH_SIZE;
+    
+    let outbound = async_stream::stream! {
+        let mut request_count = 0;
+        while remaining > 0 {
+            interval.tick().await;
+            
+            request_count += 1;
+            let request = TalkRequest {
+                data: random_id(5),
+                meta: "RUST".to_string(),
+            };
+            
+            info!(
+                "Sending bidirectional streaming request #{}: data={}, meta=RUST",
+                request_count, request.data
+            );
+            
+            yield request;
+            remaining -= 1;
+        }
+    };
+
+    let mut request = Request::new(outbound);
+    request.metadata_mut().insert("request-id", request_id.parse()?);
+    request.metadata_mut().insert("client", "rust-client".parse()?);
+
+    match client.talk_bidirectional(request).await {
+        Ok(response) => {
+            let mut inbound = response.into_inner();
+            let mut response_count = 0;
+
+            while let Some(response_item) = inbound.message().await? {
+                response_count += 1;
+                info!("Received bidirectional streaming response #{}:", response_count);
+                log_response(&response_item);
+            }
+
+            let duration = start_time.elapsed();
+            info!(
+                "Bidirectional streaming completed in {}ms",
+                duration.as_millis()
+            );
+            Ok(())
+        }
+        Err(status) => {
+            log_error(&status, &request_id, "TalkBidirectional");
+            Err(status.into())
+        }
+    }
+}
+
+/// Log response details
+fn log_response(response: &TalkResponse) {
+    info!(
+        "Response status: {}, results: {}",
+        response.status,
+        response.results.len()
+    );
+
     for (i, result) in response.results.iter().enumerate() {
         let result_map = &result.kv;
         
-        // Extract values from the key-value map with safe defaults
         let meta = result_map.get("meta").map_or("", |v| v.as_str());
-        let _id = result_map.get("id").map_or("", |v| v.as_str());
+        let id = result_map.get("id").map_or("", |v| v.as_str());
         let idx = result_map.get("idx").map_or("", |v| v.as_str());
         let data = result_map.get("data").map_or("", |v| v.as_str());
         
-        // Log the response details
         info!(
-            "Result #{}: status={}, id={}, type={}, meta={}, request_idx={}, data={}",
+            "  Result #{}: id={}, type={}, meta={}, id={}, idx={}, data={}",
             i + 1,
-            response.status,
             result.id,
             result.r#type,
             meta,
+            id,
             idx,
             data
         );
     }
+}
+
+/// Log error with context
+fn log_error(status: &tonic::Status, request_id: &str, method: &str) {
+    error!(
+        "Request failed - request_id: {}, method: {}, error_code: {:?}, message: {}",
+        request_id,
+        method,
+        status.code(),
+        status.message()
+    );
 }

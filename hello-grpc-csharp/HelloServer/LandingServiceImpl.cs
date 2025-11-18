@@ -9,22 +9,39 @@ using Microsoft.Extensions.Logging;
 
 namespace HelloServer
 {
+    /// <summary>
+    /// Implementation of the LandingService gRPC service.
+    /// Supports all four RPC patterns: unary, server streaming, client streaming, and bidirectional streaming.
+    /// Can operate in proxy mode to forward requests to a backend server.
+    /// </summary>
     public class LandingServiceImpl : LandingService.LandingServiceBase
     {
         private readonly ILog _log = LogManager.GetLogger(typeof(LandingServiceImpl));
         private LandingService.LandingServiceClient? _protoClient;
 
+        /// <summary>
+        /// Sets the backend client for proxy mode operation.
+        /// </summary>
+        /// <param name="protoClient">The client to use for forwarding requests</param>
         public void SetProtoClient(LandingService.LandingServiceClient protoClient)
         {
             this._protoClient = protoClient;
         }
 
+        /// <summary>
+        /// Handles unary RPC calls (single request, single response).
+        /// </summary>
+        /// <param name="request">The incoming request</param>
+        /// <param name="context">The server call context</param>
+        /// <returns>The response</returns>
         public override Task<TalkResponse> Talk(TalkRequest request, ServerCallContext context)
         {
-            _log.Info($"TALK REQUEST: data={request.Data},meta={request.Meta}");
+            _log.Info($"Talk REQUEST: data={request.Data}, meta={request.Meta}");
+            
             if (_protoClient == null)
             {
-                PrintHeaders(context);
+                // Direct mode: handle request locally
+                LogHeaders(context);
                 var response = new TalkResponse
                 {
                     Status = 200,
@@ -34,22 +51,29 @@ namespace HelloServer
             }
             else
             {
-                // Add proxy headers
+                // Proxy mode: forward request to backend
                 var headers = CreateProxyHeaders(context.RequestHeaders);
                 var response = _protoClient.Talk(request, headers);
                 return Task.FromResult(response);
             }
         }
 
+        /// <summary>
+        /// Handles server streaming RPC calls (single request, multiple responses).
+        /// </summary>
+        /// <param name="request">The incoming request</param>
+        /// <param name="responseStream">The stream to write responses to</param>
+        /// <param name="context">The server call context</param>
         public override async Task TalkOneAnswerMore(TalkRequest request,
             IServerStreamWriter<TalkResponse> responseStream, ServerCallContext context)
         {
-            _log.Info($"TalkOneAnswerMore REQUEST: data={request.Data},meta={request.Meta}");
+            _log.Info($"TalkOneAnswerMore REQUEST: data={request.Data}, meta={request.Meta}");
 
-            var headers = PrintHeaders(context);
+            var headers = LogHeaders(context);
 
             if (_protoClient == null)
             {
+                // Direct mode: generate responses locally
                 var datas = request.Data.Split(",");
                 foreach (var data in datas)
                 {
@@ -63,7 +87,7 @@ namespace HelloServer
             }
             else
             {
-                // Add proxy headers
+                // Proxy mode: forward stream to backend
                 headers = CreateProxyHeaders(headers);
                 using var call = _protoClient.TalkOneAnswerMore(request, headers);
                 var nextStream = call.ResponseStream;
@@ -75,60 +99,76 @@ namespace HelloServer
             }
         }
 
+        /// <summary>
+        /// Handles client streaming RPC calls (multiple requests, single response).
+        /// </summary>
+        /// <param name="requestStream">The stream to read requests from</param>
+        /// <param name="context">The server call context</param>
+        /// <returns>The aggregated response</returns>
         public override async Task<TalkResponse> TalkMoreAnswerOne(IAsyncStreamReader<TalkRequest> requestStream,
             ServerCallContext context)
         {
             if (_protoClient == null)
             {
+                // Direct mode: aggregate requests locally
                 var talkResponse = new TalkResponse()
                 {
                     Status = 200
                 };
 
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
+                var stopwatch = Stopwatch.StartNew();
                 while (await requestStream.MoveNext())
                 {
                     var request = requestStream.Current;
-                    _log.Info($"TalkMoreAnswerOne REQUEST: data={request.Data},meta={request.Meta}");
+                    _log.Info($"TalkMoreAnswerOne REQUEST: data={request.Data}, meta={request.Meta}");
                     talkResponse.Results.Add(BuildResult(request.Data));
                 }
 
-                PrintHeaders(context);
+                LogHeaders(context);
                 stopwatch.Stop();
+                _log.Info($"Client streaming completed in {stopwatch.ElapsedMilliseconds}ms");
                 return talkResponse;
             }
             else
             {
-                // Add proxy headers
+                // Proxy mode: forward stream to backend
                 var headers = CreateProxyHeaders(context.RequestHeaders);
                 using var call = _protoClient.TalkMoreAnswerOne(headers);
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
+                var stopwatch = Stopwatch.StartNew();
+                
                 while (await requestStream.MoveNext())
                 {
                     var request = requestStream.Current;
-                    _log.Info($"Request: data={request.Data},meta={request.Meta}");
+                    _log.Info($"TalkMoreAnswerOne REQUEST: data={request.Data}, meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
                 }
 
-                stopwatch.Stop();
                 await call.RequestStream.CompleteAsync();
                 var talkResponse = await call.ResponseAsync;
+                
+                stopwatch.Stop();
+                _log.Info($"Client streaming completed in {stopwatch.ElapsedMilliseconds}ms");
                 return talkResponse;
             }
         }
 
+        /// <summary>
+        /// Handles bidirectional streaming RPC calls (multiple requests, multiple responses).
+        /// </summary>
+        /// <param name="requestStream">The stream to read requests from</param>
+        /// <param name="responseStream">The stream to write responses to</param>
+        /// <param name="context">The server call context</param>
         public override async Task TalkBidirectional(IAsyncStreamReader<TalkRequest> requestStream,
             IServerStreamWriter<TalkResponse> responseStream,
             ServerCallContext context)
         {
             if (_protoClient == null)
             {
+                // Direct mode: process requests and send responses
                 while (await requestStream.MoveNext())
                 {
                     var request = requestStream.Current;
-                    _log.Info($"TalkBidirectional REQUEST: data={request.Data},meta={request.Meta}");
+                    _log.Info($"TalkBidirectional REQUEST: data={request.Data}, meta={request.Meta}");
 
                     var response = new TalkResponse
                     {
@@ -139,13 +179,15 @@ namespace HelloServer
                     await responseStream.WriteAsync(response);
                 }
 
-                PrintHeaders(context);
+                LogHeaders(context);
             }
             else
             {
-                // Add proxy headers
+                // Proxy mode: forward bidirectional stream to backend
                 var headers = CreateProxyHeaders(context.RequestHeaders);
                 using var call = _protoClient.TalkBidirectional(headers);
+                
+                // Start receiving responses in a separate task
                 var responseReaderTask = Task.Run(async () =>
                 {
                     while (await call.ResponseStream.MoveNext())
@@ -155,10 +197,11 @@ namespace HelloServer
                     }
                 });
 
+                // Forward all requests
                 while (await requestStream.MoveNext())
                 {
                     var request = requestStream.Current;
-                    _log.Info($"Request: data={request.Data},meta={request.Meta}");
+                    _log.Info($"TalkBidirectional REQUEST: data={request.Data}, meta={request.Meta}");
                     await call.RequestStream.WriteAsync(request);
                 }
 
@@ -167,6 +210,11 @@ namespace HelloServer
             }
         }
 
+        /// <summary>
+        /// Builds a TalkResult from the given data ID.
+        /// </summary>
+        /// <param name="id">The ID to use for building the result</param>
+        /// <returns>A TalkResult with generated data</returns>
         private TalkResult BuildResult(string id)
         {
             var hello = Utils.HelloList[int.Parse(id)];
@@ -184,7 +232,12 @@ namespace HelloServer
             };
         }
 
-        private Metadata PrintHeaders(ServerCallContext context)
+        /// <summary>
+        /// Logs all request headers in a standardized format.
+        /// </summary>
+        /// <param name="context">The server call context</param>
+        /// <returns>The request headers</returns>
+        private Metadata LogHeaders(ServerCallContext context)
         {
             var headers = context.RequestHeaders;
             foreach (var header in headers)
@@ -196,7 +249,7 @@ namespace HelloServer
         }
 
         /// <summary>
-        /// Creates a new Metadata object with proxy identification headers added
+        /// Creates a new Metadata object with proxy identification headers added.
         /// </summary>
         /// <param name="originalHeaders">The original request headers</param>
         /// <returns>A new Metadata object with proxy headers</returns>

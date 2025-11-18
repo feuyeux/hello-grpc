@@ -7,7 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:hello_grpc_flutter/main.dart';
+import 'package:hello_grpc_flutter_202508051543/main.dart';
 
 void main() {
   testWidgets('gRPC app smoke test', (WidgetTester tester) async {

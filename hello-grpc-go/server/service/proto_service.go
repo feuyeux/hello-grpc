@@ -29,6 +29,7 @@ type ProtoServer struct {
 // Talk implements the unary RPC method.
 // Receives a single request and returns a single response.
 func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.TalkResponse, error) {
+	requestID := common.ExtractRequestID(ctx)
 	log.Infof("TALK REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 	logHeaders(ctx)
 
@@ -44,16 +45,18 @@ func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.Ta
 	// Forward request to backend service
 	response, err := s.BackendClient.Talk(createContextWithTracing(ctx), request)
 	if err != nil {
-		log.Errorf("%v.Talk(_) = _, %v", s.BackendClient, err)
+		common.LogError(err, requestID, "Talk")
+		return nil, common.ToGrpcError(err, requestID)
 	}
-	return response, err
+	return response, nil
 }
 
 // TalkOneAnswerMore implements the server streaming RPC method.
 // Receives a single request and sends multiple responses through the stream.
 func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.LandingService_TalkOneAnswerMoreServer) error {
-	log.Infof("TalkOneAnswerMore REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 	ctx := stream.Context()
+	requestID := common.ExtractRequestID(ctx)
+	log.Infof("TalkOneAnswerMore REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 	logHeaders(ctx)
 
 	if s.BackendClient == nil {
@@ -65,7 +68,8 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 				Status:  200,
 				Results: []*pb.TalkResult{result},
 			}); err != nil {
-				return err
+				common.LogError(err, requestID, "TalkOneAnswerMore.Send")
+				return common.ToGrpcError(err, requestID)
 			}
 		}
 		return nil
@@ -74,8 +78,8 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 	// Forward request to backend service
 	nextStream, err := s.BackendClient.TalkOneAnswerMore(createContextWithTracing(ctx), request)
 	if err != nil {
-		log.Errorf("%v.TalkOneAnswerMore(_) = _, %v", s.BackendClient, err)
-		return err
+		common.LogError(err, requestID, "TalkOneAnswerMore")
+		return common.ToGrpcError(err, requestID)
 	}
 
 	// Forward all responses from backend to client
@@ -85,11 +89,12 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 			break
 		}
 		if err != nil {
-			log.Errorf("%v.TalkOneAnswerMore(_) = _, %v", s.BackendClient, err)
-			return err
+			common.LogError(err, requestID, "TalkOneAnswerMore.Recv")
+			return common.ToGrpcError(err, requestID)
 		}
 		if err := stream.Send(response); err != nil {
-			return err
+			common.LogError(err, requestID, "TalkOneAnswerMore.Send")
+			return common.ToGrpcError(err, requestID)
 		}
 	}
 	return nil
@@ -99,6 +104,7 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 // Receives multiple requests from client and returns a single response.
 func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerOneServer) error {
 	ctx := stream.Context()
+	requestID := common.ExtractRequestID(ctx)
 
 	if s.BackendClient == nil {
 		// Process requests locally
@@ -115,7 +121,8 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 				return stream.SendAndClose(response)
 			}
 			if err != nil {
-				return err
+				common.LogError(err, requestID, "TalkMoreAnswerOne.Recv")
+				return common.ToGrpcError(err, requestID)
 			}
 			log.Infof("TalkMoreAnswerOne REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 			result := s.buildResult(request.Data)
@@ -126,8 +133,8 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 	// Forward requests to backend service
 	nextStream, err := s.BackendClient.TalkMoreAnswerOne(createContextWithTracing(ctx))
 	if err != nil {
-		log.Errorf("%v.TalkMoreAnswerOne(_) = _, %v", s.BackendClient, err)
-		return err
+		common.LogError(err, requestID, "TalkMoreAnswerOne")
+		return common.ToGrpcError(err, requestID)
 	}
 
 	// Forward all client requests to backend
@@ -137,18 +144,19 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 			logHeaders(ctx)
 			response, err := nextStream.CloseAndRecv()
 			if err != nil {
-				log.Errorf("Error receiving response from backend: %v", err)
-				return err
+				common.LogError(err, requestID, "TalkMoreAnswerOne.CloseAndRecv")
+				return common.ToGrpcError(err, requestID)
 			}
 			return stream.SendAndClose(response)
 		}
 		if err != nil {
-			return err
+			common.LogError(err, requestID, "TalkMoreAnswerOne.Recv")
+			return common.ToGrpcError(err, requestID)
 		}
 		log.Infof("TalkMoreAnswerOne REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 		if err := nextStream.Send(request); err != nil {
-			log.Errorf("Failed to forward request: %v", err)
-			return err
+			common.LogError(err, requestID, "TalkMoreAnswerOne.Send")
+			return common.ToGrpcError(err, requestID)
 		}
 	}
 }
@@ -157,6 +165,7 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 // Handles multiple requests and returns multiple responses in a stream.
 func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirectionalServer) error {
 	ctx := stream.Context()
+	requestID := common.ExtractRequestID(ctx)
 
 	if s.BackendClient == nil {
 		// Process requests locally
@@ -167,7 +176,8 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 				return nil
 			}
 			if err != nil {
-				return err
+				common.LogError(err, requestID, "TalkBidirectional.Recv")
+				return common.ToGrpcError(err, requestID)
 			}
 			log.Infof("TalkBidirectional REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 
@@ -178,7 +188,8 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 				Results: []*pb.TalkResult{result},
 			}
 			if err := stream.Send(response); err != nil {
-				return err
+				common.LogError(err, requestID, "TalkBidirectional.Send")
+				return common.ToGrpcError(err, requestID)
 			}
 		}
 	}
@@ -186,12 +197,13 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 	// Forward requests to backend service
 	nextStream, err := s.BackendClient.TalkBidirectional(createContextWithTracing(ctx))
 	if err != nil {
-		log.Errorf("Failed to connect to backend service: %v", err)
-		return err
+		common.LogError(err, requestID, "TalkBidirectional")
+		return common.ToGrpcError(err, requestID)
 	}
 
 	// Channel to signal when response handling is done
 	done := make(chan struct{})
+	errChan := make(chan error, 1)
 
 	// Goroutine to handle responses from backend service
 	go func() {
@@ -203,11 +215,13 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 				return
 			}
 			if err != nil {
-				log.Errorf("Failed to receive response from backend: %v", err)
+				common.LogError(err, requestID, "TalkBidirectional.Recv")
+				errChan <- common.ToGrpcError(err, requestID)
 				return
 			}
 			if err := stream.Send(response); err != nil {
-				log.Errorf("Failed to forward response to client: %v", err)
+				common.LogError(err, requestID, "TalkBidirectional.Send")
+				errChan <- common.ToGrpcError(err, requestID)
 				return
 			}
 		}
@@ -220,22 +234,28 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 			break
 		}
 		if err != nil {
-			log.Errorf("Failed to receive request from client: %v", err)
-			break
+			common.LogError(err, requestID, "TalkBidirectional.Recv")
+			return common.ToGrpcError(err, requestID)
 		}
 		log.Infof("TalkBidirectional REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 		if err := nextStream.Send(request); err != nil {
-			log.Errorf("Failed to forward request to backend: %v", err)
-			break
+			common.LogError(err, requestID, "TalkBidirectional.Send")
+			return common.ToGrpcError(err, requestID)
 		}
 	}
 
 	if err := nextStream.CloseSend(); err != nil {
-		return err
+		common.LogError(err, requestID, "TalkBidirectional.CloseSend")
+		return common.ToGrpcError(err, requestID)
 	}
 
-	<-done
-	return nil
+	// Wait for response handling to complete or error
+	select {
+	case <-done:
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }
 
 // buildResult creates a TalkResult object with the given ID.

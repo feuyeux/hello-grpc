@@ -1,0 +1,45 @@
+# Bazel configuration for hello-grpc-cpp
+
+# Use C++17 standard
+build --cxxopt="-std=c++17"
+build --host_cxxopt="-std=c++17"
+
+# Disable hermetic sandbox for macOS compatibility
+build --noincompatible_sandbox_hermetic_tmp
+
+# Enable CC toolchain resolution
+# Disabled due to macOS ARM64 compatibility issues
+# build --incompatible_enable_cc_toolchain_resolution
+
+# Optimize for local development
+build --spawn_strategy=standalone
+build --strategy=CppCompile=standalone
+build --genrule_strategy=standalone
+
+# Disable sandboxing to avoid macOS issues
+build --noexperimental_check_output_files
+
+# Suppress verbose output
+build --output_filter=DONT_MATCH_ANYTHING
+
+# macOS specific settings
+build:macos --cxxopt=-Wno-deprecated-declarations
+build:macos --host_cxxopt=-Wno-deprecated-declarations
+
+# Use local resources efficiently
+build --jobs=auto
+
+# Disable unused plugins
+build --define=grpc_build_grpc_csharp_plugin=false
+build --define=grpc_build_grpc_node_plugin=false
+build --define=grpc_build_grpc_objective_c_plugin=false
+build --define=grpc_build_grpc_php_plugin=false
+build --define=grpc_build_grpc_python_plugin=false
+build --define=grpc_build_grpc_ruby_plugin=false
+
+# Test configuration
+test --test_output=errors
+test --test_summary=detailed
+
+# Try to import user-specific configuration
+try-import %workspace%/.bazelrc.user

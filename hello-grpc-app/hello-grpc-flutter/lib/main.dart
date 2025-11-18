@@ -166,7 +166,8 @@ class HelloAppState extends ChangeNotifier {
         await talkBidirectionalWeb(webClient);
       } catch (e) {
         list.add('Web Error: $e');
-        print('Caught web error: $e');
+        // Log error instead of print
+        debugPrint('Caught web error: $e');
       }
     } else {
       // 非Web平台的真实gRPC调用

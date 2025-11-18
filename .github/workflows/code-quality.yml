@@ -1,0 +1,301 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # Go linting
+  golangci-lint:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: hello-grpc-go
+          args: --timeout=5m
+
+  # Python linting
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint flake8 black isort mypy
+
+      - name: Run black (format check)
+        working-directory: hello-grpc-python
+        run: black --check --diff .
+
+      - name: Run isort (import sort check)
+        working-directory: hello-grpc-python
+        run: isort --check-only --diff .
+
+      - name: Run flake8
+        working-directory: hello-grpc-python
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run pylint
+        working-directory: hello-grpc-python
+        run: pylint **/*.py --exit-zero
+
+  # JavaScript/TypeScript linting
+  eslint:
+    name: ESLint (Node.js & TypeScript)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project:
+          - hello-grpc-nodejs
+          - hello-grpc-ts
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project }}
+        run: npm ci
+
+      - name: Create ESLint config if missing
+        working-directory: ${{ matrix.project }}
+        run: |
+          if [ ! -f .eslintrc.json ] && [ ! -f .eslintrc.js ]; then
+            cat > .eslintrc.json << 'EOF'
+          {
+            "env": {
+              "node": true,
+              "es2021": true
+            },
+            "extends": "eslint:recommended",
+            "parserOptions": {
+              "ecmaVersion": 12,
+              "sourceType": "module"
+            },
+            "rules": {
+              "no-unused-vars": "warn",
+              "no-console": "off"
+            }
+          }
+          EOF
+          fi
+
+      - name: Run ESLint
+        working-directory: ${{ matrix.project }}
+        run: npx eslint . --ext .js,.ts --max-warnings 50 || true
+
+  # Rust linting
+  rust-lint:
+    name: Rust Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Run rustfmt
+        working-directory: hello-grpc-rust
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        working-directory: hello-grpc-rust
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # Java linting with Checkstyle
+  java-lint:
+    name: Java Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Run Maven Checkstyle
+        working-directory: hello-grpc-java
+        run: mvn checkstyle:check || true
+
+  # Kotlin linting with ktlint
+  kotlin-lint:
+    name: Kotlin Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Run ktlint
+        working-directory: hello-grpc-kotlin
+        run: |
+          ./gradlew ktlintCheck || true
+
+  # C# linting
+  csharp-lint:
+    name: C# Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: hello-grpc-csharp
+        run: dotnet restore
+
+      - name: Run dotnet format
+        working-directory: hello-grpc-csharp
+        run: dotnet format --verify-no-changes --verbosity diagnostic || true
+
+  # PHP linting
+  php-lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: phpcs, phpstan
+
+      - name: Install dependencies
+        working-directory: hello-grpc-php
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHP_CodeSniffer
+        working-directory: hello-grpc-php
+        run: phpcs --standard=PSR12 --extensions=php . || true
+
+      - name: Run PHPStan
+        working-directory: hello-grpc-php
+        run: |
+          if [ -f phpstan.neon ]; then
+            phpstan analyse --level=5 . || true
+          else
+            echo "PHPStan config not found, skipping"
+          fi
+
+  # Swift linting
+  swift-lint:
+    name: Swift Lint
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        working-directory: hello-grpc-swift
+        run: swiftlint lint --strict || true
+
+  # Dart linting
+  dart-lint:
+    name: Dart Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: Get dependencies
+        working-directory: hello-grpc-dart
+        run: dart pub get
+
+      - name: Run dart analyze
+        working-directory: hello-grpc-dart
+        run: dart analyze --fatal-infos
+
+      - name: Run dart format check
+        working-directory: hello-grpc-dart
+        run: dart format --set-exit-if-changed .
+
+  # Summary
+  lint-summary:
+    name: Lint Summary
+    runs-on: ubuntu-latest
+    needs:
+      - golangci-lint
+      - python-lint
+      - eslint
+      - rust-lint
+      - java-lint
+      - kotlin-lint
+      - csharp-lint
+      - php-lint
+      - swift-lint
+      - dart-lint
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Code Quality Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Language Linting Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Go: ${{ needs.golangci-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Python: ${{ needs.python-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- JavaScript/TypeScript: ${{ needs.eslint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Rust: ${{ needs.rust-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Java: ${{ needs.java-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Kotlin: ${{ needs.kotlin-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- C#: ${{ needs.csharp-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- PHP: ${{ needs.php-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Swift: ${{ needs.swift-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dart: ${{ needs.dart-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY

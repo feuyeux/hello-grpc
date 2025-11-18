@@ -1,0 +1,68 @@
+name: gRPC Rust
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-rust/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-rust.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-rust/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  rust-build-test:
+    name: Rust Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            hello-grpc-rust/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('hello-grpc-rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Build Rust project
+        working-directory: hello-grpc-rust
+        run: cargo build --release
+
+      - name: Run Rust tests
+        working-directory: hello-grpc-rust
+        run: cargo test --all-features
+
+      - name: Upload Rust build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-artifacts
+          path: |
+            hello-grpc-rust/target/release/hello_client
+            hello-grpc-rust/target/release/hello_server
+          retention-days: 7

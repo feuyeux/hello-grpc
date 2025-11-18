@@ -10,14 +10,17 @@ using log4net;
 
 namespace Common
 {
+    /// <summary>
+    /// Manages gRPC channel connections with support for both secure (TLS) and insecure connections.
+    /// </summary>
     public static class Connection
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(Connection));
         private static readonly string CertBasePath = GetCertBasePath();
-        private static readonly string Cert = Path.Combine(CertBasePath, "cert.pem");
-        private static readonly string CertKey = Path.Combine(CertBasePath, "private.pkcs8.key");
-        private static readonly string CertChain = Path.Combine(CertBasePath, "full_chain.pem");
-        private static readonly string RootCert = Path.Combine(CertBasePath, "myssl_root.cer");
+        private static readonly string CertPath = Path.Combine(CertBasePath, "cert.pem");
+        private static readonly string CertKeyPath = Path.Combine(CertBasePath, "private.pkcs8.key");
+        private static readonly string CertChainPath = Path.Combine(CertBasePath, "full_chain.pem");
+        private static readonly string RootCertPath = Path.Combine(CertBasePath, "myssl_root.cer");
         private const string ServerName = "hello.grpc.io";
 
         private static string GetCertBasePath()
@@ -46,9 +49,14 @@ namespace Common
 
         static Connection()
         {
-            Log.Info($"Using certificate paths: Cert={Cert}, CertKey={CertKey}, CertChain={CertChain}, RootCert={RootCert}");
+            Log.Info($"Using certificate paths: Cert={CertPath}, CertKey={CertKeyPath}, CertChain={CertChainPath}, RootCert={RootCertPath}");
         }
 
+        /// <summary>
+        /// Creates and returns a gRPC channel configured based on environment variables.
+        /// Supports both secure (TLS) and insecure connections.
+        /// </summary>
+        /// <returns>A configured GrpcChannel</returns>
         public static GrpcChannel GetChannel()
         {
             var backPort = Environment.GetEnvironmentVariable("GRPC_HELLO_BACKEND_PORT");
@@ -66,39 +74,27 @@ namespace Common
                 {
                     SslOptions = new SslClientAuthenticationOptions
                     {
-                        // 在开发环境中可以禁用证书验证
+                        // In development environment, certificate validation can be disabled
                         RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true,
-                        // 如果需要更严格的证书验证，可以使用以下代码
-                        // ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                     }
                 };
                 
-                // 如果有客户端证书，可以在这里添加
-                if (File.Exists(Cert) && File.Exists(CertKey))
+                // Add client certificate if available
+                if (File.Exists(CertPath) && File.Exists(CertKeyPath))
                 {
                     try
                     {
-                        // Load certificate with private key using modern methods
-                        X509Certificate2 clientCert;
-                        
-                        if (File.Exists(CertKey))
-                        {
-                            // Load certificate and private key separately
-                            var privateKeyBytes = File.ReadAllBytes(CertKey);
-                            var certBytes = File.ReadAllBytes(Cert);
-                            clientCert = LoadCertificateWithPrivateKey(certBytes, privateKeyBytes);
-                        }
-                        else
-                        {
-                            // Fallback to old method if needed
-                            clientCert = X509Certificate2.CreateFromPemFile(Cert);
-                        }
+                        // Load certificate with private key
+                        var privateKeyBytes = File.ReadAllBytes(CertKeyPath);
+                        var certBytes = File.ReadAllBytes(CertPath);
+                        var clientCert = LoadCertificateWithPrivateKey(certBytes, privateKeyBytes);
                         
                         handler.SslOptions.ClientCertificates = new X509CertificateCollection { clientCert };
+                        Log.Info("Client certificate loaded successfully");
                     }
                     catch (Exception ex)
                     {
-                        Log.Warn($"加载客户端证书失败: {ex.Message}");
+                        Log.Warn($"Failed to load client certificate: {ex.Message}");
                     }
                 }
                 
@@ -114,43 +110,41 @@ namespace Common
             return GrpcChannel.ForAddress($"http://{endpoint}");
         }
 
-        // 不再需要这个方法，但为了保持代码结构完整性我们保留它的签名
-        private static HttpMessageHandler BuildSslHandler()
-        {
-            var handler = new SocketsHttpHandler
-            {
-                SslOptions = new SslClientAuthenticationOptions
-                {
-                    // 开发环境中简化证书验证
-                    RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true
-                }
-            };
-            
-            return handler;
-        }
-
+        /// <summary>
+        /// Gets the gRPC server host from environment variable or returns default.
+        /// </summary>
+        /// <returns>Server host address</returns>
         private static string GetGrcServerHost()
         {
             var server = Environment.GetEnvironmentVariable("GRPC_SERVER");
             return server ?? "localhost";
         }
 
+        /// <summary>
+        /// Gets the gRPC server port from environment variable or returns default.
+        /// </summary>
+        /// <returns>Server port number</returns>
         public static string GetGrcServerPort()
         {
             var server = Environment.GetEnvironmentVariable("GRPC_SERVER_PORT");
             return server ?? "9996";
         }
 
+        /// <summary>
+        /// Loads an X509Certificate2 with its private key from PEM-formatted bytes.
+        /// Handles platform-specific certificate loading requirements.
+        /// </summary>
+        /// <param name="certBytes">The certificate bytes</param>
+        /// <param name="privateKeyBytes">The private key bytes in PKCS8 format</param>
+        /// <returns>An X509Certificate2 with private key loaded</returns>
         private static X509Certificate2 LoadCertificateWithPrivateKey(byte[] certBytes, byte[] privateKeyBytes)
         {
-            // This method creates an X509Certificate2 with the private key loaded
             try
             {
-                // In .NET, we need to use platform-specific approaches depending on the runtime
+                // Use platform-specific approaches depending on the runtime
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // On Windows, import with appropriate flags
-                    // Create a temporary file for the certificate
+                    // Windows-specific certificate handling
                     string tempCertPath = Path.GetTempFileName();
                     try
                     {
@@ -168,8 +162,7 @@ namespace Common
                 }
                 else
                 {
-                    // On Linux/macOS
-                    // Create temporary files for the certificate and key
+                    // Linux/macOS certificate handling
                     string tempCertPath = Path.GetTempFileName();
                     try
                     {
@@ -180,10 +173,10 @@ namespace Common
                         var privateKey = System.Security.Cryptography.RSA.Create();
                         privateKey.ImportPkcs8PrivateKey(privateKeyBytes, out _);
                         
-                        // Create a new certificate with the private key
+                        // Create certificate with the private key
                         var certWithKey = cert.CopyWithPrivateKey(privateKey);
                         
-                        // Return the certificate with key using appropriate flags for Linux/macOS
+                        // Return the certificate with appropriate flags for Linux/macOS
                         return new X509Certificate2(certWithKey.Export(X509ContentType.Pfx), 
                             string.Empty, 
                             X509KeyStorageFlags.Exportable);

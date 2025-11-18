@@ -1,47 +1,151 @@
 # Java gRPC Implementation
 
-This project implements a gRPC client and server using Java, demonstrating four communication patterns:
-1. Unary RPC
-2. Server Streaming RPC
-3. Client Streaming RPC
-4. Bidirectional Streaming RPC
+## Overview
+
+This directory contains the Java implementation of the Hello gRPC project, demonstrating all four gRPC communication patterns with enterprise-grade features including TLS security, proxy support, and comprehensive logging.
+
+**Communication Patterns:**
+1. **Unary RPC**: Simple request-response
+2. **Server Streaming RPC**: Single request, multiple responses
+3. **Client Streaming RPC**: Multiple requests, single response
+4. **Bidirectional Streaming RPC**: Full-duplex communication
+
+**Key Features:**
+- ✅ All four gRPC communication models
+- ✅ TLS/SSL secure communication
+- ✅ Proxy mode for request forwarding
+- ✅ Structured logging with SLF4J + Logback
+- ✅ Graceful shutdown handling
+- ✅ Retry logic with exponential backoff
+- ✅ Docker support
+- ✅ Maven build system
+- ✅ JUnit 5 testing framework
 
 ## Prerequisites
 
-- JDK 11 or higher
-- Maven 3.6+
-- Protocol Buffers compiler (protoc)
+**Required:**
+- JDK 17 or higher (JDK 11+ supported)
+- Maven 3.8 or higher
+- Protocol Buffers compiler (protoc) 3.x
 
-## Building the Project
+**Optional:**
+- Docker (for containerized deployment)
+- IntelliJ IDEA (recommended IDE)
 
-### 1. Building with Maven
+**Installation:**
 
 ```bash
-# Build the server
-mvn clean package -f server_pom.xml
+# Install JDK (if not already installed)
+# macOS:
+brew install openjdk@17
 
-# Build the client
-mvn clean package -f client_pom.xml
+# Linux:
+apt-get install openjdk-17-jdk
+
+# Windows:
+# Download from: https://adoptium.net/
+
+# Verify installation
+java -version
+mvn -version
+
+# Install protoc
+# macOS:
+brew install protobuf
+
+# Linux:
+apt-get install -y protobuf-compiler
 ```
 
-### 2. Generate gRPC Code from Proto Files
+## Building
 
-The Maven build automatically generates the gRPC code using the `protobuf-maven-plugin`.
-
-## Running the Application
-
-### Basic Communication
+### Using Consolidated Scripts (Recommended)
 
 ```bash
-# Terminal 1: Start the server
-sh server_start.sh
-# Or using java directly:
+# Build Java implementation
+../scripts/build/build-language.sh --language java
+
+# Or with options
+../scripts/build/build-language.sh --language java --clean --test --verbose
+```
+
+### Using Local Build Script
+
+```bash
+# Simple build
+./build.sh
+
+# Clean build
+./build.sh --clean
+
+# Build with tests
+./build.sh --test
+```
+
+### Using Maven Directly
+
+```bash
+# Build server
+mvn clean package -f server_pom.xml
+
+# Build client
+mvn clean package -f client_pom.xml
+
+# Build both
+mvn clean package
+```
+
+**Build Output:**
+- Server JAR: `target/hello-grpc-java-server.jar`
+- Client JAR: `target/hello-grpc-java-client.jar`
+- Generated code: `target/generated-sources/protobuf/`
+
+**Note:** Protocol Buffer code generation is handled automatically by the `protobuf-maven-plugin` during the build process.
+
+## Running
+
+### Using Consolidated Scripts (Recommended)
+
+```bash
+# Terminal 1: Start server
+../scripts/deployment/start-server.sh --language java
+
+# Terminal 2: Start client
+../scripts/deployment/start-client.sh --language java
+```
+
+### Using Local Scripts
+
+```bash
+# Terminal 1: Start server
+./server_start.sh
+
+# Terminal 2: Start client
+./client_start.sh
+```
+
+### Direct Execution
+
+```bash
+# Terminal 1: Start server
 java -jar target/hello-grpc-java-server.jar
 
-# Terminal 2: Start the client
-sh client_start.sh
-# Or using java directly:
+# Terminal 2: Start client
 java -jar target/hello-grpc-java-client.jar
+```
+
+**Expected Output:**
+
+Server:
+```
+[2025-01-15 10:30:45.123] [INFO] [ProtoServer] Starting gRPC server on port 9996
+[2025-01-15 10:30:50.456] [INFO] [LandingServiceImpl] Received unary request
+```
+
+Client:
+```
+[2025-01-15 10:30:50.123] [INFO] [ProtoClient] Starting unary RPC call
+[2025-01-15 10:30:50.789] [INFO] [ProtoClient] Received response: Hello from Java
 ```
 
 ### Proxy Mode

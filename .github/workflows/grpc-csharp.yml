@@ -1,0 +1,62 @@
+name: gRPC C#
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-csharp/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-csharp.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-csharp/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  csharp-build-test:
+    name: C# Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore C# dependencies
+        working-directory: hello-grpc-csharp
+        run: dotnet restore HelloGrpc.sln
+
+      - name: Build C# project
+        working-directory: hello-grpc-csharp
+        run: dotnet build HelloGrpc.sln --configuration Release --no-restore
+
+      - name: Run C# tests
+        working-directory: hello-grpc-csharp
+        run: dotnet test HelloGrpc.sln --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Upload C# build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: csharp-artifacts
+          path: |
+            hello-grpc-csharp/HelloServer/bin/Release/
+            hello-grpc-csharp/HelloClient/bin/Release/
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: csharp-test-results
+          path: hello-grpc-csharp/HelloUT/TestResults/
+          retention-days: 7

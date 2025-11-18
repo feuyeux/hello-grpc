@@ -1,0 +1,57 @@
+name: gRPC PHP
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-php/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-php.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-php/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  php-build-test:
+    name: PHP Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: grpc, protobuf
+          coverage: xdebug
+
+      - name: Validate composer.json
+        working-directory: hello-grpc-php
+        run: composer validate --strict
+
+      - name: Install PHP dependencies
+        working-directory: hello-grpc-php
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHP tests
+        working-directory: hello-grpc-php
+        run: vendor/bin/phpunit --coverage-clover coverage.xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-coverage-${{ matrix.php-version }}
+          path: hello-grpc-php/coverage.xml
+          retention-days: 7

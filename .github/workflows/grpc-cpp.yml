@@ -1,0 +1,63 @@
+name: gRPC C++
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-cpp/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-cpp.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-cpp/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  cpp-build-test:
+    name: C++ Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake protobuf-compiler libprotobuf-dev
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.8.1
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - name: Build C++ project
+        working-directory: hello-grpc-cpp
+        run: bazel build //...
+
+      - name: Run C++ tests
+        working-directory: hello-grpc-cpp
+        run: bazel test //tests:hello_test --test_output=all
+
+      - name: Upload C++ build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-artifacts
+          path: hello-grpc-cpp/bazel-bin/
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-test-results
+          path: hello-grpc-cpp/bazel-testlogs/
+          retention-days: 7

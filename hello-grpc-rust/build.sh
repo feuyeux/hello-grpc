@@ -1,18 +1,36 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build script for Rust gRPC project
 set -e
 
 # Change to the script's directory
-cd "$(dirname "$0")" || exit
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "${SCRIPT_DIR}" || exit
 
-echo "Building Rust gRPC project..."
+# Source common build functions
+if [ -f "../scripts/build/build-common.sh" ]; then
+    # shellcheck source=../scripts/build/build-common.sh
+    source "../scripts/build/build-common.sh"
+    parse_build_params "$@"
+else
+    echo "Warning: build-common.sh not found, using legacy mode"
+    CLEAN_BUILD=false
+    RUN_TESTS=false
+    RELEASE_MODE=false
+    VERBOSE=false
+    log_build() { echo "[BUILD] $*"; }
+    log_success() { echo "[BUILD] $*"; }
+    log_error() { echo "[BUILD] $*" >&2; }
+    log_debug() { :; }
+fi
 
-# Check if Rust/Cargo is installed
-if ! command -v cargo &> /dev/null; then
-    echo "Cargo is not installed. Installing Rust toolchain..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    # Source cargo environment after installation
-    source "$HOME/.cargo/env"
+log_build "Building Rust gRPC project..."
+
+# Start build timer
+start_build_timer
+
+# Check dependencies
+if ! check_dependencies "cargo::curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"; then
+    exit 1
 fi
 
 # Set Rust mirror if in China
@@ -31,28 +49,46 @@ EOF
     fi
 fi
 
-# Check if we need to clean
-if [ "$1" == "--clean" ]; then
-    echo "Cleaning previous build artifacts..."
+# Clean if requested
+if [ "${CLEAN_BUILD}" = true ]; then
+    log_build "Cleaning previous build artifacts..."
     cargo clean
-    shift
 fi
 
 # Install required dependencies if not already installed
 if ! cargo install --list | grep -q "protobuf-codegen"; then
-    echo "Installing protobuf-codegen..."
+    log_build "Installing protobuf-codegen..."
     cargo install protobuf-codegen
 fi
 
-# Check if we need to rebuild
-if [ -d "target/debug" ] && [ ! "$(find src -type f -name "*.rs" -newer "target/debug" 2>/dev/null)" ] && \
-   [ ! "$(find . -name "Cargo.toml" -newer "target/debug" 2>/dev/null)" ] && \
-   [ ! "$(find ../proto -name "*.proto" -newer "target/debug" 2>/dev/null)" ]; then
-    echo "Rust project is up to date, skipping build"
-else
-    echo "Building Rust project..."
-    # Build in development mode
-    cargo build "$@"
+# Build mode
+BUILD_MODE=""
+if [ "${RELEASE_MODE}" = true ]; then
+    BUILD_MODE="--release"
+    log_build "Building in release mode (optimized)"
 fi
 
-echo "Rust gRPC project built successfully!"
+# Check if we need to rebuild
+NEEDS_BUILD=true
+if [ "${CLEAN_BUILD}" = false ] && [ -d "target/debug" ]; then
+    if ! dir_newer_than "src" "target/debug" "*.rs" && \
+       ! is_newer "Cargo.toml" "target/debug" && \
+       ! dir_newer_than "../proto" "target/debug" "*.proto"; then
+        NEEDS_BUILD=false
+        log_debug "Rust project is up to date, skipping build"
+    fi
+fi
+
+if [ "$NEEDS_BUILD" = true ]; then
+    log_build "Building Rust project..."
+    execute_build_command "cargo build ${BUILD_MODE}"
+fi
+
+# Run tests if requested
+if [ "${RUN_TESTS}" = true ]; then
+    log_build "Running tests..."
+    cargo test
+fi
+
+# End build timer
+end_build_timer

@@ -1,26 +1,50 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build script for Kotlin gRPC project
 set -e
 
 # Change to the script's directory
-cd "$(dirname "$0")" || exit
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "${SCRIPT_DIR}" || exit
 
-echo "Building Kotlin gRPC project..."
+# Source common build functions
+if [ -f "../scripts/build/build-common.sh" ]; then
+    # shellcheck source=../scripts/build/build-common.sh
+    source "../scripts/build/build-common.sh"
+    parse_build_params "$@"
+else
+    echo "Warning: build-common.sh not found, using legacy mode"
+    CLEAN_BUILD=false
+    RUN_TESTS=false
+    VERBOSE=false
+    log_build() { echo "[BUILD] $*"; }
+    log_success() { echo "[BUILD] $*"; }
+    log_error() { echo "[BUILD] $*" >&2; }
+    log_debug() { :; }
+fi
+
+log_build "Building Kotlin gRPC project..."
+
+# Start build timer
+start_build_timer
+
+# Check dependencies
+if ! check_dependencies "java:11+:brew install openjdk@21" "gradle:7.0+:brew install gradle"; then
+    exit 1
+fi
 
 # Check if gradle wrapper exists
 if [ ! -f "./gradlew" ]; then
-    echo "Gradle wrapper not found. Creating it..."
+    log_build "Gradle wrapper not found. Creating it..."
     gradle wrapper
 fi
 
 # Make gradlew executable
 chmod +x ./gradlew
 
-# Check if we need to clean
-if [ "$1" == "--clean" ]; then
-    echo "Cleaning previous build artifacts..."
+# Clean if requested
+if [ "${CLEAN_BUILD}" = true ]; then
+    log_build "Cleaning previous build artifacts..."
     ./gradlew clean
-    shift
 fi
 
 # Check if build is needed
@@ -29,21 +53,34 @@ SETTINGS_GRADLE="settings.gradle.kts"
 BUILD_DIR="build"
 
 NEEDS_BUILD=true
-if [ -d "$BUILD_DIR" ]; then
+if [ "${CLEAN_BUILD}" = false ] && [ -d "$BUILD_DIR" ]; then
     # Check if gradle files have been modified
-    if [ ! "$BUILD_GRADLE" -nt "$BUILD_DIR" ] && [ ! "$SETTINGS_GRADLE" -nt "$BUILD_DIR" ]; then
+    if ! is_newer "$BUILD_GRADLE" "$BUILD_DIR" && ! is_newer "$SETTINGS_GRADLE" "$BUILD_DIR"; then
         # Check if any kotlin files have been modified
-        if ! find . -name "*.kt" -newer "$BUILD_DIR" 2>/dev/null | grep -q .; then
+        if ! dir_newer_than "." "$BUILD_DIR" "*.kt"; then
             NEEDS_BUILD=false
-            echo "Kotlin project is up to date, skipping build"
+            log_debug "Kotlin project is up to date, skipping build"
         fi
     fi
 fi
 
 if [ "$NEEDS_BUILD" = true ]; then
-    echo "Building Kotlin project with Gradle..."
-    # Run the Gradle build with the rest of the arguments
-    ./gradlew build "$@"
+    log_build "Building Kotlin project with Gradle..."
+    
+    # Build command
+    BUILD_CMD="./gradlew build"
+    if [ "${RUN_TESTS}" = false ]; then
+        BUILD_CMD="${BUILD_CMD} -x test"
+    fi
+    
+    execute_build_command "${BUILD_CMD}"
 fi
 
-echo "Kotlin gRPC project built successfully!"
+# Run tests if requested (and not already run during build)
+if [ "${RUN_TESTS}" = true ] && [ "$NEEDS_BUILD" = false ]; then
+    log_build "Running tests..."
+    ./gradlew test
+fi
+
+# End build timer
+end_build_timer

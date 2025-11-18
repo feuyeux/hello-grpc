@@ -1,0 +1,58 @@
+name: gRPC Dart
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-dart/**'
+      - 'proto/**'
+      - '.github/workflows/grpc-dart.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'hello-grpc-dart/**'
+      - 'proto/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  dart-build-test:
+    name: Dart Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 'stable'
+
+      - name: Get Dart dependencies
+        working-directory: hello-grpc-dart
+        run: dart pub get
+
+      - name: Analyze Dart code
+        working-directory: hello-grpc-dart
+        run: dart analyze
+
+      - name: Run Dart tests
+        working-directory: hello-grpc-dart
+        run: dart test --coverage=coverage
+
+      - name: Format coverage report
+        working-directory: hello-grpc-dart
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage.lcov --report-on=lib
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dart-coverage
+          path: hello-grpc-dart/coverage.lcov
+          retention-days: 7
