@@ -7,6 +7,7 @@ import io.grpc.Attributes;
 import io.grpc.BindableService;
 import io.grpc.Channel;
 import io.grpc.ClientInterceptors;
+import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.ServerInterceptors;
@@ -213,13 +214,17 @@ public class ProtoServer {
                 new ServerTransportFilter() {
                   @Override
                   public Attributes transportReady(Attributes transportAttrs) {
-                    log.info("New client connection established: {}", transportAttrs);
+                    log.info(
+                        "Connection established: {}",
+                        transportAttrs.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR));
                     return transportAttrs;
                   }
 
                   @Override
                   public void transportTerminated(Attributes transportAttrs) {
-                    log.warn("Client connection terminated: {}", transportAttrs);
+                    log.warn(
+                        "Connection terminated: {}",
+                        transportAttrs.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR));
                   }
                 });
 
