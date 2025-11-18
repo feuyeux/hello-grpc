@@ -401,8 +401,14 @@ build_project() {
     # build.sh 不支持 --verbose 参数，所以不传递
     
     # 执行构建
-    if ! bash build.sh "${build_args[@]}"; then
-        log_fatal "项目构建失败"
+    if [[ ${#build_args[@]} -gt 0 ]]; then
+        if ! bash build.sh "${build_args[@]}"; then
+            log_fatal "项目构建失败"
+        fi
+    else
+        if ! bash build.sh; then
+            log_fatal "项目构建失败"
+        fi
     fi
     
     log_success "项目构建成功"

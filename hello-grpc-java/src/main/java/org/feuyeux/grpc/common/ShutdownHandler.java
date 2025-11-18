@@ -34,9 +34,6 @@ public class ShutdownHandler {
 
     // Register shutdown hook
     Runtime.getRuntime().addShutdownHook(new Thread(this::initiateShutdown));
-
-    // Register signal handlers
-    registerSignalHandlers();
   }
 
   /**
@@ -55,29 +52,6 @@ public class ShutdownHandler {
    */
   public void registerCleanup(Runnable cleanup) {
     cleanupFunctions.add(() -> cleanup.run());
-  }
-
-  /** Registers signal handlers for SIGINT and SIGTERM */
-  private void registerSignalHandlers() {
-    try {
-      // Handle SIGINT (Ctrl+C)
-      sun.misc.Signal.handle(
-          new sun.misc.Signal("INT"),
-          signal -> {
-            log.info("Received SIGINT signal");
-            initiateShutdown();
-          });
-
-      // Handle SIGTERM
-      sun.misc.Signal.handle(
-          new sun.misc.Signal("TERM"),
-          signal -> {
-            log.info("Received SIGTERM signal");
-            initiateShutdown();
-          });
-    } catch (IllegalArgumentException e) {
-      log.warn("Could not register signal handlers: {}", e.getMessage());
-    }
   }
 
   /** Initiates the shutdown process */
