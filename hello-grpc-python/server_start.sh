@@ -5,6 +5,15 @@ cd "$(
   pwd -P
 )/" || exit
 
+# Check if virtual environment exists and activate it
+if [ -d "venv" ]; then
+  echo "Activating virtual environment..."
+  source venv/bin/activate
+elif [ -d "../venv" ]; then
+  echo "Activating virtual environment from parent directory..."
+  source ../venv/bin/activate
+fi
+
 # Preparation steps
 echo "Checking Python gRPC dependencies..."
 # Check if grpcio and protobuf are installed
@@ -67,7 +76,44 @@ CMD="python server/protoServer.py"
 
 # Add TLS flag if enabled
 if [ "$USE_TLS" = true ]; then
-  CMD="$CMD --tls $ADDITIONAL_ARGS"
+  # Set the environment variable for secure connection
+  export GRPC_HELLO_SECURE="Y"
+  echo "TLS mode enabled"
+  
+  # Set certificate path based on OS
+  if [[ "$(uname)" == "Darwin" ]]; then
+    export CERT_BASE_PATH="/var/hello_grpc/server_certs"
+  elif [[ "$(uname)" == "Linux" ]]; then
+    export CERT_BASE_PATH="/var/hello_grpc/server_certs"
+  else
+    export CERT_BASE_PATH="d:\\garden\\var\\hello_grpc\\server_certs"
+  fi
+  
+  # Check if certificate directory exists
+  if [ ! -d "$CERT_BASE_PATH" ]; then
+    echo "Error: Certificate directory does not exist: $CERT_BASE_PATH"
+    echo "Please create the directory and add the necessary certificate files:"
+    echo "  - cert.pem: Server certificate"
+    echo "  - private.key: Server private key"
+    echo "  - full_chain.pem: Certificate chain"
+    echo "  - myssl_root.cer: Root certificate"
+    exit 1
+  fi
+  
+  # Check if the required certificate files exist
+  if [ ! -f "$CERT_BASE_PATH/cert.pem" ] || [ ! -f "$CERT_BASE_PATH/private.key" ] ||
+     [ ! -f "$CERT_BASE_PATH/full_chain.pem" ] || [ ! -f "$CERT_BASE_PATH/myssl_root.cer" ]; then
+    echo "Error: Required certificate files are missing in $CERT_BASE_PATH"
+    echo "Please make sure the following files exist:"
+    echo "  - cert.pem: Server certificate"
+    echo "  - private.key: Server private key"
+    echo "  - full_chain.pem: Certificate chain"
+    echo "  - myssl_root.cer: Root certificate"
+    exit 1
+  fi
+  
+  echo "Using certificates from: $CERT_BASE_PATH"
+  CMD="$CMD $ADDITIONAL_ARGS"
 else
   [ -n "$ADDITIONAL_ARGS" ] && CMD="$CMD $ADDITIONAL_ARGS"
 fi

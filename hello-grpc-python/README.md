@@ -17,19 +17,23 @@ This project implements a gRPC client and server using Python, demonstrating fou
 ### 1. Set Up Python Environment
 
 ```bash
+# Optional: Configure PyPI mirror for faster downloads in China
 # 1. Aliyun's mirror of the Python Package Index (PyPI)
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
 # 2. Tsinghua University's mirror of PyPI
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 # 3. University of Science and Technology of China's mirror of PyPI
 pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple
+
 # Create a virtual environment (recommended)
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install required packages
 pip install -r requirements.txt
 ```
+
+**Note**: The start scripts (`server_start.sh` and `client_start.sh`) automatically detect and activate the virtual environment if it exists in the current directory or parent directory.
 
 ### 2. Generate gRPC Code from Proto Files
 
@@ -88,13 +92,29 @@ To enable TLS, you need to prepare certificates and configure environment variab
 
 2. **Direct TLS Connection**
 
+   Using the start scripts with `--tls` flag (recommended):
    ```bash
    # Terminal 1: Start the server with TLS
-   GRPC_HELLO_SECURE=Y python server.py
+   bash server_start.sh --tls
    
    # Terminal 2: Start the client with TLS
-   GRPC_HELLO_SECURE=Y python client.py
+   bash client_start.sh --tls
    ```
+
+   Or using environment variables directly:
+   ```bash
+   # Terminal 1: Start the server with TLS
+   GRPC_HELLO_SECURE=Y python server/protoServer.py
+   
+   # Terminal 2: Start the client with TLS
+   GRPC_HELLO_SECURE=Y python client/protoClient.py
+   ```
+   
+   **Note**: The start scripts automatically:
+   - Activate virtual environment if available
+   - Set proper certificate paths based on OS
+   - Verify certificate files exist
+   - Configure TLS environment variables
 
 3. **TLS with Proxy**
 

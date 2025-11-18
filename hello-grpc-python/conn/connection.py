@@ -139,29 +139,35 @@ def build_channel():
     if secure == "Y":
         # Build secure channel with TLS
         try:
-            with open(cert_key, 'rb') as f:
-                private_key = f.read()
-            with open(cert_chain, 'rb') as f:
-                certificate_chain = f.read()
+            # Read root certificate for server verification
             with open(root_cert, 'rb') as f:
                 root_certificates = f.read()
             
+            logger.info("Loaded root certificate from: %s", root_cert)
+            logger.info("Using server-only TLS (no client certificate)")
+            
+            # Create TLS credentials without client certificates
             credentials = grpc.ssl_channel_credentials(
-                root_certificates, private_key, certificate_chain)
+                root_certificates=root_certificates,
+                private_key=None,
+                certificate_chain=None
+            )
+            
             options = (
                 ('grpc.ssl_target_name_override', server_name),
                 ('grpc.default_authority', server_name)
             )
             
-            logger.info("Connect with TLS (:%s) (Python %s.%s.%s)", 
-                       port, python_version[0], python_version[1], python_version[2])
+            logger.info("TLS connection configured with server name: %s", server_name)
+            logger.info("Connect with TLS to %s (Python %s.%s.%s)", 
+                       address, python_version[0], python_version[1], python_version[2])
             return grpc.secure_channel(address, credentials, options)
             
         except (FileNotFoundError, PermissionError) as e:
             logger.error("TLS certificate error: %s", e)
             logger.warning("Falling back to insecure connection")
-            logger.info("Connect with insecure (:%s) (Python %s.%s.%s)", 
-                       port, python_version[0], python_version[1], python_version[2])
+            logger.info("Connect with insecure to %s (Python %s.%s.%s)", 
+                       address, python_version[0], python_version[1], python_version[2])
             return grpc.insecure_channel(address)
     else:
         # Build insecure channel
