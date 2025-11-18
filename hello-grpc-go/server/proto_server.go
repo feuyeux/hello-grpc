@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"hello-grpc/common"
 	"hello-grpc/common/pb"
 	"hello-grpc/conn"
@@ -44,6 +45,11 @@ var (
 	rootCertPath  string
 )
 
+// Command-line flags
+var (
+	useTLS = flag.Bool("tls", false, "Enable TLS/SSL secure communication")
+)
+
 func init() {
 	// Set up logging configuration
 	log.SetFormatter(&log.TextFormatter{
@@ -55,7 +61,7 @@ func init() {
 	// or environment variable if specified
 	certBasePath := os.Getenv("CERT_BASE_PATH")
 	if certBasePath == "" {
-		// Use OS-specific default paths
+		// Use /var/hello_grpc base path for all OS (except Windows)
 		osType := runtime.GOOS
 		log.Infof("Operating System: %s", osType)
 
@@ -63,7 +69,7 @@ func init() {
 		case "windows":
 			certBasePath = filepath.Join("d:", "garden", "var", "hello_grpc", "server_certs")
 		case "darwin": // macOS
-			certBasePath = filepath.Join("/Users/Shared", "hello_grpc", "server_certs")
+			certBasePath = filepath.Join("/var", "hello_grpc", "server_certs")
 		case "linux":
 			certBasePath = filepath.Join("/var", "hello_grpc", "server_certs")
 		default:
@@ -82,6 +88,9 @@ func init() {
 }
 
 func main() {
+	// Parse command-line flags
+	flag.Parse()
+
 	// Create root context for managing the entire application lifecycle
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -218,9 +227,10 @@ func startMetricsServer(ctx context.Context) {
 }
 
 // createGrpcServer creates a new gRPC server with appropriate configuration.
-// Uses TLS if GRPC_HELLO_SECURE is set to "Y".
+// Uses TLS if --tls flag is provided or GRPC_HELLO_SECURE is set to "Y".
 func createGrpcServer() *grpc.Server {
-	if os.Getenv("GRPC_HELLO_SECURE") == "Y" {
+	// Check command-line flag first, then environment variable for backward compatibility
+	if *useTLS || os.Getenv("GRPC_HELLO_SECURE") == "Y" {
 		return createSecureServer()
 	}
 	return createInsecureServer()

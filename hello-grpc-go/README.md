@@ -36,6 +36,7 @@ This directory contains the Go implementation of the Hello gRPC project, demonst
 ```bash
 # Install Go (if not already installed)
 # Visit: https://golang.org/doc/install
+# brew install go
 
 # Install protoc
 # macOS:
@@ -53,18 +54,6 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
 
 ## Building
-
-### Using Consolidated Scripts (Recommended)
-
-The easiest way to build is using the consolidated scripts:
-
-```bash
-# Build Go implementation
-../scripts/build/build-language.sh --language go
-
-# Or with options
-../scripts/build/build-language.sh --language go --clean --test --verbose
-```
 
 ### Using Local Build Script
 
@@ -115,14 +104,6 @@ go build -o bin/client ./client
 
 ### Using Consolidated Scripts (Recommended)
 
-```bash
-# Terminal 1: Start server
-../scripts/deployment/start-server.sh --language go
-
-# Terminal 2: Start client
-../scripts/deployment/start-client.sh --language go
-```
-
 ### Using Local Scripts
 
 ```bash
@@ -141,20 +122,6 @@ go run server/main.go
 
 # Terminal 2: Start client
 go run client/main.go
-```
-
-**Expected Output:**
-
-Server:
-```
-[2025-01-15 10:30:45] [INFO] [ProtoServer] Starting gRPC server on port 9996
-[2025-01-15 10:30:50] [INFO] [ProtoServer] Received unary request
-```
-
-Client:
-```
-[2025-01-15 10:30:50] [INFO] [ProtoClient] Starting unary RPC call
-[2025-01-15 10:30:50] [INFO] [ProtoClient] Received response: Hello from Go
 ```
 
 ### Proxy Mode
@@ -191,26 +158,61 @@ To enable TLS, you need to prepare certificates and configure environment variab
 
 2. **Direct TLS Connection**
 
+   Using command-line flags (recommended):
    ```bash
    # Terminal 1: Start the server with TLS
-   GRPC_HELLO_SECURE=Y go run server/main.go
+   ./server_start.sh --tls
    
    # Terminal 2: Start the client with TLS
-   GRPC_HELLO_SECURE=Y go run client/main.go
+   ./client_start.sh --tls
    ```
+
+   Or using environment variables (backward compatible):
+   ```bash
+   # Terminal 1: Start the server with TLS
+   GRPC_HELLO_SECURE=Y go run server/proto_server.go
+   
+   # Terminal 2: Start the client with TLS
+   GRPC_HELLO_SECURE=Y go run client/proto_client.go
+   ```
+
+   Or directly with the Go programs:
+   ```bash
+   # Terminal 1: Start the server with TLS
+   go run server/proto_server.go --tls
+   
+   # Terminal 2: Start the client with TLS
+   go run client/proto_client.go --tls
+   ```
+
+   **Note:** If both the `--tls` flag and `GRPC_HELLO_SECURE` environment variable are set, the `--tls` flag takes precedence.
 
 3. **TLS with Proxy**
 
+   Using command-line flags:
    ```bash
    # Terminal 1: Start the backend server with TLS
-   GRPC_HELLO_SECURE=Y go run server/main.go
+   ./server_start.sh --tls
    
    # Terminal 2: Start the proxy server with TLS
    GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 \
-   GRPC_HELLO_SECURE=Y go run server/main.go
+   ./server_start.sh --tls
    
    # Terminal 3: Start the client with TLS
-   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 GRPC_HELLO_SECURE=Y go run client/main.go
+   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 ./client_start.sh --tls
+   ```
+
+   Or using environment variables:
+   ```bash
+   # Terminal 1: Start the backend server with TLS
+   GRPC_HELLO_SECURE=Y go run server/proto_server.go
+   
+   # Terminal 2: Start the proxy server with TLS
+   GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 \
+   GRPC_HELLO_SECURE=Y go run server/proto_server.go
+   
+   # Terminal 3: Start the client with TLS
+   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 GRPC_HELLO_SECURE=Y go run client/proto_client.go
    ```
 
 ## Testing
@@ -481,44 +483,6 @@ Integration with etcd for service discovery:
 GRPC_HELLO_ETCD_ENDPOINTS=localhost:2379 ./server_start.sh
 GRPC_HELLO_ETCD_ENDPOINTS=localhost:2379 ./client_start.sh
 ```
-
-## Performance Tuning
-
-### Connection Pooling
-
-Adjust connection pool settings in `common/connection.go`:
-
-```go
-const (
-    MaxConnectionIdle = 5 * time.Minute
-    MaxConnectionAge = 10 * time.Minute
-    KeepAliveTime = 30 * time.Second
-    KeepAliveTimeout = 10 * time.Second
-)
-```
-
-### Concurrency
-
-Configure server concurrency:
-
-```go
-grpc.NewServer(
-    grpc.MaxConcurrentStreams(100),
-    grpc.NumStreamWorkers(10),
-)
-```
-
-## Contributing
-
-When contributing to this implementation:
-
-1. **Follow Go conventions**: Use `gofmt`, `golint`, and `go vet`
-2. **Add tests**: Maintain test coverage above 80%
-3. **Document code**: Use GoDoc comments for public APIs
-4. **Update README**: Document new features or changes
-5. **Test compatibility**: Ensure cross-language compatibility
-
-See [CONTRIBUTING.md](../docs/CONTRIBUTING.md) for detailed guidelines.
 
 ## References
 

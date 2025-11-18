@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"hello-grpc/common/pb"
+	"hello-grpc/server/tracing"
+
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
-	"hello-grpc/common/pb"
-	"hello-grpc/server/tracing"
 )
 
 // ProtoServer implements the LandingServiceServer interface.
@@ -314,10 +315,10 @@ func extractTracing(ctx context.Context) *tracing.HelloTracing {
 		B3Sampled:      xB3Sampled[0],
 	}
 
-	if xB3Flags != nil && len(xB3Flags) > 0 {
+	if len(xB3Flags) > 0 {
 		t.B3Flags = xB3Flags[0]
 	}
-	if xOtSpanContext != nil && len(xOtSpanContext) > 0 {
+	if len(xOtSpanContext) > 0 {
 		t.OtSpanContext = xOtSpanContext[0]
 	}
 

@@ -36,12 +36,19 @@ func init() {
 		certKey = "d:\\garden\\var\\hello_grpc\\client_certs\\private.key"
 		certChain = "d:\\garden\\var\\hello_grpc\\client_certs\\full_chain.pem"
 		rootCert = "d:\\garden\\var\\hello_grpc\\client_certs\\myssl_root.cer"
-	case "linux", "darwin":
+	case "darwin": // macOS
+		certKey = "/var/hello_grpc/client_certs/private.key"
+		certChain = "/var/hello_grpc/client_certs/full_chain.pem"
+		rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
+	case "linux":
 		certKey = "/var/hello_grpc/client_certs/private.key"
 		certChain = "/var/hello_grpc/client_certs/full_chain.pem"
 		rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
 	default:
 		log.Errorf("Unsupported OS: %s", runtime.GOOS)
+		certKey = "/var/hello_grpc/client_certs/private.key"
+		certChain = "/var/hello_grpc/client_certs/full_chain.pem"
+		rootCert = "/var/hello_grpc/client_certs/myssl_root.cer"
 	}
 }
 

@@ -72,7 +72,7 @@ func (e *etcdResolver) updateState() {
 		log.Infof("conn.UpdateState key[%v];val[%v]\n", k, v)
 		// 模拟设置权重
 		addr := resolver.Address{
-			BalancerAttributes: attributes.New(common.WeightAttributeKey{}, common.WeightAddrInfo{
+			Attributes: attributes.New(common.WeightAttributeKey{}, common.WeightAddrInfo{
 				Weight: i,
 			}),
 			Addr: tA,

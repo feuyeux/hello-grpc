@@ -143,10 +143,10 @@ func LogResponse(response *pb.TalkResponse) {
 			continue
 		}
 
-		meta, _ := kv["meta"]
-		id, _ := kv["id"]
-		idx, _ := kv["idx"]
-		data, _ := kv["data"]
+		meta := kv["meta"]
+		id := kv["id"]
+		idx := kv["idx"]
+		data := kv["data"]
 
 		log.Infof("  Result #%d: id=%d, type=%d, meta=%s, id=%s, idx=%s, data=%s",
 			i+1, result.Id, result.Type, meta, id, idx, data)

@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,29 +24,16 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 
 	// Ensure log directory exists
-	os.MkdirAll("log", os.ModePerm)
+	if err := os.MkdirAll("log", os.ModePerm); err != nil {
+		log.Warnf("Failed to create log directory: %v", err)
+		return
+	}
 
 	// Set file output
 	file, err := os.OpenFile("log/hello-grpc.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err == nil {
 		log.SetOutput(io.MultiWriter(os.Stdout, file))
 	}
-}
-
-// DInfo dev info
-func DInfo(msg string) string {
-	id := uuid.New().String()
-	log.Infof("%s", msg)
-	return id
-}
-
-// TInfo dev tracing info
-func TInfo(id, msg string) {
-	log.Infof("%s", msg)
-}
-
-func DInfof(format string, args ...interface{}) {
-	log.Infof(format, args...)
 }
 
 // Info standard log method

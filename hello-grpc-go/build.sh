@@ -6,23 +6,22 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "${SCRIPT_DIR}" || exit
 
-# Source common build functions
-if [ -f "../scripts/build/build-common.sh" ]; then
-    # shellcheck source=../scripts/build/build-common.sh
-    source "../scripts/build/build-common.sh"
-    parse_build_params "$@"
-else
-    echo "Warning: build-common.sh not found, using legacy mode"
-    CLEAN_BUILD=false
-    RUN_TESTS=false
-    VERBOSE=false
-    log_build() { echo "[BUILD] $*"; }
-    log_success() { echo "[BUILD] $*"; }
-    log_error() { echo "[BUILD] $*" >&2; }
-    log_debug() { :; }
-fi
+CLEAN_BUILD=false
+RUN_TESTS=false
+RELEASE_MODE=false
+log_build() { echo "[BUILD] $*"; }
+log_success() { echo "[BUILD] $*"; }
+log_error() { echo "[BUILD] $*" >&2; }
+log_debug() { :; }
+check_dependencies() { return 0; }
+start_build_timer() { :; }
+end_build_timer() { :; }
+standard_clean() { :; }
+ensure_dir() { mkdir -p "$1"; }
+proto_needs_regen() { return 0; }
+dir_newer_than() { return 0; }
 
-log_build "Building Go gRPC project..."
+log_build "Building Go($(go version)) gRPC project..."
 
 # Check dependencies
 if ! check_dependencies "go:1.21+:brew install go" "protoc::brew install protobuf"; then

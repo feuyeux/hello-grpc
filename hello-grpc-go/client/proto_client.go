@@ -3,6 +3,7 @@ package main
 import (
 	"container/list"
 	"context"
+	"flag"
 	"fmt"
 	"hello-grpc/common"
 	"hello-grpc/conn"
@@ -30,6 +31,11 @@ const (
 	defaultBatchSize = 5                      // Default number of requests in a batch
 )
 
+// Command-line flags
+var (
+	useTLS = flag.Bool("tls", false, "Enable TLS/SSL secure communication")
+)
+
 func init() {
 	// Set up logging configuration
 	log.SetFormatter(&log.TextFormatter{
@@ -39,6 +45,15 @@ func init() {
 }
 
 func main() {
+	// Parse command-line flags
+	flag.Parse()
+
+	// Set TLS environment variable if --tls flag is provided
+	// This ensures backward compatibility with existing connection logic
+	if *useTLS {
+		os.Setenv("GRPC_HELLO_SECURE", "Y")
+	}
+
 	// Create root context with cancellation for the entire application
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -458,7 +473,7 @@ func executeBidirectionalStreamingCall(ctx context.Context, client pb.LandingSer
 
 // addMetadata adds key-value pairs to the outgoing context as metadata
 func addMetadata(ctx context.Context, md map[string]string) context.Context {
-	pairs := []string{}
+	var pairs []string
 	for k, v := range md {
 		pairs = append(pairs, k, v)
 	}
