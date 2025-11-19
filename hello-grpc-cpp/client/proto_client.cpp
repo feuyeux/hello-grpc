@@ -340,8 +340,7 @@ private:
   static void log_error(const Status &status, const std::string &request_id,
                         const std::string &operation) {
     LOG(ERROR) << "[request_id=" << request_id << "] " << operation
-               << " failed: code=" << ErrorMapper::StatusCodeToString(status.code())
-               << ", message=" << status.error_message();
+               << " failed: " << hello::ErrorMapper::MapGrpcError(status);
   }
 
   std::unique_ptr<LandingService::Stub> stub_;

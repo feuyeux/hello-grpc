@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getVersion } from '../common/utils';
+import { getVersion } from '../src/lib/utils';
 
 // Print version information at the start of tests for informational purposes
 console.log('\n=== TypeScript gRPC Version Information ===');

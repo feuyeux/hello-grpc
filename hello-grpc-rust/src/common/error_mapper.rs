@@ -56,7 +56,6 @@ fn get_status_description(code: Code) -> &'static str {
         Code::Unavailable => "Service unavailable",
         Code::DataLoss => "Data loss",
         Code::Unauthenticated => "Authentication required",
-        _ => "Unknown error code",
     }
 }
 

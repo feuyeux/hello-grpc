@@ -31,6 +31,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/common/msg/Hello/TalkRequest.php';
 require_once __DIR__ . '/common/msg/Hello/TalkResponse.php';
 require_once __DIR__ . '/common/msg/Hello/TalkResult.php';
+require_once __DIR__ . '/common/svc/Hello/LandingServiceInterface.php';
+require_once __DIR__ . '/common/svc/Hello/LandingServiceStub.php';
 
 /**
  * Translation responses for different greetings
@@ -44,6 +46,8 @@ $translations = [
     "Ciao" => "Mille Grazie",
     "안녕하세요" => "대단히 감사합니다",
 ];
+
+use Hello\LandingServiceInterface;
 
 /**
  * Available greetings in different languages
@@ -96,7 +100,9 @@ $log->info("======= PHP gRPC服务端启动，日志系统初始化完成 ======
  * @author Hello gRPC Team
  */
 
-class LandingService
+use Hello\LandingServiceStub;
+
+class LandingService extends LandingServiceStub
 {
     /**
      * Backend client for proxy mode
@@ -177,8 +183,8 @@ class LandingService
     {
         $metadata = [];
         
-        // Get metadata from context
-        $md = $context->getMetadata();
+        // Get metadata from context using clientMetadata() method
+        $md = $context->clientMetadata();
         if (!empty($md)) {
             foreach ($md as $key => $value) {
                 // Handle metadata values correctly - in PHP gRPC, metadata values should be strings, not arrays
@@ -372,49 +378,9 @@ class LandingService
     }
     
     /**
-     * Required by gRPC server to register service methods
-     * Returns an array of method descriptors for the service
-     *
-     * @return array Method descriptors for the service
-     */
-    public static function getMethodDescriptors(): array
-    {
-        return [
-            [
-                'name' => 'Talk',
-                'input_type' => '\Hello\TalkRequest',
-                'output_type' => '\Hello\TalkResponse',
-                'client_streaming' => false,
-                'server_streaming' => false
-            ],
-            [
-                'name' => 'TalkOneAnswerMore',
-                'input_type' => '\Hello\TalkRequest',
-                'output_type' => '\Hello\TalkResponse',
-                'client_streaming' => false,
-                'server_streaming' => true
-            ],
-            [
-                'name' => 'TalkMoreAnswerOne',
-                'input_type' => '\Hello\TalkRequest',
-                'output_type' => '\Hello\TalkResponse',
-                'client_streaming' => true,
-                'server_streaming' => false
-            ],
-            [
-                'name' => 'TalkBidirectional',
-                'input_type' => '\Hello\TalkRequest',
-                'output_type' => '\Hello\TalkResponse',
-                'client_streaming' => true,
-                'server_streaming' => true
-            ]
-        ];
-    }
-    
-    /**
      * Implements the Talk unary RPC method
      */
-    public function Talk(TalkRequest $request, $context): TalkResponse
+    public function Talk(TalkRequest $request, \Grpc\ServerContext $context): ?TalkResponse
     {
         $this->logRequest('Talk', $context, $request);
         $metadata = $this->extractMetadata($context);
@@ -466,7 +432,11 @@ class LandingService
     /**
      * Implements the TalkOneAnswerMore server streaming RPC method
      */
-    public function TalkOneAnswerMore(TalkRequest $request, $context): void
+    public function TalkOneAnswerMore(
+        TalkRequest $request,
+        \Grpc\ServerCallWriter $writer,
+        \Grpc\ServerContext $context
+    ): void
     {
         $this->logRequest('TalkOneAnswerMore', $context, $request);
         $metadata = $this->extractMetadata($context);
@@ -489,13 +459,11 @@ class LandingService
                 // Proxy each response from backend
                 $responseCount = 0;
                 foreach ($responseStream as $response) {
-                    if ($context->isCancelled()) {
-                        break; // Client cancelled the call
-                    }
+                    // PHP gRPC doesn't support cancellation check
                     
                     if ($response instanceof TalkResponse) {
                         $responseCount++;
-                        $context->write($response);
+                        $writer->write($response);
                     }
                 }
                 
@@ -517,9 +485,7 @@ class LandingService
             
             // For each index, create a separate response
             foreach ($indices as $idx => $index) {
-                if ($context->isCancelled()) {
-                    break; // Client cancelled, stop sending
-                }
+                // PHP gRPC doesn't support cancellation check
                 
                 // Create individual response
                 $results = [[
@@ -531,7 +497,7 @@ class LandingService
                 ]];
                 
                 $response = $this->createResponse(0, $results);
-                $context->write($response);
+                $writer->write($response);
                 
                 // Small delay between responses to simulate processing time
                 usleep(200000); // 200ms
@@ -548,10 +514,14 @@ class LandingService
     /**
      * Implements the TalkMoreAnswerOne client streaming RPC method
      * 
-     * @param $context gRPC context used for reading client streams
-     * @return TalkResponse Single response for all requests
+     * @param \Grpc\ServerCallReader $reader reader for client streaming
+     * @param \Grpc\ServerContext $context gRPC context
+     * @return ?TalkResponse Single response for all requests
      */
-    public function TalkMoreAnswerOne($context): TalkResponse
+    public function TalkMoreAnswerOne(
+        \Grpc\ServerCallReader $reader,
+        \Grpc\ServerContext $context
+    ): ?TalkResponse
     {
         $this->logRequest('TalkMoreAnswerOne', $context);
         $metadata = $this->extractMetadata($context);
@@ -574,7 +544,7 @@ class LandingService
                 $backendCall = $this->backendClient->TalkMoreAnswerOne($md, $options);
                 
                 // Read all requests from the client and forward to backend
-                while ($request = $context->read()) {
+                while ($request = $reader->read()) {
                     if ($request instanceof TalkRequest) {
                         $requestCount++;
                         // Store the meta from the last request received
@@ -598,14 +568,14 @@ class LandingService
             } catch (\Exception $e) {
                 $this->logError('TalkMoreAnswerOne', $e->getMessage(), true);
                 // Fall back to local processing - but we need to read all requests first
-                while ($context->read()) {
+                while ($reader->read()) {
                     $requestCount++;
                 }
                 $this->metrics['local_fallback']++;
             }
         } else {
             // Read all requests and accumulate results
-            while ($request = $context->read()) {
+            while ($request = $reader->read()) {
                 if ($request instanceof TalkRequest) {
                     $requestCount++;
                     
@@ -639,7 +609,11 @@ class LandingService
     /**
      * Implements the TalkBidirectional bidirectional streaming RPC method
      */
-    public function TalkBidirectional($context): void
+    public function TalkBidirectional(
+        \Grpc\ServerCallReader $reader,
+        \Grpc\ServerCallWriter $writer,
+        \Grpc\ServerContext $context
+    ): void
     {
         $this->logRequest('TalkBidirectional', $context);
         $metadata = $this->extractMetadata($context);
@@ -662,19 +636,15 @@ class LandingService
                 
                 // Use non-blocking processing with cooperative multitasking
                 while (true) {
-                    // Check if call was cancelled by client
-                    if ($context->isCancelled()) {
-                        $backendCall->cancel();
-                        break;
-                    }
+                    // PHP gRPC doesn't support cancellation check
                     
                     // Try to read from client
-                    $request = $context->read();
+                    $request = $reader->read();
                     if ($request !== null) {
                         $requestCount++;
                         // Forward to backend
                         $backendCall->write($request);
-                    } else if ($context->writesDone()) {
+                    } else if ($reader->writesDone()) {
                         // Client is done writing
                         $backendCall->writesDone();
                         break;
@@ -685,7 +655,7 @@ class LandingService
                     if ($response !== null) {
                         $responseCount++;
                         // Forward to client
-                        $context->write($response);
+                        $writer->write($response);
                     }
                     
                     // Small yield to avoid CPU spinning
@@ -694,11 +664,8 @@ class LandingService
                 
                 // Continue reading responses until end of stream
                 while ($response = $backendCall->read()) {
-                    if ($context->isCancelled()) {
-                        break;
-                    }
-                    $responseCount++;
-                    $context->write($response);
+                    // PHP gRPC doesn't support cancellation check
+                    $writer->write($response);
                 }
                 
                 $this->metrics['proxy_success']++;
@@ -710,7 +677,7 @@ class LandingService
                 $this->metrics['local_fallback']++;
                 
                 // Clear the read buffer to avoid hanging
-                while (!$context->isCancelled() && $context->read() !== null) {
+                while ($reader->read() !== null) {
                     // Just drain the buffer
                 }
             }
@@ -721,19 +688,13 @@ class LandingService
             $requestIndex = 0;
             
             // Keep processing until client is done or call is cancelled
-            while (!$context->isCancelled()) {
+            while (true) {
                 // Read request
-                $request = $context->read();
+                $request = $reader->read();
                 
                 if ($request === null) {
-                    if ($context->writesDone()) {
-                        // Client closed the writing stream, we're done
-                        break;
-                    }
-                    
-                    // No new request yet, wait a bit
-                    usleep(100000); // 100ms
-                    continue;
+                    // Client closed the writing stream, we're done
+                    break;
                 }
                 
                 // Got a request, process it
@@ -751,7 +712,7 @@ class LandingService
                     ]];
                     
                     $response = $this->createResponse(0, $results);
-                    $context->write($response);
+                    $writer->write($response);
                     $responseCount++;
                 }
             }

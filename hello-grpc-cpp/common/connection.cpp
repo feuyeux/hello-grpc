@@ -45,9 +45,9 @@ std::shared_ptr<grpc::Channel> Connection::getChannel() {
   if (!secure.empty() && secure == "Y") {
     // Create secure channel with TLS
     grpc::SslCredentialsOptions ssl_opts;
-    ssl_opts.pem_root_certs = Connection::getFileContent(cert_chain);
+    ssl_opts.pem_root_certs = Connection::getFileContent(root_cert);
     ssl_opts.pem_private_key = Connection::getFileContent(cert_key);
-    ssl_opts.pem_cert_chain = Connection::getFileContent(cert_chain);
+    ssl_opts.pem_cert_chain = Connection::getFileContent(cert);
 
     grpc::ChannelArguments channel_args;
     channel_args.SetString("grpc.default_authority", server_name);

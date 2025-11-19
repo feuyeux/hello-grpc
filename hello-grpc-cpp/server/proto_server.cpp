@@ -377,6 +377,10 @@ void RunServer() {
       pemKeyCertPair.cert_chain = Connection::getFileContent(certChain.c_str());
       ssl_opts.pem_key_cert_pairs.push_back(pemKeyCertPair);
 
+      LOG(INFO) << "TLS configuration: root_certs=" << ssl_opts.pem_root_certs.size() 
+                << " bytes, private_key=" << pemKeyCertPair.private_key.size()
+                << " bytes, cert_chain=" << pemKeyCertPair.cert_chain.size() << " bytes";
+
       builder.AddListeningPort(server_address,
                                grpc::SslServerCredentials(ssl_opts));
     } catch (const std::exception &e) {

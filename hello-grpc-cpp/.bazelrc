@@ -1,8 +1,15 @@
 # Bazel configuration for hello-grpc-cpp
 
+# Download configuration with retries
+fetch --experimental_repository_downloader_retries=5
+build --experimental_repository_downloader_retries=5
+
 # Use C++17 standard
 build --cxxopt="-std=c++17"
 build --host_cxxopt="-std=c++17"
+
+# Disable strict layering check to work around module dependency issues
+build --features=-layering_check
 
 # Disable hermetic sandbox for macOS compatibility
 build --noincompatible_sandbox_hermetic_tmp

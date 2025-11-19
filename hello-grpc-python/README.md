@@ -8,9 +8,13 @@ This project implements a gRPC client and server using Python, demonstrating fou
 
 ## Prerequisites
 
-- Python 3.7 or higher
-- pip (Python package manager)
-- Protocol Buffers compiler (protoc)
+| Component          | Version | Notes                             |
+|--------------------|---------|-----------------------------------|
+| Python             | 3.13.3  | Python runtime                    |
+| Build Tool         | pip     | Python package manager            |
+| gRPC               | 1.76.0  | grpcio-tools                      |
+| Protocol Buffers   | 6.33.1  | protobuf                          |
+| protoc             | Auto    | Included in grpcio-tools          |
 
 ## Building the Project
 

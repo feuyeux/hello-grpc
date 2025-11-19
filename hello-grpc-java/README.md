@@ -6,14 +6,15 @@ This directory contains the Java implementation of the Hello gRPC project, demon
 
 ## Prerequisites
 
-**Required:**
-- JDK 21 or higher (JDK 11+ supported)
-- Maven 3.9 or higher
-- Protocol Buffers compiler (protoc) 3.x
-
-**Optional:**
-- Docker (for containerized deployment)
-- IntelliJ IDEA (recommended IDE)
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| JDK                | 21.0.7  | Java Development Kit (JDK 11+ supported) |
+| Build Tool         | 3.9.11  | Apache Maven                             |
+| gRPC               | 1.75.0  | io.grpc:grpc-netty                       |
+| Protocol Buffers   | 3.24.3  | com.google.protobuf:protobuf-java        |
+| protoc             | 3.x     | Protocol Buffers compiler                |
+| Docker             | Latest  | Optional, for containerized deployment   |
+| IntelliJ IDEA      | Latest  | Optional, recommended IDE                |
 
 **Installation:**
 

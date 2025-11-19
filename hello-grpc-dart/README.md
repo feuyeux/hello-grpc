@@ -8,9 +8,13 @@ This project implements a gRPC client and server using Dart, demonstrating four 
 
 ## Prerequisites
 
-- Dart SDK 3.7.0 or higher
-- Protocol Buffers compiler (protoc)
-- Dart protoc plugin
+| Component          | Version       | Notes                          |
+|--------------------|---------------|--------------------------------|
+| Dart SDK           | 3.9.2         | Dart language SDK              |
+| Build Tool         | dart pub      | Dart package manager           |
+| gRPC               | 4.0.1         | grpc package                   |
+| Protocol Buffers   | 4.0.0         | protobuf package               |
+| protoc plugin      | protoc_plugin | Dart protoc code generator     |
 
 ## Building the Project
 

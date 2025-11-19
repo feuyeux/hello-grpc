@@ -22,21 +22,21 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
         #[cfg(target_os = "windows")]
         let key = include_str!("d:\\garden\\var\\hello_grpc\\client_certs\\private.key");
         #[cfg(target_os = "windows")]
-        let ca = include_str!("d:\\garden\\var\\hello_grpc\\client_certs\\full_chain.pem");
+        let ca = include_str!("d:\\garden\\var\\hello_grpc\\client_certs\\myssl_root.cer");
 
         #[cfg(target_os = "linux")]
         let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
         #[cfg(target_os = "linux")]
         let key = include_str!("/var/hello_grpc/client_certs/private.key");
         #[cfg(target_os = "linux")]
-        let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+        let ca = include_str!("/var/hello_grpc/client_certs/myssl_root.cer");
 
         #[cfg(target_os = "macos")]
         let cert = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
         #[cfg(target_os = "macos")]
         let key = include_str!("/var/hello_grpc/client_certs/private.key");
         #[cfg(target_os = "macos")]
-        let ca = include_str!("/var/hello_grpc/client_certs/full_chain.pem");
+        let ca = include_str!("/var/hello_grpc/client_certs/myssl_root.cer");
 
         // creating identity from key and certificate
         let identity_cert = Identity::from_pem(cert.as_bytes(), key.as_bytes());

@@ -8,9 +8,13 @@ This project implements a gRPC client and server using Node.js, demonstrating fo
 
 ## Prerequisites
 
-- Node.js 16.x or higher (Node.js 23.x recommended)
-- npm or yarn package manager
-- Protocol Buffers compiler (protoc)
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| Node.js            | 24.7.0  | Node.js runtime                          |
+| Build Tool         | 11.6.1  | npm, Node package manager (or yarn)      |
+| gRPC               | 1.13.3  | @grpc/grpc-js                            |
+| Protocol Buffers   | 3.21.2  | google-protobuf                          |
+| grpc-tools         | 1.12.4  | Protocol Buffers compiler for Node.js    |
 
 ## Building the Project
 

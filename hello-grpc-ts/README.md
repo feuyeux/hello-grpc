@@ -8,10 +8,14 @@ This project implements a gRPC client and server using TypeScript, demonstrating
 
 ## Prerequisites
 
-- Node.js 14.x or higher
-- npm or yarn package manager
-- Protocol Buffers compiler (protoc)
-- TypeScript 4.5+
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| Node.js            | 24.7.0  | Node.js runtime                          |
+| TypeScript         | 5.9.3   | TypeScript language (4.5+ supported)     |
+| Build Tool         | 11.6.1  | npm, Node package manager (or yarn)      |
+| gRPC               | 1.12.0  | @grpc/grpc-js                            |
+| Protocol Buffers   | 3.21.4  | google-protobuf                          |
+| grpc-tools         | 1.12.4  | Protocol Buffers compiler for Node.js    |
 
 ## Building the Project
 

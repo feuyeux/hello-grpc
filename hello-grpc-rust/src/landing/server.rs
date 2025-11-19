@@ -80,6 +80,9 @@ const GRACEFUL_SHUTDOWN_TIMEOUT_MS: u64 = 10000;
 /// Configures and starts the server with appropriate TLS settings if enabled.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize rustls crypto provider
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
 
@@ -144,32 +147,55 @@ async fn main() -> Result<(), Box<dyn Error>> {
         metrics: metrics.clone(),
     });
 
-    // Add metrics endpoint
+    // Add metrics endpoint using hyper 1.x API
     let metrics_clone = metrics.clone();
     tokio::spawn(async move {
-        let metrics_address = format!("[::0]:{}", get_server_port().parse::<u16>().unwrap_or(50051) + 1).parse().unwrap();
-        info!("Starting metrics server on port {}", get_server_port().parse::<u16>().unwrap_or(50051) + 1);
+        use hyper::server::conn::http1;
+        use hyper::service::service_fn;
+        use hyper::{Request, Response};
+        use hyper_util::rt::TokioIo;
+        use tokio::net::TcpListener;
         
-        let make_service = hyper::service::make_service_fn(move |_| {
-            let metrics = metrics_clone.clone();
-            async move {
-                Ok::<_, hyper::Error>(hyper::service::service_fn(move |_req| {
-                    let metrics = metrics.clone();                async move {
-                    let stats = metrics.get_stats().await;
-                    let mut response = String::new();
-                    for (k, v) in stats {
-                        response.push_str(&format!("{}={}\n", k, v));
-                    }
-                    
-                    Ok::<_, hyper::Error>(hyper::Response::new(hyper::Body::from(response)))
-                }
-                }))
+        let metrics_port = get_server_port().parse::<u16>().unwrap_or(50051) + 1;
+        let metrics_address = format!("[::0]:{}", metrics_port);
+        info!("Starting metrics server on port {}", metrics_port);
+        
+        let listener = match TcpListener::bind(&metrics_address).await {
+            Ok(l) => l,
+            Err(e) => {
+                error!("Failed to bind metrics server: {}", e);
+                return;
             }
-        });
+        };
         
-        let server = hyper::Server::bind(&metrics_address).serve(make_service);
-        if let Err(e) = server.await {
-            error!("Metrics server error: {}", e);
+        loop {
+            let (stream, _) = match listener.accept().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("Failed to accept connection: {}", e);
+                    continue;
+                }
+            };
+            
+            let metrics = metrics_clone.clone();
+            tokio::spawn(async move {
+                let io = TokioIo::new(stream);
+                let service = service_fn(move |_req: Request<hyper::body::Incoming>| {
+                    let metrics = metrics.clone();
+                    async move {
+                        let stats = metrics.get_stats().await;
+                        let mut response_text = String::new();
+                        for (k, v) in stats {
+                            response_text.push_str(&format!("{}={}\n", k, v));
+                        }
+                        Ok::<_, hyper::Error>(Response::new(response_text))
+                    }
+                });
+                
+                if let Err(e) = http1::Builder::new().serve_connection(io, service).await {
+                    error!("Error serving metrics connection: {}", e);
+                }
+            });
         }
     });
 

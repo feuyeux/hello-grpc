@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use chrono::Local;
-use tracing::{Level, Subscriber};
+use tracing::Level;
 use tracing_subscriber::{
     fmt::{self, format::FmtSpan},
     layer::SubscriberExt,

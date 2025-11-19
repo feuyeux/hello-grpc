@@ -1,4 +1,4 @@
-FROM rust:1.86-slim-bookworm AS build-base
+FROM rust:1.91-slim-bookworm AS build-base
 # Change APT sources to Aliyun mirrors for the newer debian.sources format
 RUN if [ -f "/etc/apt/sources.list.d/debian.sources" ]; then \
     cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak && \

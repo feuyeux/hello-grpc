@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Client start script for Node.js gRPC project
+set -e
+
+# Change to the script's directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${PROJECT_ROOT}" || exit
+
+# Logging functions
+log_info() { echo "[CLIENT] $*"; }
+log_error() { echo "[ERROR] $*" >&2; }
+
+# Preparation steps
+log_info "Checking and installing dependencies if needed..."
+if [ ! -d "node_modules" ] || [ ! -d "node_modules/@grpc" ]; then
+    log_info "Installing required gRPC dependencies..."
+    # Check if package.json exists, create if not
+    if [ ! -f "package.json" ]; then
+        npm init -y
+    fi
+    npm install @grpc/grpc-js @grpc/proto-loader winston
+else
+    log_info "Dependencies already installed"
+fi
+
+# Default configuration
+USE_TLS=false
+ADDITIONAL_ARGS=""
+
+# Process command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    --tls)
+        USE_TLS=true
+        shift
+        ;;
+    --addr=*)
+        ADDR="${1#*=}"
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS --addr=$ADDR"
+        shift
+        ;;
+    --log=*)
+        LOG_LEVEL="${1#*=}"
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS --log=$LOG_LEVEL"
+        shift
+        ;;
+    --count=*)
+        COUNT="${1#*=}"
+        ADDITIONAL_ARGS="$ADDITIONAL_ARGS --count=$COUNT"
+        shift
+        ;;
+    --help|-h)
+        echo "Usage: $0 [options]"
+        echo "Options:"
+        echo "  --tls                 Enable TLS communication"
+        echo "  --addr=HOST:PORT      Server address to connect to (default: 127.0.0.1:9996)"
+        echo "  --log=LEVEL           Set log level (trace|debug|info|warn|error)"
+        echo "  --count=NUMBER        Number of requests to send"
+        echo "  --help, -h            Show this help message"
+        exit 0
+        ;;
+    *)
+        log_error "Unknown option: $1"
+        echo "Use --help to see available options"
+        exit 1
+        ;;
+    esac
+done
+
+log_info "Starting Node.js gRPC client..."
+
+# Prepare environment and command
+CMD="node proto_client.js"
+
+# Add TLS flag if enabled
+if [ "$USE_TLS" = true ]; then
+    export GRPC_HELLO_SECURE="Y"
+    log_info "TLS enabled"
+
+    # Set certificate path based on OS
+    if [[ "$(uname)" == "Darwin" ]] || [[ "$(uname)" == "Linux" ]]; then
+        export CERT_BASE_PATH="/var/hello_grpc/client_certs"
+    else
+        export CERT_BASE_PATH="d:\\garden\\var\\hello_grpc\\client_certs"
+    fi
+
+    # Check if certificate directory and root certificate exist
+    if [ ! -d "$CERT_BASE_PATH" ] || [ ! -f "$CERT_BASE_PATH/myssl_root.cer" ]; then
+        log_error "Certificate directory does not exist or missing myssl_root.cer: $CERT_BASE_PATH"
+        exit 1
+    fi
+
+    log_info "Using certificates from: $CERT_BASE_PATH"
+    CMD="$CMD --tls $ADDITIONAL_ARGS"
+else
+    [ -n "$ADDITIONAL_ARGS" ] && CMD="$CMD $ADDITIONAL_ARGS"
+fi
+
+# Execute the command
+log_info "Running: $CMD"
+eval "$CMD"

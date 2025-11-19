@@ -8,9 +8,48 @@ This project implements a gRPC client and server using Kotlin, demonstrating fou
 
 ## Prerequisites
 
-- JDK 11 or higher
-- Gradle 7.0+ (wrapper included)
-- Protocol Buffers compiler (protoc)
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| JDK                | 21.0.7  | Java Development Kit                     |
+| Kotlin             | 2.2.20  | Kotlin language version                  |
+| Build Tool         | 9.2.1   | Gradle                                   |
+| gRPC               | 1.68.0  | io.grpc:grpc-netty                       |
+| gRPC Kotlin        | 1.4.1   | io.grpc:grpc-kotlin-stub                 |
+| Protocol Buffers   | 4.28.2  | com.google.protobuf:protobuf-kotlin      |
+
+### China Mirror Configuration (Optional)
+
+If you're in China and experiencing slow downloads, configure Gradle to use Aliyun mirror by creating `~/.gradle/init.gradle`:
+
+```gradle
+allprojects {
+    buildscript {
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            mavenCentral()
+            google()
+        }
+    }
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        mavenCentral()
+        google()
+    }
+}
+
+settingsEvaluated { settings ->
+    settings.pluginManagement {
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            gradlePluginPortal()
+        }
+    }
+}
+```
 
 ## Building the Project
 
@@ -18,11 +57,11 @@ This project implements a gRPC client and server using Kotlin, demonstrating fou
 
 ```bash
 # Build the entire project
-./gradlew build
+gradle build
 
 # Build server and client separately
-./gradlew :server:build
-./gradlew :client:build
+gradle :server:build
+gradle :client:build
 ```
 
 ### 2. Generate gRPC Code from Proto Files
@@ -37,12 +76,12 @@ The Gradle build automatically generates the gRPC code using the `protobuf-gradl
 # Terminal 1: Start the server
 sh server_start.sh
 # Or using gradle directly:
-./gradlew :server:run
+gradle :server:run
 
 # Terminal 2: Start the client
 sh client_start.sh
 # Or using gradle directly:
-./gradlew :client:run
+gradle :client:run
 ```
 
 ### Proxy Mode
@@ -51,13 +90,13 @@ Kotlin implementation supports proxy mode, where the server can forward requests
 
 ```bash
 # Terminal 1: Start the backend server
-./gradlew :server:run
+gradle :server:run
 
 # Terminal 2: Start the proxy server
-GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 ./gradlew :server:run
+GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 gradle :server:run
 
 # Terminal 3: Start the client
-GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 ./gradlew :client:run
+GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 gradle :client:run
 ```
 
 ### TLS Secure Communication
@@ -81,31 +120,31 @@ To enable TLS, you need to prepare certificates and configure environment variab
 
    ```bash
    # Terminal 1: Start the server with TLS
-   GRPC_HELLO_SECURE=Y ./gradlew :server:run
+   GRPC_HELLO_SECURE=Y gradle :server:run
    
    # Terminal 2: Start the client with TLS
-   GRPC_HELLO_SECURE=Y ./gradlew :client:run
+   GRPC_HELLO_SECURE=Y gradle :client:run
    ```
 
 3. **TLS with Proxy**
 
    ```bash
    # Terminal 1: Start the backend server with TLS
-   GRPC_HELLO_SECURE=Y ./gradlew :server:run
+   GRPC_HELLO_SECURE=Y gradle :server:run
    
    # Terminal 2: Start the proxy server with TLS
    GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 \
-   GRPC_HELLO_SECURE=Y ./gradlew :server:run
+   GRPC_HELLO_SECURE=Y gradle :server:run
    
    # Terminal 3: Start the client with TLS
-   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 GRPC_HELLO_SECURE=Y ./gradlew :client:run
+   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 GRPC_HELLO_SECURE=Y gradle :client:run
    ```
 
 ## Testing
 
 ```bash
 # Run tests with Gradle
-./gradlew test
+gradle test
 ```
 
 ## Troubleshooting
@@ -121,12 +160,6 @@ To enable TLS, you need to prepare certificates and configure environment variab
    ```bash
    # View log files
    tail -f log/hello-grpc.log
-   ```
-
-3. **Gradle Wrapper Issues**
-   ```bash
-   # Re-download the Gradle wrapper if needed
-   gradle wrapper
    ```
 
 ## Environment Variables

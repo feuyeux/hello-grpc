@@ -35,6 +35,9 @@ const DEFAULT_BATCH_SIZE: usize = 5;
 /// Client application entry point
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize rustls crypto provider
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
     

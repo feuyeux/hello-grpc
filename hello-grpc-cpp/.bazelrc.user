@@ -1,0 +1,11 @@
+# User-specific Bazel configuration
+# Enable repository cache to speed up builds
+build --repository_cache=~/.cache/bazel/repository_cache
+fetch --repository_cache=~/.cache/bazel/repository_cache
+
+# Use local distribution directory
+build --distdir=~/.cache/bazel/repository_cache
+fetch --distdir=~/.cache/bazel/repository_cache
+
+# Note: For GitHub rate limit issues, wait for the limit to reset (usually 1 hour)
+# or use a different network connection

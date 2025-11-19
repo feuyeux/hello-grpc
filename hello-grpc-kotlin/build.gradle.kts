@@ -32,8 +32,6 @@ allprojects {
     repositories {
         maven {
             // https://developer.aliyun.com/mvn/guide
-            url = uri("https://maven.aliyun.com/repository/central")
-            url = uri("https://maven.aliyun.com/repository/google")
             url = uri("https://maven.aliyun.com/repository/public")
             isAllowInsecureProtocol = true
         }
@@ -42,4 +40,3 @@ allprojects {
         google()
     }
 }
-// tasks.create("assemble").dependsOn(":server:installDist")

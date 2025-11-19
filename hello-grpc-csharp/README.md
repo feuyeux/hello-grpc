@@ -8,12 +8,16 @@ This project implements a gRPC client and server using C#, demonstrating four co
 
 ## Prerequisites
 
-> - Download .NET SDK <https://dotnet.microsoft.com/en-us/download/visual-studio-sdks>
-> - What is .NET SDK <https://learn.microsoft.com/en-us/dotnet/core/sdk>
+| Component          | Version        | Notes                                    |
+|--------------------|----------------|------------------------------------------|
+| .NET SDK           | 9.0.203        | Target framework: net9.0                 |
+| Build Tool         | dotnet CLI     | .NET command-line interface              |
+| gRPC               | 2.61.0         | Grpc.AspNetCore, Grpc.Net.Client         |
+| Protocol Buffers   | Auto-generated | Managed by Grpc.Tools NuGet package      |
+| IDE                | VS 2022/VS Code| Optional                                 |
 
-- .NET 6.0 SDK or higher
-- Protocol Buffers compiler (protoc)
-- Visual Studio 2022 or Visual Studio Code (optional)
+> - Download .NET SDK: <https://dotnet.microsoft.com/en-us/download/visual-studio-sdks>
+> - What is .NET SDK: <https://learn.microsoft.com/en-us/dotnet/core/sdk>
 
 ## Version Information
 

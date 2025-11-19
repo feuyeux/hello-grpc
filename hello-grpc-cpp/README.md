@@ -8,10 +8,13 @@ This project implements a gRPC client and server using C++, demonstrating four c
 
 ## Prerequisites
 
-- C++17 compatible compiler (GCC 7+, Clang 5+, or MSVC 2019+)
-- Bazel build system
-- Protocol Buffers compiler (protoc)
-- CMake 3.15+ (alternative build system)
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| C++ Standard       | C++17   | Clang 17.0.0 (Apple clang)               |
+| Build Tool         | 8.4.2   | Bazel build system                       |
+| gRPC               | 1.65.0  | grpc library                             |
+| Protocol Buffers   | 26.0    | protobuf library (26.0.bcr.2)            |
+| CMake              | 3.15+   | Alternative build system (optional)      |
 
 ## Building the Project
 

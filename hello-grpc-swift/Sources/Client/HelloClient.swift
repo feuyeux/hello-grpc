@@ -191,8 +191,8 @@ struct HelloClient: AsyncParsableCommand {
         }
         
         let metadata: Metadata = [
-            "request-id": requestId,
-            "client": "swift-client"
+            "request-id": .string(requestId),
+            "client": .string("swift-client")
         ]
         
         logger.info("Sending unary request: data=\(request.data), meta=\(request.meta)")
@@ -222,29 +222,32 @@ struct HelloClient: AsyncParsableCommand {
         }
         
         let metadata: Metadata = [
-            "request-id": requestId,
-            "client": "swift-client"
+            "request-id": .string(requestId),
+            "client": .string("swift-client")
         ]
         
         logger.info("Starting server streaming with request: data=\(request.data), meta=\(request.meta)")
         let startTime = Date()
         
         do {
-            var responseCount = 0
+            final class Counter: @unchecked Sendable {
+                var value = 0
+            }
+            let responseCount = Counter()
             try await client.talkOneAnswerMore(request, metadata: metadata) { response in
                 for try await resp in response.messages {
                     if shutdownRequested {
                         logger.info("Server streaming cancelled")
                         return
                     }
-                    responseCount += 1
-                    logger.info("Received server streaming response #\(responseCount):")
+                    responseCount.value += 1
+                    logger.info("Received server streaming response #\(responseCount.value):")
                     logResponse(resp, logger: logger)
                 }
             }
             
             let duration = Date().timeIntervalSince(startTime) * 1000
-            logger.info("Server streaming completed: received \(responseCount) responses in \(Int(duration))ms")
+            logger.info("Server streaming completed: received \(responseCount.value) responses in \(Int(duration))ms")
         } catch {
             logError(error, requestId: requestId, method: "TalkOneAnswerMore", logger: logger)
             throw error
@@ -298,7 +301,10 @@ struct HelloClient: AsyncParsableCommand {
         let startTime = Date()
         
         do {
-            var responseCount = 0
+            final class Counter: @unchecked Sendable {
+                var value = 0
+            }
+            let responseCount = Counter()
             try await client.talkBidirectional { writer in
                 var requestCount = 0
                 for request in requests {
@@ -317,8 +323,8 @@ struct HelloClient: AsyncParsableCommand {
                         logger.info("Bidirectional streaming cancelled")
                         return
                     }
-                    responseCount += 1
-                    logger.info("Received bidirectional streaming response #\(responseCount):")
+                    responseCount.value += 1
+                    logger.info("Received bidirectional streaming response #\(responseCount.value):")
                     logResponse(response, logger: logger)
                 }
             }

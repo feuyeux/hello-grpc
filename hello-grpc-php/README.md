@@ -8,10 +8,14 @@ This project implements a gRPC client and server using PHP, demonstrating four c
 
 ## Prerequisites
 
-- PHP 7.4 or higher
-- Composer (PHP package manager)
-- PHP gRPC extension
-- Protocol Buffers compiler (protoc)
+| Component          | Version  | Notes                             |
+|--------------------|----------|-----------------------------------|
+| PHP                | 8.4.8    | PHP runtime                       |
+| Build Tool         | Composer | PHP package manager               |
+| gRPC               | 1.57.0+  | grpc/grpc extension               |
+| Protocol Buffers   | 4.0.0+   | google/protobuf                   |
+| protoc             | Latest   | Protocol Buffers compiler         |
+| PHP gRPC Extension | Latest   | pecl install grpc                 |
 
 ## Building the Project
 

@@ -57,7 +57,7 @@ public struct LoggingConfig {
             if let fileHandle = logFileHandle {
                 return MultiplexLogHandler([
                     handler,
-                    FileLogHandler(label: label, fileHandle: fileHandle, level: level)
+                    FileLogHandler(label: label, fileHandle: fileHandle, logLevel: level)
                 ])
             }
             

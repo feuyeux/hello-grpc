@@ -8,9 +8,13 @@ This project implements a gRPC client and server using Rust, demonstrating four 
 
 ## Prerequisites
 
-- Rust 1.70 or higher (recommended)
-- Cargo (Rust package manager)
-- Protocol Buffers compiler (protoc)
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| Rust               | 1.91.1  | Rust programming language (Edition 2024) |
+| Build Tool         | Cargo   | Rust package manager                     |
+| gRPC               | 0.14.2  | tonic                                    |
+| Protocol Buffers   | 0.14.1  | prost                                    |
+| protoc             | Auto    | Handled by tonic-prost-build 0.14.2      |
 
 ## Building the Project
 
@@ -20,29 +24,33 @@ This project implements a gRPC client and server using Rust, demonstrating four 
 # Install Rust with rustup if you haven't already
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Install protobuf compiler plugin for Rust if needed
-export RUSTUP_DIST_SERVER="https://mirrors.tuna.tsinghua.edu.cn/rustup"
-cargo install protobuf-codegen
-cargo install tonic-build
+# For faster downloads in China, use mirror (optional)
+export RUSTUP_DIST_SERVER="https://rsproxy.cn"
+export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+
+# Update to latest Rust version
+rustup update
+
+# The project uses tonic 0.14.2 with tonic-prost-build
+# All dependencies are managed via Cargo.toml
 ```
 
 ### 2. Generate gRPC Code from Proto Files
 
-The code generation is configured in `build.rs` and happens automatically during build, but you can also trigger it with:
+The code generation is configured in `build.rs` and happens automatically during build using `tonic-prost-build`:
 
 ```bash
-# Generate Rust code from proto files
+# Generate Rust code from proto files (happens automatically)
 cargo build
 
-$ find . -name "*.rs"
-
-./target/debug/build/hello-grpc-rust-b1aedb8eb000afe4/out/org.feuyeux.grpc.rs
-./target/debug/build/anyhow-db0336bb83000618/out/probe.rs
-./build.rs
-./main.rs
-./src/client.rs
-./src/server.rs
+# The generated code will be in:
+# target/debug/build/hello_grpc_rust-<hash>/out/hello.rs
 ```
+
+The build process uses:
+- `tonic-prost-build 0.14.2` for code generation
+- `prost 0.14.1` for Protocol Buffers serialization
+- `tonic 0.14.2` for gRPC runtime
 
 ### 3. Build the Project
 
@@ -58,12 +66,22 @@ cargo build --release
 
 ### Basic Communication
 
+Using convenience scripts:
 ```bash
 # Terminal 1: Start the server
-cargo run --bin server
+./server_start.sh
 
 # Terminal 2: Start the client
-cargo run --bin client
+./client_start.sh
+```
+
+Or using cargo directly:
+```bash
+# Terminal 1: Start the server
+cargo run --bin proto-server
+
+# Terminal 2: Start the client
+cargo run --bin proto-client
 ```
 
 ### Proxy Mode
@@ -72,13 +90,13 @@ Rust implementation supports proxy mode, where the server can forward requests t
 
 ```bash
 # Terminal 1: Start the backend server
-cargo run --bin server
+cargo run --bin proto-server
 
 # Terminal 2: Start the proxy server
-GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 cargo run --bin server
+GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 cargo run --bin proto-server
 
 # Terminal 3: Start the client
-GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 cargo run --bin client
+GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 cargo run --bin proto-client
 ```
 
 ### TLS Secure Communication
@@ -100,26 +118,36 @@ To enable TLS, you need to prepare certificates and configure environment variab
 
 2. **Direct TLS Connection**
 
+   Using convenience scripts:
    ```bash
    # Terminal 1: Start the server with TLS
-   GRPC_HELLO_SECURE=Y cargo run --bin server
+   ./server_start.sh --tls
    
    # Terminal 2: Start the client with TLS
-   GRPC_HELLO_SECURE=Y cargo run --bin client
+   ./client_start.sh --tls
+   ```
+
+   Or using cargo directly with environment variables:
+   ```bash
+   # Terminal 1: Start the server with TLS
+   GRPC_HELLO_SECURE=Y cargo run --bin proto-server
+   
+   # Terminal 2: Start the client with TLS
+   GRPC_HELLO_SECURE=Y cargo run --bin proto-client
    ```
 
 3. **TLS with Proxy**
 
    ```bash
    # Terminal 1: Start the backend server with TLS
-   GRPC_HELLO_SECURE=Y cargo run --bin server
+   GRPC_HELLO_SECURE=Y cargo run --bin proto-server
    
    # Terminal 2: Start the proxy server with TLS
    GRPC_SERVER_PORT=9997 GRPC_HELLO_BACKEND=localhost GRPC_HELLO_BACKEND_PORT=9996 \
-   GRPC_HELLO_SECURE=Y cargo run --bin server
+   GRPC_HELLO_SECURE=Y cargo run --bin proto-server
    
    # Terminal 3: Start the client with TLS
-   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 GRPC_HELLO_SECURE=Y cargo run --bin client
+   GRPC_SERVER=localhost GRPC_SERVER_PORT=9997 GRPC_HELLO_SECURE=Y cargo run --bin proto-client
    ```
 
 ## Testing
@@ -201,16 +229,18 @@ CROSS_COMPILE=x86_64-linux-musl-gcc cargo build --release --bin proto-server --t
 
 ## Features
 
-- ✅ Four gRPC communication models
-- ✅ TLS secure communication
-- ✅ Proxy functionality
+- ✅ Four gRPC communication models (Unary, Server Streaming, Client Streaming, Bidirectional)
+- ✅ TLS secure communication with webpki-roots
+- ✅ Proxy functionality for request forwarding
 - ✅ Docker compatibility
-- ✅ Async programming with Tokio
+- ✅ Async programming with Tokio 1.48
 - ✅ Memory and thread safety guarantees
-- ✅ Header propagation
-- ✅ Structured logging with tracing
+- ✅ Header propagation and metadata handling
+- ✅ Structured logging with tracing and tracing-subscriber
 - ✅ Environment variable configuration
-- ✅ gRPC and protoc version reporting
+- ✅ Metrics endpoint (port +1 from main server)
+- ✅ Rust Edition 2024
+- ✅ Latest tonic 0.14.2 with hyper 1.x support
 
 ## Contributor Notes
 

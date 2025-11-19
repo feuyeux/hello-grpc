@@ -93,7 +93,16 @@ class Connection
         if (empty($basePath)) {
             $osName = PHP_OS_FAMILY;
             
-            if ($osName === 'Windows') {
+            // First try to use docker/tls directory relative to project root
+            // __DIR__ is /path/to/hello-grpc-php/conn
+            // We need /path/to/hello-grpc/docker/tls/server_certs
+            $projectRoot = dirname(dirname(__DIR__)); // Go up two levels from conn directory
+            $dockerTlsPath = $projectRoot . '/docker/tls/server_certs';
+            
+            if (file_exists($dockerTlsPath)) {
+                $basePath = $dockerTlsPath;
+                $this->logger->info(sprintf("Using project certificate path: %s", $basePath));
+            } elseif ($osName === 'Windows') {
                 $basePath = 'd:\\garden\\var\\hello_grpc\\server_certs';
             } elseif ($osName === 'Darwin') {
                 // macOS uses a different path structure
@@ -103,8 +112,10 @@ class Connection
                 $basePath = '/var/hello_grpc/server_certs';
             }
             
-            $this->logger->info(sprintf("Using platform-specific (%s) certificate path: %s", 
-                $osName, $basePath));
+            if (!file_exists($dockerTlsPath)) {
+                $this->logger->info(sprintf("Using platform-specific (%s) certificate path: %s", 
+                    $osName, $basePath));
+            }
         } else {
             $this->logger->info(sprintf("Using custom certificate path from environment: %s", 
                 $basePath));

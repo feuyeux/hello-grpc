@@ -48,6 +48,22 @@ $GLOBALS['log'] = $log;
 // Print initial debug message to verify logging is working
 $log->debug("Logger initialized");
 
+// Parse command line arguments
+$options = getopt('', ['tls', 'addr:', 'log:']);
+
+// Set TLS mode from command line if provided
+if (isset($options['tls'])) {
+    putenv('GRPC_HELLO_SECURE=Y');
+}
+
+// Set address if provided
+if (isset($options['addr'])) {
+    $addrParts = explode(':', $options['addr']);
+    if (count($addrParts) === 2) {
+        putenv('GRPC_SERVER_PORT=' . $addrParts[1]);
+    }
+}
+
 // Define signal handler function
 /**
  * Signal handler for graceful shutdown
@@ -103,22 +119,26 @@ try {
             $server->addHttp2Port($port);
         } else {
             try {
-                // Read certificate files
+                // Read certificate files  
                 $serverKey = file_get_contents($conn->keyPath);
                 $serverCert = file_get_contents($conn->certPath);
+                $rootCert = file_exists($conn->rootCertPath) ? file_get_contents($conn->rootCertPath) : null;
                 
                 // Create SSL credentials
-                // PHP gRPC ServerCredentials::createSsl signature:
-                // createSsl(string $pem_root_certs, string $pem_private_key, string $pem_cert_chain)
-                // For server-only auth (no client cert verification), use null for root certs
+                // ServerCredentials::createSsl expects exactly 3 string parameters:
+                // 1. Root certificate (for client verification, use null or empty string for server-only auth)
+                // 2. Server private key
+                // 3. Server certificate chain
                 $serverCredentials = ServerCredentials::createSsl(
-                    null,           // Root certificate for client verification (null = no client auth)
-                    $serverKey,     // Server private key
-                    $serverCert     // Server certificate chain
+                    $rootCert ?: null,  // Root certificate for client verification
+                    $serverKey,         // Server private key
+                    $serverCert         // Server certificate chain
                 );
                 
-                // Add secure port
-                $server->addHttp2Port($port, $serverCredentials);
+                $log->info("SSL credentials created successfully");
+                
+                // Add secure port using addSecureHttp2Port
+                $server->addSecureHttp2Port($port, $serverCredentials);
                 
                 $actuallySecure = true;
                 $log->info("TLS configuration successful - server is SECURE");

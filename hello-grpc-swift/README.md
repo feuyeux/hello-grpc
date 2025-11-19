@@ -8,10 +8,14 @@ This project implements a gRPC client and server using Swift, demonstrating four
 
 ## Prerequisites
 
-- Swift 5.5 or higher
-- Swift Package Manager
-- Protocol Buffers compiler (protoc)
-- macOS 10.15+ or Ubuntu 18.04+
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| Swift              | 6.2.1   | Swift programming language (Swift 5.5+)  |
+| Build Tool         | SPM     | Swift Package Manager                    |
+| gRPC               | 2.0.0+  | grpc-swift                               |
+| Protocol Buffers   | 1.0.0+  | grpc-swift-protobuf                      |
+| protoc             | Latest  | Protocol Buffers compiler                |
+| Platform           | macOS   | macOS 15.0+ or Ubuntu 18.04+             |
 
 ## Building the Project
 

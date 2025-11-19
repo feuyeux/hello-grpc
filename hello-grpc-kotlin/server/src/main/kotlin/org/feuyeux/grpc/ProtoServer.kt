@@ -124,14 +124,7 @@ class ProtoServer {
     @Throws(SSLException::class)
     private fun createServer(): Server? {
         // Create service implementation
-        val landingService = if (System.getenv("GRPC_HELLO_BACKEND") != null) {
-            logger.info("Operating in proxy mode with backend connection")
-            val channel = Connection.getChannel(HeaderClientInterceptor())
-            LandingService(ProtoClient(channel))
-        } else {
-            logger.info("Operating in standalone mode (no backend)")
-            LandingService(null)
-        }
+        val landingService = LandingService()
         
         // Apply server interceptors
         val interceptedService = ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
@@ -148,12 +141,12 @@ class ProtoServer {
                 .addService(interceptedService)
                 .addTransportFilter(object : ServerTransportFilter() {
                     override fun transportReady(attributes: Attributes): Attributes {
-                        logger.info("New client connection established: ${attributes}")
+                        logger.info("Connection established: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
                         return attributes
                     }
                     
                     override fun transportTerminated(attributes: Attributes) {
-                        logger.warn("Client connection terminated: ${attributes}")
+                        logger.warn("Connection terminated: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
                     }
                 })
                 .build()
@@ -167,6 +160,16 @@ class ProtoServer {
                 
                 NettyServerBuilder.forPort(serverPort)
                     .addService(interceptedService)
+                    .addTransportFilter(object : ServerTransportFilter() {
+                        override fun transportReady(attributes: Attributes): Attributes {
+                            logger.info("Connection established: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
+                            return attributes
+                        }
+                        
+                        override fun transportTerminated(attributes: Attributes) {
+                            logger.warn("Connection terminated: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
+                        }
+                    })
                     .sslContext(buildSslContext()?.build())
                     .build()
             } catch (e: Exception) {

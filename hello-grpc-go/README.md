@@ -22,14 +22,15 @@ This directory contains the Go implementation of the Hello gRPC project, demonst
 
 ## Prerequisites
 
-**Required:**
-- Go 1.21 or higher
-- Protocol Buffers compiler (protoc) 3.x
-- Go protocol buffers plugins
-
-**Optional:**
-- Docker (for containerized deployment)
-- Make (for build automation)
+| Component          | Version | Notes                                    |
+|--------------------|---------|------------------------------------------|
+| Go                 | 1.25.4  | Go programming language                  |
+| Build Tool         | 1.25.4  | go mod, Go module system                 |
+| gRPC               | 1.76.0  | google.golang.org/grpc                   |
+| Protocol Buffers   | 1.36.10 | google.golang.org/protobuf               |
+| protoc             | 3.x     | Protocol Buffers compiler                |
+| Docker             | Latest  | Optional, for containerized deployment   |
+| Make               | Latest  | Optional, for build automation           |
 
 **Installation:**
 
