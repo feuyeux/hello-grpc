@@ -21,14 +21,17 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "server": "node src/server/index.js",
+    "client": "node src/client/index.js",
+    "start": "node src/server/index.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/feuyeux/hello-grpc-nodejs.git"
   },
   "license": "Apache-2.0",
-  "main": "proto_client.js",
+  "main": "src/server/index.js",
   "directories": {
     "test": "test"
   },

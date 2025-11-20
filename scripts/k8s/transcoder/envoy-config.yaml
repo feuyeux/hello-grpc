@@ -1,0 +1,72 @@
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    #1
+    socket_address: { address: 0.0.0.0, port_value: 9991 }
+
+static_resources:
+  listeners:
+    - name: main-listener
+      address:
+        #2
+        socket_address: { address: 0.0.0.0, port_value: 9990 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: grpc_json
+                codec_type: AUTO
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"]
+                      routes:
+                        # NOTE: by default, matching happens based on the gRPC route, and not on the incoming request path.
+                        # Reference: https://www.envoyproxy.io/docs/envoy/latest/configuration/http_filters/grpc_json_transcoder_filter#route-configs-for-transcoded-requests
+                        # 3a grpc:{} means that requests are only forwarded if they are found in the grpc service definition, returning 404 for others
+                        - match: { prefix: "/" , grpc: {}}
+                          route: { cluster: grpc-backend-services, timeout: { seconds: 60 } }
+                http_filters:
+                  - name: envoy.filters.http.grpc_json_transcoder
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
+                      #4
+                      proto_descriptor: "./landing.pb"
+                      #5
+                      services: ["org.feuyeux.grpc.LandingService"]
+                      print_options:
+                        add_whitespace: true
+                        always_print_primitive_fields: true
+                        always_print_enums_as_ints: false
+                        preserve_proto_field_names: false
+                  - name: envoy.filters.http.router
+
+  clusters:
+    #7
+    - name: grpc-backend-services
+      connect_timeout: 1.25s
+      type: logical_dns
+      lb_policy: round_robin
+      dns_lookup_family: V4_ONLY
+#      typed_extension_protocol_options:
+#        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+#          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+#          explicit_http_config:
+#            http2_protocol_options: {}
+      http2_protocol_options: {}
+      load_assignment:
+        #7
+        cluster_name: grpc-backend-services
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      # WARNING: "docker.for.mac.localhost" has been deprecated from Docker v18.03.0.
+                      # If you're running an older version of Docker, please use "docker.for.mac.localhost" instead.
+                      # Reference: https://docs.docker.com/docker-for-mac/release-notes/#docker-community-edition-18030-ce-mac59-2018-03-26
+                      #8
+                      address: 127.0.0.1
+                      port_value: 9996

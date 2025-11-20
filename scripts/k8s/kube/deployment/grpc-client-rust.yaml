@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-best
+  name: grpc-client-rust
+  labels:
+    app: grpc-client-rust
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-client-rust
+  template:
+    metadata:
+      labels:
+        app: grpc-client-rust
+    spec:
+      serviceAccountName: grpc-best-sa
+      containers:
+        - name: grpc-client-rust
+          image: feuyeux/grpc_client_rust:1.0.0
+          command: ["/bin/sleep", "3650d"]
+          env:
+            - name: GRPC_SERVER
+              value: "grpc-server-svc.grpc-best.svc.cluster.local"
+          imagePullPolicy: Always

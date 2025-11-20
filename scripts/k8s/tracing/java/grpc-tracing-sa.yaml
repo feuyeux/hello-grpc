@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: grpc-tracing
+  name: grpc-tracing-sa
+  labels:
+    account: grpc-tracing-sa

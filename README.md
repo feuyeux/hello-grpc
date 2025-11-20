@@ -25,6 +25,7 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 - [gRPC Architecture & Communication Patterns](#-grpc-architecture--communication-patterns)
 - [Feature Implementation Status](#-feature-implementation-status)
 - [Quick Start Guide - Learn gRPC in 5 Minutes](#-quick-start-guide---learn-grpc-in-5-minutes)
+- [Proxy Scripts - Test gRPC Proxy Chains Across All Languages](#-proxy-scripts---test-grpc-proxy-chains-across-all-languages)
 - [Multi-Language Container Examples](#multi-language-container-example)
 - [Cross-Platform Applications](#-cross-platform-applications)
 - [Documentation](#-documentation)
@@ -72,7 +73,7 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 
 ## 🔷 gRPC Architecture & Communication Patterns
 
-![gRPC Architecture Diagram](diagram/hello-grpc.svg)
+![gRPC Architecture Diagram](doc/diagram/hello-grpc.svg)
 
 ### gRPC Communication Models Explained
 
@@ -114,16 +115,16 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 |:-----------|:--------|:----|:------|:------------|:-------------------------|:------------------------|:----------------|
 | Java       | ✅      | ✅  | ✅    | ✅          | [Maven][1]               | [JUnit 5][2]            | [Log4j2][3]     |
 | Go         | ✅      | ✅  | ✅    | ✅          | [Go Modules][40]         | [Go Testing][41]        | [Logrus][5]     |
-| Node.js    | ✅      | ⚠️  | ✅    | ✅          | [npm][7]                 | [Mocha][8]              | [Winston][9]    |
-| TypeScript | ✅      | ⚠️  | ✅    | ✅          | [Yarn][28] & [TSC][29]   | [Jest][42]              | [Winston][9]    |
+| Node.js    | ✅      | ✅  | ✅    | ✅          | [npm][7]                 | [Mocha][8]              | [Winston][9]    |
+| TypeScript | ✅      | ✅  | ✅    | ✅          | [Yarn][28] & [TSC][29]   | [Jest][42]              | [Winston][9]    |
 | Python     | ✅      | ✅  | ✅    | ✅          | [pip][11]                | [unittest][43]          | [logging][44]   |
 | Rust       | ✅      | ✅  | ✅    | ✅          | [Cargo][13]              | [Rust Test][45]         | [log4rs][14]    |
 | C++        | ✅      | ✅  | ✅    | ✅          | [Bazel][37]/[CMake][16]  | [Catch2][24]            | [glog][17]      |
 | C#         | ✅      | ✅  | ✅    | ✅          | [NuGet][18]              | [NUnit][30]             | [log4net][19]   |
 | Kotlin     | ✅      | ✅  | ✅    | ✅          | [Gradle][21]             | [JUnit 5][2]            | [Log4j2][3]     |
-| Swift      | ✅      | ✅  | ⚠️    | ✅          | [SPM][22]                | [Swift Testing][38]     | [swift-log][23] |
-| Dart       | ✅      | 🚧  | 🚧    | ✅          | [Pub][25]                | [Test][27]              | [Logger][26]    |
-| PHP        | ✅      | 🚧  | 🚧    | ✅          | [Composer][34]           | [PHPUnit][35]           | [Monolog][36]   |
+| Swift      | ✅      | ✅  | ✅    | ✅          | [SPM][22]                | [Swift Testing][38]     | [swift-log][23] |
+| Dart       | ✅      | ✅  | ✅    | ✅          | [Pub][25]                | [Test][27]              | [Logger][26]    |
+| PHP        | ✅      | ✅  | ✅    | ✅          | [Composer][34]           | [PHPUnit][35]           | [Monolog][36]   |
 
 **Legend:**
 
@@ -284,6 +285,49 @@ Enable gRPC debugging with:
 export GRPC_VERBOSITY=DEBUG
 export GRPC_TRACE=all
 ```
+
+## 🔷 Proxy Scripts - Test gRPC Proxy Chains
+
+Unified scripts in `scripts/proxy/` to test proxy functionality across all 12 languages.
+
+**Architecture**: `Client → Proxy Server → Backend Server`
+
+### Quick Start
+
+```bash
+# Test single language
+./scripts/proxy/test-proxy.sh --language go
+
+# Test all languages (100% support)
+./scripts/proxy/verify-all-proxies.sh
+
+# With TLS
+./scripts/proxy/test-proxy.sh --language java --tls
+```
+
+### Manual Testing
+
+```bash
+# Terminal 1: Backend (port 9996)
+./scripts/proxy/start-backend.sh --language java
+
+# Terminal 2: Proxy (port 8886 → 9996)
+./scripts/proxy/start-proxy.sh --language java
+
+# Terminal 3: Client (→ 8886)
+./scripts/proxy/start-client.sh --language java
+```
+
+### Cross-Language Proxy
+
+```bash
+# Mix languages: Python client → Java proxy → Rust backend
+./scripts/proxy/start-backend.sh --language rust --port 9996
+./scripts/proxy/start-proxy.sh --language java --port 8886 --backend localhost:9996
+./scripts/proxy/start-client.sh --language python --server localhost:8886
+```
+
+**Full docs**: [scripts/proxy/README.md](scripts/proxy/README.md)
 
 ## 🔷 Cross-Platform Applications
 

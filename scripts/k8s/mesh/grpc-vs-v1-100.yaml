@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  namespace: grpc-best
+  name: grpc-server-vs
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - grpc-gateway
+  http:
+    - match:
+        - port: 9996
+      route:
+        - destination:
+            host: grpc-server-svc
+            subset: v1
+          weight: 100

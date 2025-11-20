@@ -139,14 +139,11 @@ fi
 SERVER_JAR="target/hello-grpc-java-server.jar"
 CLIENT_JAR="target/hello-grpc-java-client.jar"
 POM_FILE="pom.xml"
-SERVER_POM="server_pom.xml"
-CLIENT_POM="client_pom.xml"
 
 NEEDS_BUILD=false
 if [ "$CLEAN_BUILD" = true ] || [ ! -f "$SERVER_JAR" ] || [ ! -f "$CLIENT_JAR" ]; then
     NEEDS_BUILD=true
-elif [ "$POM_FILE" -nt "$SERVER_JAR" ] || [ "$SERVER_POM" -nt "$SERVER_JAR" ] || \
-     [ "$CLIENT_POM" -nt "$CLIENT_JAR" ]; then
+elif [ "$POM_FILE" -nt "$SERVER_JAR" ]; then
     NEEDS_BUILD=true
 elif [ -n "$(find src -name "*.java" -newer "$SERVER_JAR" 2>/dev/null)" ]; then
     NEEDS_BUILD=true
@@ -167,10 +164,20 @@ if [ "$NEEDS_BUILD" = true ]; then
         MVN_ARGS="clean $MVN_ARGS"
     fi
     
+    # Build server JAR
+    log_build "Building server JAR..."
     if [ "$VERBOSE" = true ]; then
-        mvn $MVN_ARGS
+        mvn $MVN_ARGS -Pserver
     else
-        mvn $MVN_ARGS -q
+        mvn $MVN_ARGS -Pserver -q
+    fi
+    
+    # Build client JAR
+    log_build "Building client JAR..."
+    if [ "$VERBOSE" = true ]; then
+        mvn $MVN_ARGS -Pclient
+    else
+        mvn $MVN_ARGS -Pclient -q
     fi
 else
     log_debug "Java project is up to date, skipping build"

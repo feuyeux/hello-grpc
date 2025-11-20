@@ -64,9 +64,40 @@ class Server {
       // Configure server port
       final serverPort = Conn.getServerPort();
 
+      // Create backend client if in proxy mode
+      LandingServiceClient? backendClient;
+      if (Conn.hasBackend) {
+        _logger.info('Proxy mode enabled - initializing backend client');
+        final backendHost = Conn.backendHost!;
+        final backendPortStr =
+            io.Platform.environment['GRPC_HELLO_BACKEND_PORT'];
+        final backendPort =
+            backendPortStr != null ? int.parse(backendPortStr) : 9996;
+
+        _logger.info('Connecting to backend at $backendHost:$backendPort');
+
+        final backendChannel = grpc.ClientChannel(
+          backendHost,
+          port: backendPort,
+          options: grpc.ChannelOptions(
+            credentials:
+                Conn.isSecure
+                    ? grpc.ChannelCredentials.secure(
+                      certificates: await File(Conn.rootCertPath).readAsBytes(),
+                    )
+                    : const grpc.ChannelCredentials.insecure(),
+          ),
+        );
+
+        backendClient = LandingServiceClient(backendChannel);
+        _logger.info('Backend client initialized');
+      }
+
       // Create server with service implementation
       final server = grpc.Server.create(
-        services: [LandingService(logger: _logger)],
+        services: [
+          LandingService(logger: _logger, backendClient: backendClient),
+        ],
       );
 
       // Set up signal handling for graceful shutdown
@@ -122,8 +153,9 @@ class Server {
     // Configure root logger
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((rec) {
-      // Log to console using logger instead of print
-      _logger.info('${rec.level.name}: ${rec.time}: ${rec.message}');
+      // Log to console using print to avoid recursion
+      // ignore: avoid_print
+      print('${rec.level.name}: ${rec.time}: ${rec.message}');
 
       // Write to log file
       outputFile.writeAsStringSync(
@@ -160,13 +192,13 @@ class Server {
 /// Implementation of the gRPC LandingService
 class LandingService extends LandingServiceBase {
   /// Constructor
-  LandingService({required this.logger});
+  LandingService({required this.logger, this.backendClient});
 
   /// Logger instance
   final Logger logger;
 
-  /// Backend client for proxy mode (not implemented in this version)
-  // final LandingServiceClient? _backendClient;
+  /// Backend client for proxy mode
+  final LandingServiceClient? backendClient;
 
   /// Create response result with appropriate data
   ///
@@ -218,6 +250,25 @@ class LandingService extends LandingServiceBase {
     );
 
     try {
+      // Forward to backend if in proxy mode
+      if (backendClient != null) {
+        logger.info('Forwarding request to backend: request_id=$requestId');
+        final startTime = DateTime.now();
+
+        // Forward metadata/headers
+        final metadata = _extractTracingHeaders(call);
+        final response = await backendClient!.talk(
+          request,
+          options: grpc.CallOptions(metadata: metadata),
+        );
+
+        final duration = DateTime.now().difference(startTime);
+        logger.info(
+          'Backend response received: request_id=$requestId, duration=${duration.inMilliseconds}ms',
+        );
+        return response;
+      }
+
       // Create response
       final response = TalkResponse()..status = 200;
       response.results.add(createResponse(request.data));
@@ -244,6 +295,36 @@ class LandingService extends LandingServiceBase {
     );
 
     try {
+      // Forward to backend if in proxy mode
+      if (backendClient != null) {
+        logger.info(
+          'Forwarding server streaming request to backend: request_id=$requestId',
+        );
+        final startTime = DateTime.now();
+
+        // Forward metadata/headers
+        final metadata = _extractTracingHeaders(call);
+        final responseStream = backendClient!.talkOneAnswerMore(
+          request,
+          options: grpc.CallOptions(metadata: metadata),
+        );
+
+        var count = 0;
+        await for (final response in responseStream) {
+          count++;
+          logger.info(
+            'Forwarding response #$count from backend: request_id=$requestId',
+          );
+          yield response;
+        }
+
+        final duration = DateTime.now().difference(startTime);
+        logger.info(
+          'Backend streaming completed: request_id=$requestId, responses=$count, duration=${duration.inMilliseconds}ms',
+        );
+        return;
+      }
+
       // Split input data by comma
       final items = request.data.split(',');
 
@@ -277,6 +358,27 @@ class LandingService extends LandingServiceBase {
     logger.info('REQUEST: method=TalkMoreAnswerOne, request_id=$requestId');
 
     try {
+      // Forward to backend if in proxy mode
+      if (backendClient != null) {
+        logger.info(
+          'Forwarding client streaming request to backend: request_id=$requestId',
+        );
+        final startTime = DateTime.now();
+
+        // Forward metadata/headers
+        final metadata = _extractTracingHeaders(call);
+        final response = await backendClient!.talkMoreAnswerOne(
+          requests,
+          options: grpc.CallOptions(metadata: metadata),
+        );
+
+        final duration = DateTime.now().difference(startTime);
+        logger.info(
+          'Backend response received: request_id=$requestId, duration=${duration.inMilliseconds}ms',
+        );
+        return response;
+      }
+
       // Create response
       final response = TalkResponse()..status = 200;
       var requestCount = 0;
@@ -314,6 +416,36 @@ class LandingService extends LandingServiceBase {
     logger.info('REQUEST: method=TalkBidirectional, request_id=$requestId');
 
     try {
+      // Forward to backend if in proxy mode
+      if (backendClient != null) {
+        logger.info(
+          'Forwarding bidirectional streaming request to backend: request_id=$requestId',
+        );
+        final startTime = DateTime.now();
+
+        // Forward metadata/headers
+        final metadata = _extractTracingHeaders(call);
+        final responseStream = backendClient!.talkBidirectional(
+          requests,
+          options: grpc.CallOptions(metadata: metadata),
+        );
+
+        var count = 0;
+        await for (final response in responseStream) {
+          count++;
+          logger.info(
+            'Forwarding response #$count from backend: request_id=$requestId',
+          );
+          yield response;
+        }
+
+        final duration = DateTime.now().difference(startTime);
+        logger.info(
+          'Backend bidirectional streaming completed: request_id=$requestId, responses=$count, duration=${duration.inMilliseconds}ms',
+        );
+        return;
+      }
+
       var requestCount = 0;
       // Process each request and yield a response
       await for (final request in requests) {
@@ -336,6 +468,26 @@ class LandingService extends LandingServiceBase {
       );
       rethrow;
     }
+  }
+
+  /// Extract tracing headers from incoming request
+  ///
+  /// [call] The service call containing metadata
+  /// Returns a map of tracing headers to forward to backend
+  Map<String, String> _extractTracingHeaders(grpc.ServiceCall call) {
+    final headers = <String, String>{};
+    final clientMetadata = call.clientMetadata;
+
+    if (clientMetadata != null) {
+      for (final headerName in tracingHeaders) {
+        final value = clientMetadata[headerName];
+        if (value != null) {
+          headers[headerName] = value;
+        }
+      }
+    }
+
+    return headers;
   }
 
   /// Log request metadata for debugging

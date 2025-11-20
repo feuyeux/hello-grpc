@@ -11,13 +11,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jdk.version>21</jdk.version>
-        <!-- https://mvnrepository.com/artifact/io.grpc/grpc-protobuf -->
         <grpc.version>1.75.0</grpc.version>
-        <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
         <protoc.version>3.24.3</protoc.version>
         <netty-resolver-dns.version>4.2.7.Final</netty-resolver-dns.version>
         <guava.version>33.5.0-jre</guava.version>
-        <!-- https://mvnrepository.com/artifact/io.etcd/jetcd-core -->
         <jetcd.version>0.8.6</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
@@ -25,23 +22,21 @@
         <maven-shade-plugin.version>3.3.0</maven-shade-plugin.version>
         <junit.version>5.13.4</junit.version>
         <system-rules.version>1.19.0</system-rules.version>
-        <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <log4j-slf4j-impl.version>2.25.1</log4j-slf4j-impl.version>
         <nacos.version>3.1.0</nacos.version>
         <lombok.version>1.18.36</lombok.version>
+        <fmt-maven-plugin.version>2.29</fmt-maven-plugin.version>
+        <exec-maven-plugin.version>3.6.2</exec-maven-plugin.version>
     </properties>
 
     <dependencies>
-        <!-- Lombok for code generation -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/io.grpc/grpc-netty -->
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
@@ -53,7 +48,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
@@ -70,8 +64,6 @@
             <artifactId>grpc-stub</artifactId>
             <version>${grpc.version}</version>
         </dependency>
-
-        <!-- grpc reflection -->
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-services</artifactId>
@@ -91,8 +83,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!-- jetcd -->
         <dependency>
             <groupId>io.etcd</groupId>
             <artifactId>jetcd-core</artifactId>
@@ -104,35 +94,28 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
         </dependency>
-
-        <!-- SLF4J Bridge slf4j to log4j2 -->
-        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-slf4j-impl -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j-slf4j-impl.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>annotations-api</artifactId>
             <version>${annotations-api.version}</version>
             <scope>provided</scope>
         </dependency>
-
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver-dns-native-macos</artifactId>
             <version>${netty-resolver-dns.version}</version>
             <classifier>osx-x86_64</classifier>
         </dependency>
-
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
@@ -179,23 +162,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!-- junit5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/com.github.stefanbirkner/system-rules -->
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
             <version>${system-rules.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-testing</artifactId>
@@ -206,7 +184,6 @@
 
     <build>
         <extensions>
-            <!-- https://mvnrepository.com/artifact/kr.motd.maven/os-maven-plugin -->
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
@@ -215,7 +192,6 @@
         </extensions>
         <finalName>${project.name}</finalName>
         <plugins>
-            <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -224,6 +200,13 @@
                     <encoding>UTF-8</encoding>
                     <source>${jdk.version}</source>
                     <target>${jdk.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
@@ -236,15 +219,10 @@
                 <version>${protobuf-maven-plugin.version}</version>
                 <configuration>
                     <clearOutputDirectory>false</clearOutputDirectory>
-                    <!--<outputDirectory>${project.build.sourceDirectory}</outputDirectory>-->
-                    <pluginArtifact>
-                        io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
-                    </pluginArtifact>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
                     <pluginId>grpc-java</pluginId>
                     <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
-                    <protocArtifact>
-                        com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
-                    </protocArtifact>
+                    <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
                 </configuration>
                 <executions>
                     <execution>
@@ -255,27 +233,22 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- https://mvnrepository.com/artifact/com.spotify.fmt/fmt-maven-plugin -->
             <plugin>
                 <groupId>com.spotify.fmt</groupId>
                 <artifactId>fmt-maven-plugin</artifactId>
-                <version>2.29</version>
+                <version>${fmt-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
-                            <!-- Goal	Default Phase -->
-                            <!-- format	process-sources-->
-                            <!-- check	verify-->
                             <goal>format</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
-            <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/exec-maven-plugin -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.6.2</version>
+                <version>${exec-maven-plugin.version}</version>
                 <configuration>
                     <cleanupDaemonThreads>false</cleanupDaemonThreads>
                     <daemonThreadJoinTimeout>0</daemonThreadJoinTimeout>
@@ -283,4 +256,77 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>server</id>
+            <build>
+                <finalName>hello-grpc-java-server</finalName>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>${maven-shade-plugin.version}</version>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>org.feuyeux.grpc.server.ProtoServer</mainClass>
+                                            <manifestEntries>
+                                                <Multi-Release>true</Multi-Release>
+                                            </manifestEntries>
+                                        </transformer>
+                                    </transformers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>client</id>
+            <build>
+                <finalName>hello-grpc-java-client</finalName>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>${maven-shade-plugin.version}</version>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>org.feuyeux.grpc.client.ProtoClient</mainClass>
+                                            <manifestEntries>
+                                                <Multi-Release>true</Multi-Release>
+                                            </manifestEntries>
+                                        </transformer>
+                                    </transformers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

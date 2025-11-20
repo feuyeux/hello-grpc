@@ -1,5 +1,5 @@
 // filepath: /Users/hanl5/coding/feuyeux/hello-grpc/hello-grpc-nodejs/test_tls.js
-const connectionModule = require('./common/connection');
+const connectionModule = require('./src/common/connection');
 const logger = connectionModule.logger;
 
 // Set environment variable to trigger TLS connection
@@ -16,7 +16,7 @@ try {
     logger.info("TLS client created successfully. Testing connection...");
     
     // Create a simple unary call to test connection
-    const { TalkRequest } = require('./common/landing_pb');
+    const { TalkRequest } = require('./src/proto/landing_pb');
     const request = new TalkRequest();
     request.setData("TLS-TEST");
     request.setMeta("NODEJS-TLS-TEST");

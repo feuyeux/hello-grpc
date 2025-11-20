@@ -4,10 +4,67 @@ import GRPCCore
 import GRPCNIOTransportHTTP2
 import HelloCommon
 import Logging
+import NIOCore
+import NIOPosix
 
-struct HelloService: Hello_LandingService.SimpleServiceProtocol {
+class HelloService: Hello_LandingService.SimpleServiceProtocol {
     let logger = Logger(label: "HelloService")
-    var backendClient: Hello_LandingService.ClientProtocol?
+    let backendConfig: (host: String, port: Int, useTLS: Bool)?
+    let certBasePath: String
+    
+    // Lazy backend client - created on first use
+    private var _backendClient: Hello_LandingService.ClientProtocol?
+    private let backendClientLock = NSLock()
+    
+    init(backendConfig: (host: String, port: Int, useTLS: Bool)?, certBasePath: String) {
+        self.backendConfig = backendConfig
+        self.certBasePath = certBasePath
+    }
+    
+    private func getBackendClient() throws -> Hello_LandingService.ClientProtocol? {
+        guard let config = backendConfig else {
+            return nil
+        }
+        
+        // Thread-safe lazy initialization
+        backendClientLock.lock()
+        defer { backendClientLock.unlock() }
+        
+        if _backendClient == nil {
+            logger.info("Initializing backend client connection to \(config.host):\(config.port)")
+            
+            let backendTransport: HTTP2ClientTransport.Posix
+            
+            if config.useTLS {
+                logger.info("Using TLS for backend connection")
+                let rootCertPath = "\(certBasePath)/full_chain.pem"
+                
+                backendTransport = try HTTP2ClientTransport.Posix(
+                    target: .ipv4(host: config.host, port: config.port),
+                    transportSecurity: .tls(
+                        .init(
+                            certificateChain: [],
+                            privateKey: nil,
+                            serverCertificateVerification: .noVerification,
+                            trustRoots: .certificates([.file(path: rootCertPath, format: .pem)])
+                        )
+                    )
+                )
+            } else {
+                logger.info("Using plaintext for backend connection")
+                backendTransport = try HTTP2ClientTransport.Posix(
+                    target: .ipv4(host: config.host, port: config.port),
+                    transportSecurity: .plaintext
+                )
+            }
+            
+            let client = GRPCClient(transport: backendTransport)
+            _backendClient = Hello_LandingService.Client(wrapping: client)
+            logger.info("Backend client initialized successfully")
+        }
+        
+        return _backendClient
+    }
 
     // Unary RPC implementation
     func talk(
@@ -16,7 +73,7 @@ struct HelloService: Hello_LandingService.SimpleServiceProtocol {
     ) async throws -> Hello_TalkResponse {
         logger.info("[\(request.data)] talk request: data=\(request.data), meta=\(request.meta)")
 
-        if let backendClient {
+        if let backendClient = try getBackendClient() {
             // Forward request to backend service
             // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
@@ -43,20 +100,20 @@ struct HelloService: Hello_LandingService.SimpleServiceProtocol {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] talkOneAnswerMore request: data=\(request.data), meta=\(request.meta)")
 
-        if let backendClient {
+        if let backendClient = try getBackendClient() {
             // Forward request to backend service
             // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkOneAnswerMore: \(startTime)")
-            let _ = try await backendClient.talkOneAnswerMore(request, metadata: [:]) { streamResponse in
-                logger.info("[\(requestId)] 开始处理 talkOneAnswerMore 流响应")
+            let _ = try await backendClient.talkOneAnswerMore(request, metadata: [:]) { [self] streamResponse in
+                self.logger.info("[\(requestId)] 开始处理 talkOneAnswerMore 流响应")
                 for try await responseMessage in streamResponse.messages {
                     try await response.write(responseMessage)
-                    logger.info("[\(requestId)] 已写入一条 talkOneAnswerMore 响应")
+                    self.logger.info("[\(requestId)] 已写入一条 talkOneAnswerMore 响应")
                 }
                 let endTime = Date()
                 let elapsedTime = endTime.timeIntervalSince(startTime)
-                logger.info("[\(requestId)] talkOneAnswerMore 流处理完成: 耗时: \(elapsedTime)秒")
+                self.logger.info("[\(requestId)] talkOneAnswerMore 流处理完成: 耗时: \(elapsedTime)秒")
             }
             logger.info("[\(requestId)] talkOneAnswerMore 请求已发送至后端")
             return
@@ -82,17 +139,17 @@ struct HelloService: Hello_LandingService.SimpleServiceProtocol {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] 开始处理 talkMoreAnswerOne 请求")
 
-        if let backendClient {
+        if let backendClient = try getBackendClient() {
             // Forward request to backend service
             // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkMoreAnswerOne: \(startTime)")
-            let response = try await backendClient.talkMoreAnswerOne(metadata: [:]) { writer in
+            let response = try await backendClient.talkMoreAnswerOne(metadata: [:]) { [self] writer in
                 for try await req in request {
-                    logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
+                    self.logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
                     try await writer.write(req)
                 }
-                logger.info("[\(requestId)] 所有客户端请求已转发至后端")
+                self.logger.info("[\(requestId)] 所有客户端请求已转发至后端")
             }
             let endTime = Date()
             let elapsedTime = endTime.timeIntervalSince(startTime)
@@ -122,31 +179,31 @@ struct HelloService: Hello_LandingService.SimpleServiceProtocol {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] 开始处理 talkBidirectional 请求")
 
-        if let backendClient {
+        if let backendClient = try getBackendClient() {
             // Forward request to backend service
             // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkBidirectional: \(startTime)")
             try await backendClient.talkBidirectional(metadata: [:]) { writer in
-                Task {
-                    logger.info("[\(requestId)] 开始转发请求到后端服务")
+                Task { [self] in
+                    self.logger.info("[\(requestId)] 开始转发请求到后端服务")
                     for try await req in request {
-                        logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
+                        self.logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
                         try await writer.write(req)
                     }
-                    logger.info("[\(requestId)] 完成所有客户端请求转发")
+                    self.logger.info("[\(requestId)] 完成所有客户端请求转发")
                 }
             } onResponse: { streamResponse in
-                Task {
-                    logger.info("[\(requestId)] 开始处理后端服务响应")
+                Task { [self] in
+                    self.logger.info("[\(requestId)] 开始处理后端服务响应")
                     for try await responseMessage in streamResponse.messages {
-                        logger.info("[\(requestId)] 接收到后端响应")
+                        self.logger.info("[\(requestId)] 接收到后端响应")
                         try await response.write(responseMessage)
-                        logger.info("[\(requestId)] 已将响应写回客户端")
+                        self.logger.info("[\(requestId)] 已将响应写回客户端")
                     }
                     let endTime = Date()
                     let elapsedTime = endTime.timeIntervalSince(startTime)
-                    logger.info("[\(requestId)] talkBidirectional 请求完成: 耗时: \(elapsedTime)秒")
+                    self.logger.info("[\(requestId)] talkBidirectional 请求完成: 耗时: \(elapsedTime)秒")
                 }
                 return ()
             }

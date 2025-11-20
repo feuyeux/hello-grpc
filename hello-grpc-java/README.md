@@ -60,13 +60,16 @@ apt-get install -y protobuf-compiler
 
 ```bash
 # Build server
-mvn clean package -f server_pom.xml
+mvn clean package -Pserver
 
 # Build client
-mvn clean package -f client_pom.xml
+mvn clean package -Pclient
 
 # Build both
-mvn clean package
+mvn clean package -Pserver,client
+
+# Development (no JAR packaging)
+mvn clean compile
 ```
 
 **Build Output:**
@@ -74,7 +77,7 @@ mvn clean package
 - Client JAR: `target/hello-grpc-java-client.jar`
 - Generated code: `target/generated-sources/protobuf/`
 
-**Note:** Protocol Buffer code generation is handled automatically by the `protobuf-maven-plugin` during the build process.
+**Note:** Protocol Buffer code generation is handled automatically by the `protobuf-maven-plugin` during the build process. The project uses a single `pom.xml` with Maven profiles (`server` and `client`) for building different artifacts.
 
 ## Running
 

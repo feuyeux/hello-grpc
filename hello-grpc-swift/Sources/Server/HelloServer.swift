@@ -50,53 +50,20 @@ struct HelloServer: AsyncParsableCommand {
         let conn: Connection = HelloConn()
 
         do {
-            // Set up backend connection if in proxy mode
-            var backendClient: Hello_LandingService.ClientProtocol? = nil
+            // Store backend configuration for lazy initialization
+            var backendConfig: (host: String, port: Int, useTLS: Bool)? = nil
 
             if options.isProxyMode || conn.hasBackend {
-                logger.info("Initializing in proxy mode")
+                logger.info("Proxy mode enabled - backend client will be initialized on first request")
                 let backendHost = conn.backendHost ?? "127.0.0.1"
                 let backendPort = conn.backendPort ?? 9996
-
-                logger.info("Connecting to backend at \(backendHost):\(backendPort)")
-
-                let backendTransport: HTTP2ClientTransport.Posix
-
-                if options.useTLS {
-                    // Create secure transport for backend connection
-                    logger.info("Using TLS for backend connection")
-                    let certBasePath = options.certBasePath
-                    let rootCertPath = "\(certBasePath)/full_chain.pem"
-
-                    backendTransport = try HTTP2ClientTransport.Posix(
-                        target: .ipv4(host: backendHost, port: backendPort),
-                        transportSecurity: .tls(
-                            .init(
-                                certificateChain: [],
-                                privateKey: nil,
-                                serverCertificateVerification: .noVerification,
-                                trustRoots: .certificates([.file(path: rootCertPath, format: .pem)])
-                            )
-                        )
-                    )
-                } else {
-                    // Create plaintext transport for backend connection
-                    logger.info("Using plaintext for backend connection")
-                    backendTransport = try HTTP2ClientTransport.Posix(
-                        target: .ipv4(host: backendHost, port: backendPort),
-                        transportSecurity: .plaintext
-                    )
-                }
-
-                // Create the backend client
-                let client = GRPCClient(transport: backendTransport)
-                backendClient = Hello_LandingService.Client(wrapping: client)
-                logger.info("Backend connection established")
+                backendConfig = (host: backendHost, port: backendPort, useTLS: options.useTLS)
+                logger.info("Backend configured: \(backendHost):\(backendPort)")
             }
 
-            // Create HelloService with or without the backend client
-            let service = HelloService(backendClient: backendClient)
-            logger.info("Service initialized \(backendClient != nil ? "with" : "without") backend")
+            // Create HelloService with backend configuration (client will be created lazily)
+            let service = HelloService(backendConfig: backendConfig, certBasePath: options.certBasePath)
+            logger.info("Service initialized \(backendConfig != nil ? "with" : "without") backend configuration")
 
             let transport: HTTP2ServerTransport.Posix
 

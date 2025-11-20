@@ -1,8 +1,8 @@
 # 图标生成清单
 
 ## 原始图标
-- **Tauri**: `../diagram/blue.png` (蓝色主题)
-- **Flutter**: `../diagram/red.png` (红色主题)
+- **Tauri**: `../diagram/hello_grpc_blue.png` (蓝色主题)
+- **Flutter**: `../diagram/hello_grpc_red.png` (红色主题)
 
 ## Tauri 图标 (蓝色主题)
 - `hello-grpc-tauri/src-tauri/icons/32x32.png` - 32x32 PNG
@@ -37,7 +37,7 @@
 
 ## 使用说明
 
-1. 如需自定义图标，请替换 `../diagram/blue.png` 和 `../diagram/red.png`
+1. 如需自定义图标，请替换 `../diagram/hello_grpc_blue.png` 和 `../diagram/hello_grpc_red.png`
 2. 重新运行此脚本生成所有平台图标
 3. 对于生产环境，建议使用专业设计的图标
 

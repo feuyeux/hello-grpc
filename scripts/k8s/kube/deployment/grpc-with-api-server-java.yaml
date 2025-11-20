@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-best
+  name: grpc-server-java
+  labels:
+    app: grpc-server-deploy
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server-deploy
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: grpc-server-deploy
+        version: v1
+    spec:
+      serviceAccountName: grpc-best-sa
+      containers:
+        - name: grpc-server-deploy
+          image: feuyeux/grpc_with_api_server_java:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9996
+              name: grpc-port

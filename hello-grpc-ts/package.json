@@ -11,6 +11,8 @@
     "build": "tsc --outDir dist",
     "start:server": "node dist/hello_server.js",
     "start:client": "node dist/hello_client.js",
+    "server": "node dist/hello_server.js",
+    "client": "node dist/hello_client.js",
     "test": "ts-mocha test/**/*.test.ts",
     "generate-proto": "grpc_tools_node_protoc --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --js_out=import_style=commonjs,binary:./src/proto --ts_out=service=grpc-node,mode=grpc-js:./src/proto -I ../proto ../proto/landing.proto"
   },

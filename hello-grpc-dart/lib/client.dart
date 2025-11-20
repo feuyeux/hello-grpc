@@ -87,6 +87,10 @@ class Client {
     } else {
       _logger.info('Client execution completed successfully');
     }
+
+    // Explicitly exit to ensure the process terminates
+    // This is necessary because some async operations (like logging) may keep the process alive
+    exit(0);
   }
 
   /// Configure logging for the application
