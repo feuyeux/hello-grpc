@@ -103,12 +103,8 @@ namespace HelloServer
                                 {
                                     try
                                     {
-                                        // Load certificate and key for server
-                                        var privateKeyBytes = File.ReadAllBytes(CertKeyPath);
-                                        var certBytes = File.ReadAllBytes(CertPath);
-
-                                        // Use helper method to load the certificate with its private key
-                                        var serverCert = LoadCertificateWithPrivateKey(certBytes, privateKeyBytes);
+                                        // Load certificate with private key using CreateFromPemFile
+                                        var serverCert = X509Certificate2.CreateFromPemFile(CertPath, CertKeyPath);
 
                                         listenOptions.UseHttps(serverCert);
                                         Logger.Info($"TLS certificate configured: {CertPath}");
@@ -168,6 +164,10 @@ namespace HelloServer
         {
             try
             {
+                // Parse PEM-encoded private key to get DER bytes
+                string pemKey = System.Text.Encoding.UTF8.GetString(privateKeyBytes);
+                byte[] keyDer = ParsePemPrivateKey(pemKey);
+                
                 // Use platform-specific approaches depending on the runtime
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
@@ -178,7 +178,7 @@ namespace HelloServer
                         File.WriteAllBytes(tempCertPath, certBytes);
                         var cert = X509Certificate2.CreateFromPemFile(tempCertPath);
                         var rsa = System.Security.Cryptography.RSA.Create();
-                        rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
+                        rsa.ImportPkcs8PrivateKey(keyDer, out _);
                         return cert.CopyWithPrivateKey(rsa);
                     }
                     finally
@@ -198,7 +198,7 @@ namespace HelloServer
 
                         // Import the private key
                         var privateKey = System.Security.Cryptography.RSA.Create();
-                        privateKey.ImportPkcs8PrivateKey(privateKeyBytes, out _);
+                        privateKey.ImportPkcs8PrivateKey(keyDer, out _);
 
                         // Create certificate with the private key
                         var certWithKey = cert.CopyWithPrivateKey(privateKey);
@@ -220,6 +220,26 @@ namespace HelloServer
                 Logger.Error($"Error loading certificate with private key: {ex.Message}");
                 throw;
             }
+        }
+        
+        /// <summary>
+        /// Parses a PEM-encoded private key and returns the DER bytes
+        /// </summary>
+        /// <param name="pemKey">PEM-encoded private key string</param>
+        /// <returns>DER-encoded private key bytes</returns>
+        private static byte[] ParsePemPrivateKey(string pemKey)
+        {
+            // Remove PEM headers and footers
+            string base64 = pemKey
+                .Replace("-----BEGIN PRIVATE KEY-----", "")
+                .Replace("-----END PRIVATE KEY-----", "")
+                .Replace("-----BEGIN RSA PRIVATE KEY-----", "")
+                .Replace("-----END RSA PRIVATE KEY-----", "")
+                .Replace("\r", "")
+                .Replace("\n", "")
+                .Trim();
+            
+            return Convert.FromBase64String(base64);
         }
 
         /// <summary>

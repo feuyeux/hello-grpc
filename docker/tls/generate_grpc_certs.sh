@@ -95,33 +95,63 @@ openssl x509 -req -in "$SERVER_CERT_DIR/server.csr" \
 echo -e "${CYAN}7. Creating full certificate chain...${NC}"
 cat "$SERVER_CERT_DIR/cert.pem" "$CERT_DIR/ca.crt" > "$SERVER_CERT_DIR/full_chain.pem"
 
-# 8. Copy CA certificate and server certs to client directory
-echo -e "${CYAN}8. Copying certificates to client directory...${NC}"
-cp "$CERT_DIR/ca.crt" "$SERVER_CERT_DIR/myssl_root.cer"
-cp "$CERT_DIR/ca.crt" "$CLIENT_CERT_DIR/myssl_root.cer"
-cp "$SERVER_CERT_DIR/cert.pem" "$CLIENT_CERT_DIR/cert.pem"
-cp "$SERVER_CERT_DIR/full_chain.pem" "$CLIENT_CERT_DIR/full_chain.pem"
-cp "$SERVER_CERT_DIR/private.key" "$CLIENT_CERT_DIR/private.key"
+# 8. Generate client private key
+echo -e "${CYAN}8. Generating client private key...${NC}"
+openssl genrsa -out "$CLIENT_CERT_DIR/private.key" 4096
 
-# 9. Convert private key to PKCS8 format (for Java compatibility)
-echo -e "${CYAN}9. Converting private key to PKCS8 format...${NC}"
+# 9. Generate client certificate signing request (CSR)
+echo -e "${CYAN}9. Generating client CSR...${NC}"
+openssl req -new -key "$CLIENT_CERT_DIR/private.key" -out "$CLIENT_CERT_DIR/client.csr" \
+  -subj "/C=CN/ST=Beijing/L=Beijing/O=HelloGRPC/OU=Client/CN=hello.grpc.client"
+
+# 10. Create client certificate extensions file
+echo -e "${CYAN}10. Creating client certificate extensions...${NC}"
+cat > "$CLIENT_CERT_DIR/client.ext" <<EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+EOF
+
+# 11. Generate client certificate signed by CA
+echo -e "${CYAN}11. Generating client certificate...${NC}"
+openssl x509 -req -in "$CLIENT_CERT_DIR/client.csr" \
+  -CA "$CERT_DIR/ca.crt" -CAkey "$CERT_DIR/ca.key" -CAcreateserial \
+  -out "$CLIENT_CERT_DIR/cert.pem" -days 3650 \
+  -extfile "$CLIENT_CERT_DIR/client.ext"
+
+# 12. Create client full certificate chain
+echo -e "${CYAN}12. Creating client full certificate chain...${NC}"
+cat "$CLIENT_CERT_DIR/cert.pem" "$CERT_DIR/ca.crt" > "$CLIENT_CERT_DIR/full_chain.pem"
+
+# 13. Convert private keys to PKCS8 format (for Java compatibility)
+echo -e "${CYAN}13. Converting private keys to PKCS8 format...${NC}"
 openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
   -in "$SERVER_CERT_DIR/private.key" -out "$SERVER_CERT_DIR/private.pkcs8.key"
-cp "$SERVER_CERT_DIR/private.pkcs8.key" "$CLIENT_CERT_DIR/private.pkcs8.key"
+openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
+  -in "$CLIENT_CERT_DIR/private.key" -out "$CLIENT_CERT_DIR/private.pkcs8.key"
 
-# 10. Create symbolic links for convenience
-echo -e "${CYAN}10. Creating symbolic links...${NC}"
+# 14. Copy CA certificate to both directories
+echo -e "${CYAN}14. Copying CA certificate...${NC}"
+cp "$CERT_DIR/ca.crt" "$SERVER_CERT_DIR/myssl_root.cer"
+cp "$CERT_DIR/ca.crt" "$CLIENT_CERT_DIR/myssl_root.cer"
+
+# 15. Create symbolic links for convenience
+echo -e "${CYAN}15. Creating symbolic links...${NC}"
 ln -sf cert.pem "$SERVER_CERT_DIR/server.crt" 2>/dev/null || true
 ln -sf cert.pem "$CLIENT_CERT_DIR/client.crt" 2>/dev/null || true
 ln -sf private.key "$CLIENT_CERT_DIR/client.key" 2>/dev/null || true
 
-# 11. Verify the certificate
-echo -e "${CYAN}11. Verifying server certificate...${NC}"
+# 16. Verify the certificates
+echo -e "${CYAN}16. Verifying certificates...${NC}"
+echo "Server certificate:"
 openssl verify -CAfile "$CERT_DIR/ca.crt" "$SERVER_CERT_DIR/cert.pem"
+echo "Client certificate:"
+openssl verify -CAfile "$CERT_DIR/ca.crt" "$CLIENT_CERT_DIR/cert.pem"
 
-# 12. Copy to /var/hello_grpc if requested
+# 17. Copy to /var/hello_grpc if requested
 if [ "$COPY_TO_VAR" = true ]; then
-  echo -e "\n${CYAN}12. Copying certificates to /var/hello_grpc/...${NC}"
+  echo -e "\n${CYAN}17. Copying certificates to /var/hello_grpc/...${NC}"
   
   VAR_SERVER_DIR="/var/hello_grpc/server_certs"
   VAR_CLIENT_DIR="/var/hello_grpc/client_certs"

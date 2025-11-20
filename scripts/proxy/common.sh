@@ -189,11 +189,10 @@ get_server_command() {
       echo "${env_vars}dotnet run --project HelloServer"
       ;;
     kotlin)
-      echo "${env_vars}gradle :server:ProtoServer"
+      echo "${env_vars}gradle :server:run"
       ;;
     swift)
-      # Use pre-built binary to avoid SwiftPM lock contention
-      echo "${env_vars}.build/debug/HelloServer"
+      echo "${env_vars}swift run HelloServer"
       ;;
     dart)
       echo "${env_vars}dart run server.dart"
@@ -263,11 +262,10 @@ get_client_command() {
       echo "${env_vars}dotnet run --project HelloClient"
       ;;
     kotlin)
-      echo "${env_vars}gradle :client:ProtoClient"
+      echo "${env_vars}gradle :client:run"
       ;;
     swift)
-      # Use pre-built binary to avoid SwiftPM lock contention
-      echo "${env_vars}.build/debug/HelloClient"
+      echo "${env_vars}swift run HelloClient"
       ;;
     dart)
       echo "${env_vars}dart run client.dart"

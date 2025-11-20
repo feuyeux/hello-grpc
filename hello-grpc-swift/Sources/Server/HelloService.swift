@@ -7,7 +7,7 @@ import Logging
 import NIOCore
 import NIOPosix
 
-class HelloService: Hello_LandingService.SimpleServiceProtocol {
+final class HelloService: Hello_LandingService.SimpleServiceProtocol {
     let logger = Logger(label: "HelloService")
     let backendConfig: (host: String, port: Int, useTLS: Bool)?
     let certBasePath: String

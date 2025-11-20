@@ -80,7 +80,7 @@ def execute_unary_call(stub, request):
         logger.info("Unary call successful in %.3fs", duration)
         return response
     except Exception as e:
-        error_mapper.log_error(e, request_id, "Talk")
+        error_mapper.handle_rpc_error(e, "Talk", {"request_id": request_id})
         raise
 
 
@@ -114,7 +114,7 @@ def execute_server_streaming_call(stub, request):
         logger.info("Server streaming completed: received %d responses in %.3fs", response_count, duration)
         
     except Exception as e:
-        error_mapper.log_error(e, request_id, "TalkOneAnswerMore")
+        error_mapper.handle_rpc_error(e, "TalkOneAnswerMore", {"request_id": request_id})
         raise
 
 
@@ -156,7 +156,7 @@ def execute_client_streaming_call(stub, requests):
         return response
         
     except Exception as e:
-        error_mapper.log_error(e, request_id, "TalkMoreAnswerOne")
+        error_mapper.handle_rpc_error(e, "TalkMoreAnswerOne", {"request_id": request_id})
         raise
 
 
@@ -204,7 +204,7 @@ def execute_bidirectional_streaming_call(stub, requests):
         logger.info("Bidirectional streaming completed in %.3fs", duration)
         
     except Exception as e:
-        error_mapper.log_error(e, request_id, "TalkBidirectional")
+        error_mapper.handle_rpc_error(e, "TalkBidirectional", {"request_id": request_id})
         raise
 
 

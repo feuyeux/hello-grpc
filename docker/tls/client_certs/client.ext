@@ -1,4 +1,4 @@
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-extendedKeyUsage = clientAuth, serverAuth
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth

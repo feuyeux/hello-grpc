@@ -31,7 +31,7 @@ const int defaultBatchSize = 5;
 
 /// Main client class that manages gRPC communication
 class Client {
-  late final LandingServiceClient _stub;
+  LandingServiceClient? _stub;
   late final Logger _logger;
   final File _outputFile = File('log/hello_client.log');
   bool _shutdownRequested = false;
@@ -139,6 +139,7 @@ class Client {
         ..info('Root cert path: ${Conn.rootCertPath}');
 
       final rootCert = await File(Conn.rootCertPath).readAsBytes();
+
       credentials = ChannelCredentials.secure(
         certificates: rootCert,
         authority: 'hello.grpc.io',
@@ -208,6 +209,10 @@ class Client {
 
   /// Execute unary RPC call
   Future<void> executeUnaryCall(TalkRequest request) async {
+    if (_stub == null) {
+      throw StateError('Client stub not initialized');
+    }
+
     final requestId = 'unary-${DateTime.now().millisecondsSinceEpoch}';
     final metadata = <String, String>{
       'request-id': requestId,
@@ -220,7 +225,7 @@ class Client {
     final startTime = DateTime.now();
 
     try {
-      final response = await _stub.talk(
+      final response = await _stub!.talk(
         request,
         options: CallOptions(metadata: metadata),
       );
@@ -248,7 +253,7 @@ class Client {
 
     try {
       var responseCount = 0;
-      await for (final response in _stub.talkOneAnswerMore(
+      await for (final response in _stub!.talkOneAnswerMore(
         request,
         options: CallOptions(metadata: metadata),
       )) {
@@ -301,7 +306,7 @@ class Client {
         }
       }
 
-      final response = await _stub.talkMoreAnswerOne(
+      final response = await _stub!.talkMoreAnswerOne(
         generateRequests(),
         options: CallOptions(metadata: metadata),
       );
@@ -350,7 +355,7 @@ class Client {
       }
 
       var responseCount = 0;
-      await for (final response in _stub.talkBidirectional(
+      await for (final response in _stub!.talkBidirectional(
         generateRequests(),
         options: CallOptions(metadata: metadata),
       )) {

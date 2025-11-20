@@ -125,6 +125,23 @@ namespace Common
         }
 
         /// <summary>
+        /// Logs an error with request ID and operation context
+        /// </summary>
+        /// <param name="exception">The exception that occurred</param>
+        /// <param name="requestId">The request ID</param>
+        /// <param name="operation">The operation name</param>
+        public static void LogError(Exception exception, string requestId, string operation)
+        {
+            if (exception == null)
+            {
+                return;
+            }
+
+            string errorMsg = MapGrpcError(exception);
+            Log.Error($"[{operation}] Request {requestId} failed: {errorMsg}");
+        }
+
+        /// <summary>
         /// Handles RPC errors with logging and context
         /// </summary>
         /// <param name="exception">The exception that occurred</param>

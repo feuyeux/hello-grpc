@@ -143,14 +143,21 @@ def build_channel():
             with open(root_cert, 'rb') as f:
                 root_certificates = f.read()
             
-            logger.info("Loaded root certificate from: %s", root_cert)
-            logger.info("Using server-only TLS (no client certificate)")
+            # Read client certificate and private key for mutual TLS
+            with open(cert, 'rb') as f:
+                certificate_chain = f.read()
             
-            # Create TLS credentials without client certificates
+            with open(cert_key, 'rb') as f:
+                private_key = f.read()
+            
+            logger.info("Loaded root certificate from: %s", root_cert)
+            logger.info("Using mutual TLS (client certificate required)")
+            
+            # Create TLS credentials with client certificates (mutual TLS)
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=root_certificates,
-                private_key=None,
-                certificate_chain=None
+                private_key=private_key,
+                certificate_chain=certificate_chain
             )
             
             options = (

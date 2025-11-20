@@ -31,25 +31,20 @@ class Conn {
 
   /// Gets the client certificate base path (for root CA)
   static String get clientCertBasePath {
-    // For client, we need the server's root cert to verify the server
-    // So we use server_certs path
+    // For client, we use client_certs path for mutual TLS
     final envPath = io.Platform.environment['CERT_BASE_PATH'];
     if (envPath != null && envPath.isNotEmpty) {
-      // If it points to client_certs, redirect to server_certs
-      if (envPath.contains('client_certs')) {
-        return envPath.replaceAll('client_certs', 'server_certs');
-      }
       return envPath;
     }
 
     // Use platform-specific default paths
     if (io.Platform.isWindows) {
-      return r'd:\garden\var\hello_grpc\server_certs';
+      return r'd:\garden\var\hello_grpc\client_certs';
     } else if (io.Platform.isMacOS) {
-      return '/var/hello_grpc/server_certs';
+      return '/var/hello_grpc/client_certs';
     } else {
       // Linux and others
-      return '/var/hello_grpc/server_certs';
+      return '/var/hello_grpc/client_certs';
     }
   }
 
