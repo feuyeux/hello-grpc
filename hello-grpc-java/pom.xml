@@ -24,7 +24,7 @@
         <system-rules.version>1.19.0</system-rules.version>
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <log4j-slf4j-impl.version>2.25.1</log4j-slf4j-impl.version>
-        <nacos.version>3.1.0</nacos.version>
+        <nacos.version>3.1.1</nacos.version>
         <lombok.version>1.18.42</lombok.version>
         <fmt-maven-plugin.version>2.29</fmt-maven-plugin.version>
         <exec-maven-plugin.version>3.6.2</exec-maven-plugin.version>
