@@ -50,7 +50,7 @@ if ($Tls) {
 }
 
 # Build the command
-$cmd = "cargo run --bin server"
+$cmd = "cargo run --bin proto-server"
 if ($additionalArgs.Count -gt 0) {
     $cmd += " -- " + ($additionalArgs -join " ")
 }

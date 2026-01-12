@@ -45,78 +45,79 @@ pub fn thanks(key: &str) -> &str {
     ANS_MAP.lock().unwrap().get(key).unwrap()
 }
 
+#[inline]
 pub fn random_id(max: i32) -> String {
     let mut rng = rand::rng(); // Using rand 0.9.x API
-    let random_value = rng.random_range(0..max); // Using rand 0.9.x API
-    let id_string = format!("{}", random_value);
-    id_string
+    format!("{}", rng.random_range(0..max)) // Using rand 0.9.x API
 }
 
 pub fn get_version() -> String {
     use std::fs;
     use std::path::Path;
-    
+
     // First try to read Cargo.toml directly to get versions
     let cargo_path = Path::new("Cargo.toml");
-    if cargo_path.exists() {
-        if let Ok(content) = fs::read_to_string(cargo_path) {
-            let tonic_version = extract_dependency_version(&content, "tonic").unwrap_or_else(|| "unknown".to_string());
-            let prost_version = extract_dependency_version(&content, "prost").unwrap_or_else(|| "unknown".to_string());
-            return format!("tonic.version={} (prost.version={})", tonic_version, prost_version);
-        }
-    }
-    
-    // If file reading fails, use hardcoded versions from Cargo.toml
-    // These should be updated when dependencies change
-    format!("tonic.version=0.9.2 (prost.version=0.11.9)")
+    let Ok(content) = fs::read_to_string(cargo_path) else {
+        // If file reading fails, use hardcoded versions from Cargo.toml
+        // These should be updated when dependencies change
+        return format!("tonic.version=0.9.2 (prost.version=0.11.9)");
+    };
+
+    let tonic_version =
+        extract_dependency_version(&content, "tonic").unwrap_or_else(|| "unknown".to_string());
+    let prost_version =
+        extract_dependency_version(&content, "prost").unwrap_or_else(|| "unknown".to_string());
+    format!(
+        "tonic.version={} (prost.version={})",
+        tonic_version, prost_version
+    )
 }
 
+#[inline]
 fn extract_dependency_version(cargo_content: &str, dependency_name: &str) -> Option<String> {
-    // Simple parser to find a dependency version in Cargo.toml
-    for line in cargo_content.lines() {
-        let line = line.trim();
-        // Match patterns like: tonic = "0.9.2" or tonic = { version = "0.9.2", features = [...] }
-        if line.starts_with(&format!("{} =", dependency_name)) {
+    // Simple parser to find a dependency version in Cargo.toml using iterator pattern
+    cargo_content.lines().find_map(|line| {
+        let trimmed = line.trim();
+        let dep_pattern = format!("{} =", dependency_name);
+
+        if trimmed.starts_with(&dep_pattern) {
             // Simple case: dependency = "version"
-            if let Some(version) = line.split('"').nth(1) {
-                return Some(version.to_string());
-            }
-        } else if line.starts_with(&format!("{} {{", dependency_name)) || 
-                  line.starts_with(&format!("{}{{", dependency_name)) {
+            line.split('"').nth(1).map(|s| s.to_string())
+        } else if trimmed.starts_with(&format!("{} {{", dependency_name)) {
             // Complex case with features, scan next lines for version
-            return extract_version_from_block(cargo_content, line);
-        } 
-    }
-    None
+            extract_version_from_block(cargo_content, line)
+        } else {
+            None
+        }
+    })
 }
 
+#[inline]
 fn extract_version_from_block(cargo_content: &str, start_line: &str) -> Option<String> {
-    let mut in_block = false;
-    let mut block_indent = 0;
-    
-    for line in cargo_content.lines() {
+    let block_indent = start_line.len() - start_line.trim_start().len();
+    let mut found_start = false;
+
+    cargo_content.lines().find_map(|line| {
+        if !found_start {
+            if line.contains(start_line) {
+                found_start = true;
+            }
+            return None;
+        }
+
         let trimmed = line.trim();
-        // Check if this line contains the starting line
-        if line.contains(start_line) {
-            in_block = true;
-            block_indent = line.len() - line.trim_start().len();
-            continue;
+        let current_indent = line.len() - line.trim_start().len();
+
+        // Check for end of block
+        if !line.trim().is_empty() && current_indent <= block_indent {
+            return None;
         }
-        
-        if in_block {
-            // Look for version inside the block
-            if trimmed.starts_with("version") {
-                if let Some(version) = line.split('"').nth(1) {
-                    return Some(version.to_string());
-                }
-            }
-            
-            // Check for end of block
-            let current_indent = line.len() - line.trim_start().len();
-            if !line.trim().is_empty() && current_indent <= block_indent {
-                break;
-            }
+
+        // Look for version inside the block
+        if trimmed.starts_with("version") {
+            line.split('"').nth(1).map(|s| s.to_string())
+        } else {
+            None
         }
-    }
-    None
+    })
 }

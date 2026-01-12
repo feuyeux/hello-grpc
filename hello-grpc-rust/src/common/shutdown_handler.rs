@@ -28,6 +28,7 @@ impl ShutdownHandler {
     }
 
     /// Creates a new shutdown handler with default timeout
+    #[inline]
     pub fn default() -> Self {
         Self::new(DEFAULT_SHUTDOWN_TIMEOUT)
     }
@@ -37,11 +38,11 @@ impl ShutdownHandler {
     where
         F: Fn() -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
     {
-        let mut functions = self.cleanup_functions.lock().await;
-        functions.push(Box::new(cleanup_fn));
+        self.cleanup_functions.lock().await.push(Box::new(cleanup_fn));
     }
 
     /// Initiates the shutdown process
+    #[inline]
     pub fn initiate_shutdown(&self) {
         if !self.shutdown_initiated.swap(true, Ordering::SeqCst) {
             info!("Shutdown initiated");
@@ -49,6 +50,7 @@ impl ShutdownHandler {
     }
 
     /// Checks if shutdown has been initiated
+    #[inline]
     pub fn is_shutdown_initiated(&self) -> bool {
         self.shutdown_initiated.load(Ordering::SeqCst)
     }
@@ -91,18 +93,17 @@ impl ShutdownHandler {
         info!("Starting graceful shutdown...");
 
         let shutdown_future = async {
-            let mut has_errors = false;
-            
-            // Execute cleanup functions in reverse order (LIFO)
             let functions = self.cleanup_functions.lock().await;
-            for cleanup_fn in functions.iter().rev() {
+
+            // Execute cleanup functions in reverse order (LIFO) and collect errors
+            functions.iter().rev().fold(false, |has_errors, cleanup_fn| {
                 if let Err(e) = cleanup_fn() {
                     error!("Error during cleanup: {}", e);
-                    has_errors = true;
+                    true
+                } else {
+                    has_errors
                 }
-            }
-            
-            has_errors
+            })
         };
 
         match timeout(self.timeout, shutdown_future).await {
@@ -130,6 +131,7 @@ impl ShutdownHandler {
 }
 
 impl Clone for ShutdownHandler {
+    #[inline]
     fn clone(&self) -> Self {
         ShutdownHandler {
             timeout: self.timeout,

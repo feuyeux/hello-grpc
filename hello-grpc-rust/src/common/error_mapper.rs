@@ -1,7 +1,7 @@
+use log::{error, info, warn};
 use std::time::Duration;
 use tokio::time::sleep;
 use tonic::{Code, Status};
-use log::{error, info, warn};
 
 /// Configuration for retry logic
 #[derive(Clone, Debug)]
@@ -25,18 +25,20 @@ impl RetryConfig {
 }
 
 /// Maps gRPC status code to human-readable message
+#[inline]
 pub fn map_grpc_error(status: &Status) -> String {
     let description = get_status_description(status.code());
     let message = status.message();
 
-    if !message.is_empty() {
-        format!("{}: {}", description, message)
-    } else {
+    if message.is_empty() {
         description.to_string()
+    } else {
+        format!("{}: {}", description, message)
     }
 }
 
 /// Gets human-readable description for a gRPC status code
+#[inline]
 fn get_status_description(code: Code) -> &'static str {
     match code {
         Code::Ok => "Success",
@@ -60,6 +62,7 @@ fn get_status_description(code: Code) -> &'static str {
 }
 
 /// Determines if an error should be retried
+#[inline]
 pub fn is_retryable_error(status: &Status) -> bool {
     matches!(
         status.code(),
@@ -68,35 +71,29 @@ pub fn is_retryable_error(status: &Status) -> bool {
 }
 
 /// Handles RPC errors with logging and context
+#[inline]
 pub fn handle_rpc_error(status: &Status, operation: &str, context: &[(&str, &str)]) {
     let error_msg = map_grpc_error(status);
-    let context_str: Vec<String> = context
-        .iter()
-        .map(|(k, v)| format!("{}={}", k, v))
-        .collect();
-    let context_joined = context_str.join(", ");
+    let context_str = if context.is_empty() {
+        String::new()
+    } else {
+        let formatted = context
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!(", {}", formatted)
+    };
 
     if is_retryable_error(status) {
         warn!(
             "Retryable error occurred: operation={}, error={}{}",
-            operation,
-            error_msg,
-            if context_joined.is_empty() {
-                String::new()
-            } else {
-                format!(", {}", context_joined)
-            }
+            operation, error_msg, context_str
         );
     } else {
         error!(
             "Non-retryable error occurred: operation={}, error={}{}",
-            operation,
-            error_msg,
-            if context_joined.is_empty() {
-                String::new()
-            } else {
-                format!(", {}", context_joined)
-            }
+            operation, error_msg, context_str
         );
     }
 }
@@ -153,7 +150,7 @@ where
                 if attempt < config.max_retries {
                     // Calculate next delay with exponential backoff
                     delay = Duration::from_millis(
-                        (delay.as_millis() as f64 * config.multiplier) as u64
+                        (delay.as_millis() as f64 * config.multiplier) as u64,
                     );
                     if delay > config.max_delay {
                         delay = config.max_delay;

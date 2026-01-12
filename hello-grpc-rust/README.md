@@ -1,6 +1,7 @@
 # Rust gRPC Implementation
 
 This project implements a gRPC client and server using Rust, demonstrating four communication patterns:
+
 1. Unary RPC
 2. Server Streaming RPC
 3. Client Streaming RPC
@@ -10,8 +11,8 @@ This project implements a gRPC client and server using Rust, demonstrating four 
 
 | Component          | Version | Notes                                    |
 |--------------------|---------|------------------------------------------|
-| Rust               | 1.91.1  | Rust programming language (Edition 2024) |
-| Build Tool         | Cargo   | Rust package manager                     |
+| Rust               | 1.92.0  | Rust programming language (Edition 2024) |
+| Cargo              |1.92.0   | Rust package manager                     |
 | gRPC               | 0.14.2  | tonic                                    |
 | Protocol Buffers   | 0.14.1  | prost                                    |
 | protoc             | Auto    | Handled by tonic-prost-build 0.14.2      |
@@ -48,6 +49,7 @@ cargo build
 ```
 
 The build process uses:
+
 - `tonic-prost-build 0.14.2` for code generation
 - `prost 0.14.1` for Protocol Buffers serialization
 - `tonic 0.14.2` for gRPC runtime
@@ -67,15 +69,21 @@ cargo build --release
 ### Basic Communication
 
 Using convenience scripts:
+
 ```bash
 # Terminal 1: Start the server
-./server_start.sh
+./scripts/server_start.sh
+
+.\scripts\server_start.ps1
 
 # Terminal 2: Start the client
-./client_start.sh
+./scripts/client_start.sh
+
+.\scripts\client_start.ps1
 ```
 
 Or using cargo directly:
+
 ```bash
 # Terminal 1: Start the server
 cargo run --bin proto-server
@@ -106,6 +114,7 @@ To enable TLS, you need to prepare certificates and configure environment variab
 1. **Certificate Setup**
 
    Verify the certificate structure:
+
    ```bash
    # Server certificates
    ls -la /var/hello_grpc/server_certs
@@ -119,6 +128,7 @@ To enable TLS, you need to prepare certificates and configure environment variab
 2. **Direct TLS Connection**
 
    Using convenience scripts:
+
    ```bash
    # Terminal 1: Start the server with TLS
    ./server_start.sh --tls
@@ -128,6 +138,7 @@ To enable TLS, you need to prepare certificates and configure environment variab
    ```
 
    Or using cargo directly with environment variables:
+
    ```bash
    # Terminal 1: Start the server with TLS
    GRPC_HELLO_SECURE=Y cargo run --bin proto-server
@@ -163,6 +174,7 @@ cargo test --test version_test -- --nocapture
 ## Troubleshooting
 
 1. **Port Already in Use**
+
    ```bash
    # Find and kill processes using specific ports
    kill $(lsof -t -i:9996) 2>/dev/null || true
@@ -170,12 +182,14 @@ cargo test --test version_test -- --nocapture
    ```
 
 2. **Check Service Logs**
+
    ```bash
    # View log files
    RUST_LOG=trace cargo run --bin server
    ```
 
 3. **Cargo Issues**
+
    ```bash
    # Clean and rebuild
    cargo clean
@@ -245,6 +259,7 @@ CROSS_COMPILE=x86_64-linux-musl-gcc cargo build --release --bin proto-server --t
 ## Contributor Notes
 
 When modifying or extending this implementation, please:
+
 1. Follow Rust's style guidelines
 2. Add appropriate tests for new functionality
 3. Update documentation as needed

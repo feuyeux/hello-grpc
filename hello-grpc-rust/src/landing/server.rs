@@ -8,22 +8,22 @@ use std::error::Error;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tonic::{
+    IntoRequest, Request, Response, Status, Streaming,
     metadata::{KeyAndValueRef, MetadataMap},
     transport::{Channel, Identity, Server, ServerTlsConfig},
-    IntoRequest, Request, Response, Status, Streaming,
 };
 use uuid::Uuid;
 
-use hello_grpc_rust::common::conn::{build_client, grpc_backend_host, has_backend, CONFIG_PATH};
+use hello_grpc_rust::common::conn::{CONFIG_PATH, build_client, grpc_backend_host, has_backend};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::landing_service_server::{
     LandingService, LandingServiceServer,
 };
 use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
 use hello_grpc_rust::common::trans::{CERT_CHAIN, CERT_KEY, TRACING_KEYS};
-use hello_grpc_rust::common::utils::{get_version, thanks, HELLOS};
+use hello_grpc_rust::common::utils::{HELLOS, get_version, thanks};
 
 // Add a lightweight metrics collector
 struct ServerMetrics {
@@ -42,30 +42,33 @@ impl ServerMetrics {
     }
 
     async fn record_request(&self) {
-        self.requests_total.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.requests_total
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut last_time = self.last_request_time.lock().await;
         *last_time = Some(Utc::now());
     }
 
     fn record_error(&self) {
-        self.errors_total.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.errors_total
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
 
     async fn get_stats(&self) -> HashMap<String, String> {
         let mut stats = HashMap::new();
         stats.insert(
             "requests_total".to_string(),
-            self.requests_total.load(std::sync::atomic::Ordering::Relaxed).to_string(),
+            self.requests_total
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .to_string(),
         );
         stats.insert(
             "errors_total".to_string(),
-            self.errors_total.load(std::sync::atomic::Ordering::Relaxed).to_string(),
+            self.errors_total
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .to_string(),
         );
         if let Some(last_time) = *self.last_request_time.lock().await {
-            stats.insert(
-                "last_request_time".to_string(),
-                last_time.to_rfc3339(),
-            );
+            stats.insert("last_request_time".to_string(), last_time.to_rfc3339());
         }
         stats
     }
@@ -82,7 +85,7 @@ const GRACEFUL_SHUTDOWN_TIMEOUT_MS: u64 = 10000;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize rustls crypto provider
     let _ = rustls::crypto::ring::default_provider().install_default();
-    
+
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
 
@@ -94,13 +97,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let cert = tokio::fs::read(CERT_CHAIN).await?;
         let key = tokio::fs::read(CERT_KEY).await?;
         let identity = Identity::from_pem(cert, key);
-        
+
         info!(
             "Starting gRPC TLS server on port {} [version: {}]",
             get_server_port(),
             get_version()
         );
-        
+
         Server::builder()
             .tls_config(ServerTlsConfig::new().identity(identity))?
             .timeout(Duration::from_millis(REQUEST_TIMEOUT_MS)) // Add request timeout
@@ -110,14 +113,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             get_server_port(),
             get_version()
         );
-        
-        Server::builder()
-            .timeout(Duration::from_millis(REQUEST_TIMEOUT_MS)) // Add request timeout
+
+        Server::builder().timeout(Duration::from_millis(REQUEST_TIMEOUT_MS)) // Add request timeout
     };
 
     // Create shared metrics
     let metrics = Arc::new(ServerMetrics::new());
-    
+
     // Create connection pool if backend is configured
     let client_pool = if has_backend() {
         info!(
@@ -125,7 +127,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             grpc_backend_host(),
             CONNECTION_POOL_SIZE
         );
-        
+
         let mut pool = Vec::with_capacity(CONNECTION_POOL_SIZE);
         for i in 0..CONNECTION_POOL_SIZE {
             // build_client() returns the client directly, not a Result
@@ -133,7 +135,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             pool.push(Some(client));
             info!("Created connection #{} in pool", i);
         }
-        
+
         Some(Arc::new(Mutex::new(pool)))
     } else {
         info!("Operating in standalone mode (no backend)");
@@ -142,7 +144,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create service implementation
     let service = LandingServiceServer::new(ProtoServer {
-        backend: if has_backend() { grpc_backend_host() } else { "".to_string() },
+        backend: if has_backend() {
+            grpc_backend_host()
+        } else {
+            "".to_string()
+        },
         client_pool,
         metrics: metrics.clone(),
     });
@@ -155,11 +161,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         use hyper::{Request, Response};
         use hyper_util::rt::TokioIo;
         use tokio::net::TcpListener;
-        
+
         let metrics_port = get_server_port().parse::<u16>().unwrap_or(50051) + 1;
         let metrics_address = format!("[::0]:{}", metrics_port);
         info!("Starting metrics server on port {}", metrics_port);
-        
+
         let listener = match TcpListener::bind(&metrics_address).await {
             Ok(l) => l,
             Err(e) => {
@@ -167,7 +173,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 return;
             }
         };
-        
+
         loop {
             let (stream, _) = match listener.accept().await {
                 Ok(s) => s,
@@ -176,7 +182,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     continue;
                 }
             };
-            
+
             let metrics = metrics_clone.clone();
             tokio::spawn(async move {
                 let io = TokioIo::new(stream);
@@ -191,7 +197,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         Ok::<_, hyper::Error>(Response::new(response_text))
                     }
                 });
-                
+
                 if let Err(e) = http1::Builder::new().serve_connection(io, service).await {
                     error!("Error serving metrics connection: {}", e);
                 }
@@ -201,10 +207,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create the server future
     let server_future = server.add_service(service).serve(address);
-    
+
     // Use a separate future for shutdown signal
     let shutdown = shutdown_signal();
-    
+
     // Wait for either server completion or shutdown signal
     tokio::select! {
         result = server_future => {
@@ -264,22 +270,22 @@ fn get_server_port() -> String {
 // Helper function to propagate tracing headers
 fn propagate_headers(request: &mut Request<TalkRequest>) -> MetadataMap {
     let mut headers_map = MetadataMap::new();
-    
+
     // First collect the values we need to copy
     let mut values_to_copy = Vec::new();
-    for key_name in &TRACING_KEYS {
-        if let Some(value) = request.metadata().get(*key_name) {
+    for &key_name in TRACING_KEYS {
+        if let Some(value) = request.metadata().get(key_name) {
             debug!("Propagating tracing header: {}={:?}", key_name, value);
-            values_to_copy.push((*key_name, value.clone()));
+            values_to_copy.push((key_name, value.clone()));
         }
     }
-    
+
     // Now insert the values into both maps
     for (key, value) in values_to_copy {
         request.metadata_mut().insert(key, value.clone());
         headers_map.insert(key, value);
     }
-    
+
     headers_map
 }
 
@@ -303,20 +309,20 @@ fn create_response(data: String) -> TalkResult {
     // Try to parse the input data as an index into the HELLOS array
     let index = data.parse::<usize>().unwrap_or(0) % HELLOS.len();
     let hello = HELLOS[index];
-    
+
     // Create a map for the key-value pairs in the result
     let mut result_map = HashMap::new();
     result_map.insert("id".to_string(), Uuid::new_v4().to_string());
     result_map.insert("idx".to_string(), data);
-    
+
     // Build the data string with greeting and response
     let mut response_data = hello.to_string();
     response_data.push_str(",");
     response_data.push_str(thanks(hello));
-    
+
     result_map.insert("data".to_string(), response_data);
     result_map.insert("meta".to_string(), "RUST".to_string());
-    
+
     TalkResult {
         id: Utc::now().timestamp_millis(),
         r#type: ResultType::Ok as i32,
@@ -340,7 +346,7 @@ impl ProtoServer {
     async fn get_client(&self) -> Option<LandingServiceClient<Channel>> {
         if let Some(pool) = &self.client_pool {
             let mut pool_guard = pool.lock().await;
-            
+
             // Find an available client in the pool
             for client_opt in pool_guard.iter_mut() {
                 if let Some(client) = client_opt {
@@ -348,11 +354,11 @@ impl ProtoServer {
                     return Some(client.clone());
                 }
             }
-            
+
             // If no clients available, try to create a new one
             // build_client() returns the client directly, not a Result
             let client = build_client().await;
-            
+
             // Try to replace a None slot if available
             for client_opt in pool_guard.iter_mut() {
                 if client_opt.is_none() {
@@ -375,7 +381,7 @@ impl LandingService for ProtoServer {
         mut request: Request<TalkRequest>,
     ) -> Result<Response<TalkResponse>, Status> {
         self.metrics.record_request().await;
-        
+
         let talk_request = request.get_ref();
         let data = &talk_request.data;
         let meta = &talk_request.meta;
@@ -386,26 +392,26 @@ impl LandingService for ProtoServer {
         if !self.backend.is_empty() {
             // Propagate tracing headers
             propagate_headers(&mut request);
-            
+
             match self.get_client().await {
                 Some(mut client) => {
                     // Set timeout for the backend request
                     let mut req = request.into_request();
                     req.set_timeout(Duration::from_millis(REQUEST_TIMEOUT_MS - 500)); // Slightly shorter than server timeout
-                    
+
                     match client.talk(req).await {
                         Ok(response) => {
                             let talk_response = response.get_ref();
                             info!("Proxy response received from backend");
                             Ok(Response::new(talk_response.clone()))
-                        },
+                        }
                         Err(status) => {
                             error!("Backend call failed: {}", status);
                             self.metrics.record_error();
                             Err(status)
                         }
                     }
-                },
+                }
                 None => {
                     error!("Backend configured but client not available");
                     self.metrics.record_error();
@@ -434,22 +440,22 @@ impl LandingService for ProtoServer {
     ) -> Result<Response<Self::TalkOneAnswerMoreStream>, Status> {
         let talk_request = request.get_ref();
         info!(
-            "Server streaming call received - data: {}, meta: {}", 
+            "Server streaming call received - data: {}, meta: {}",
             talk_request.data, talk_request.meta
         );
         log_metadata("TalkOneAnswerMore", request.metadata());
-        
+
         let (tx, rx) = mpsc::channel(4);
-        
+
         // If backend is configured, proxy the request
         if !self.backend.is_empty() {
             if let Some(client) = self.get_client().await {
                 let mut client_clone = client.clone();
-                
+
                 match client_clone.talk_one_answer_more(request).await {
                     Ok(response) => {
                         let mut stream = response.into_inner();
-                        
+
                         // Spawn a task to forward responses from backend to client
                         tokio::spawn(async move {
                             while let Some(result) = stream.message().await.unwrap_or(None) {
@@ -458,7 +464,7 @@ impl LandingService for ProtoServer {
                                 }
                             }
                         });
-                    },
+                    }
                     Err(status) => {
                         error!("Backend streaming call failed: {}", status);
                         return Err(status);
@@ -471,7 +477,7 @@ impl LandingService for ProtoServer {
         } else {
             // Process locally
             let data = talk_request.data.clone();
-            
+
             // Spawn a task to send multiple responses
             tokio::spawn(async move {
                 for data_part in data.split(',') {
@@ -480,14 +486,14 @@ impl LandingService for ProtoServer {
                         status: 200,
                         results: vec![result],
                     };
-                    
+
                     if tx.send(Ok(response)).await.is_err() {
                         break;
                     }
                 }
             });
         }
-        
+
         // Return the receiver stream
         Ok(Response::new(Box::pin(
             tokio_stream::wrappers::ReceiverStream::new(rx),
@@ -501,15 +507,15 @@ impl LandingService for ProtoServer {
     ) -> Result<Response<TalkResponse>, Status> {
         info!("Client streaming call received");
         log_metadata("TalkMoreAnswerOne", request.metadata());
-        
+
         let mut inbound_stream = request.into_inner();
-        
+
         // If backend is configured, proxy the request
         if !self.backend.is_empty() {
             if let Some(client) = self.get_client().await {
                 let mut client_clone = client.clone();
                 let mut requests = Vec::new();
-                
+
                 // Collect all incoming requests
                 while let Some(result) = inbound_stream.next().await {
                     match result {
@@ -520,10 +526,10 @@ impl LandingService for ProtoServer {
                         }
                     }
                 }
-                
+
                 // Forward collected requests to backend
                 let outbound = Request::new(stream::iter(requests));
-                
+
                 match client_clone.talk_more_answer_one(outbound).await {
                     Ok(response) => Ok(Response::new(response.into_inner())),
                     Err(status) => {
@@ -538,26 +544,29 @@ impl LandingService for ProtoServer {
         } else {
             // Process locally
             let mut results = Vec::new();
-            
+
             // Process each incoming request
             while let Some(result) = inbound_stream.next().await {
                 match result {
                     Ok(request) => {
-                        info!("Client stream item - data: {}, meta: {}", request.data, request.meta);
+                        info!(
+                            "Client stream item - data: {}, meta: {}",
+                            request.data, request.meta
+                        );
                         results.push(create_response(request.data));
-                    },
+                    }
                     Err(status) => {
                         error!("Error receiving client stream: {}", status);
                         return Err(status);
                     }
                 }
             }
-            
+
             let response = TalkResponse {
                 status: 200,
                 results,
             };
-            
+
             Ok(Response::new(response))
         }
     }
@@ -573,15 +582,15 @@ impl LandingService for ProtoServer {
     ) -> Result<Response<Self::TalkBidirectionalStream>, Status> {
         info!("Bidirectional streaming call received");
         log_metadata("TalkBidirectional", request.metadata());
-        
+
         let mut request_stream = request.into_inner();
-        
+
         // If backend is configured, proxy the request
         if !self.backend.is_empty() {
             if let Some(client) = self.get_client().await {
                 let mut client_clone = client.clone();
                 let (tx, rx) = mpsc::channel(4);
-                
+
                 // Collect all incoming requests
                 let mut requests = Vec::new();
                 while let Some(result) = request_stream.next().await {
@@ -593,27 +602,28 @@ impl LandingService for ProtoServer {
                         }
                     }
                 }
-                
+
                 // Forward collected requests to backend
                 let outbound = Request::new(stream::iter(requests));
-                
+
                 match client_clone.talk_bidirectional(outbound).await {
                     Ok(response) => {
                         let mut response_stream = response.into_inner();
-                        
+
                         // Spawn a task to forward responses
                         tokio::spawn(async move {
-                            while let Some(result) = response_stream.message().await.unwrap_or(None) {
+                            while let Some(result) = response_stream.message().await.unwrap_or(None)
+                            {
                                 if tx.send(Ok(result)).await.is_err() {
                                     break;
                                 }
                             }
                         });
-                        
+
                         Ok(Response::new(Box::pin(
                             tokio_stream::wrappers::ReceiverStream::new(rx),
                         )))
-                    },
+                    }
                     Err(status) => {
                         error!("Backend bidirectional streaming call failed: {}", status);
                         Err(status)
@@ -640,7 +650,7 @@ impl LandingService for ProtoServer {
                     }
                 }
             };
-            
+
             Ok(Response::new(Box::pin(output)))
         }
     }

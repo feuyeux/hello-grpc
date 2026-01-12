@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-pub static TRACING_KEYS: [&'static str; 7] = [
+pub static TRACING_KEYS: &[&str] = &[
     "x-request-id",
     "x-b3-traceid",
     "x-b3-spanid",
