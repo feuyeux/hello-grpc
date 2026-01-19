@@ -10,7 +10,7 @@ require (
 	// https://github.com/grpc-ecosystem/go-grpc-middleware/tags
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	// https://github.com/sirupsen/logrus/tags
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	// https://github.com/stretchr/testify/tags
 	github.com/stretchr/testify v1.11.1
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
