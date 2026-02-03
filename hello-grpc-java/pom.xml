@@ -22,7 +22,7 @@
         <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
         <junit.version>5.13.4</junit.version>
         <system-rules.version>1.19.0</system-rules.version>
-        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <log4j-slf4j-impl.version>2.25.1</log4j-slf4j-impl.version>
         <nacos.version>3.1.1</nacos.version>
         <lombok.version>1.18.42</lombok.version>
