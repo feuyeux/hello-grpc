@@ -13,7 +13,7 @@
         <jdk.version>21</jdk.version>
         <grpc.version>1.78.0</grpc.version>
         <protoc.version>3.24.3</protoc.version>
-        <netty-resolver-dns.version>4.2.9.Final</netty-resolver-dns.version>
+        <netty-resolver-dns.version>4.2.10.Final</netty-resolver-dns.version>
         <guava.version>33.5.0-jre</guava.version>
         <jetcd.version>0.8.6</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
