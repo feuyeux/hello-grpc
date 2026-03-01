@@ -3,7 +3,7 @@ plugins {
     // https://plugins.gradle.org/plugin/com.google.protobuf
     id("com.google.protobuf") version "0.9.6"
     // https://kotlinlang.org/docs/jvm-get-started.html
-    kotlin("jvm") version "1.9.24"
+    kotlin("jvm") version "2.3.10"
 }
 
 //https://github.com/grpc/grpc/releases
