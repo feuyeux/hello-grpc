@@ -423,17 +423,8 @@ public class ProtoClient {
    * @throws SSLException If SSL context setup fails
    */
   public void connect(ManagedChannel channel) throws SSLException {
-    io.opentelemetry.api.OpenTelemetry clientOtel =
-        org.feuyeux.grpc.common.OtelSupport.initOtel("hello-grpc-java-client");
-    var chain = new java.util.ArrayList<io.grpc.ClientInterceptor>();
-    chain.add(new HeaderClientInterceptor());
-    var otelClient = org.feuyeux.grpc.common.OtelSupport.clientInterceptor(clientOtel);
-    if (otelClient != null) {
-      chain.add(otelClient);
-    }
-    Channel interceptChannel = ClientInterceptors.intercept(
-        channel,
-        chain.toArray(new io.grpc.ClientInterceptor[0]));
+    ClientInterceptor interceptor = new HeaderClientInterceptor();
+    Channel interceptChannel = ClientInterceptors.intercept(channel, interceptor);
     blockingStub = LandingServiceGrpc.newBlockingStub(interceptChannel);
     asyncStub = LandingServiceGrpc.newStub(interceptChannel);
   }
