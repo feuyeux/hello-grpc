@@ -3,7 +3,7 @@ import {createLogger, format, transports} from "winston";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import {LandingServiceClient} from "../generated/landing_grpc_pb";
+import {LandingServiceClient} from "../proto/landing_grpc_pb";
 
 // 定义默认端口
 export const port = "9996";

@@ -1,7 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { getVersion } = require('../common/utils');
+const { getVersion } = require('../src/common/utils');
 
 // Directly output the getVersion() result
 console.log(getVersion());
