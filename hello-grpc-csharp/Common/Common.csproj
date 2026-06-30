@@ -9,6 +9,13 @@
   <ItemGroup>
     <!-- 依赖包升级到最新稳定版本 -->
     <PackageReference Include="Google.Protobuf" Version="3.31.1" />
+    <!-- OpenTelemetry SDK + ASP.NET Core + gRPC client instrumentations.
+         Behind GRPC_HELLO_OTEL=Y in Common/Otel.cs. -->
+    <PackageReference Include="OpenTelemetry" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.9.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
     <PackageReference Include="Grpc.Net.Common" Version="2.80.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
