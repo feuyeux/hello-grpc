@@ -21,12 +21,17 @@ import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import org.feuyeux.grpc.client.HeaderClientInterceptor;
 import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
+import io.opentelemetry.api.OpenTelemetry;
+import io.grpc.opentelemetry.GrpcOpenTelemetry;
+import io.grpc.opentelemetry.OpenTelemetryServerInterceptor;
+import org.feuyeux.grpc.common.OtelSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +115,15 @@ public class ProtoServer {
    */
   public ProtoServer(LandingServiceImpl landingService)
       throws IOException, ExecutionException, InterruptedException {
-    this.server = createServer(landingService);
+    // Default constructor preserves pre-OTel behavior by passing a
+    // no-op SDK; createServer() consults OtelSupport.otelEnabled() for
+    // the interceptor factory.
+    this(landingService, OtelSupport.initOtel("hello-grpc-java-server"));
+  }
+
+  public ProtoServer(LandingServiceImpl landingService, OpenTelemetry otel)
+      throws IOException, ExecutionException, InterruptedException {
+    this.server = createServer(landingService, otel);
     start(landingService);
   }
 
@@ -123,12 +136,18 @@ public class ProtoServer {
       throws InterruptedException, IOException, ExecutionException {
     log.info("Starting gRPC server [version: {}]", getVersion());
 
+    // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The returned
+    // SDK is no-op when the env var is off, so this call is always
+    // safe. The SDK handle is captured so the interceptor factory
+    // further down in createServer() can attach the same provider.
+    final OpenTelemetry otel = OtelSupport.initOtel("hello-grpc-java-server");
+
     try {
       // Initialize server implementation
       LandingServiceImpl landingService = createServiceImplementation();
 
       // Create and start server
-      ProtoServer server = new ProtoServer(landingService);
+      ProtoServer server = new ProtoServer(landingService, otel);
       log.info("Server started successfully");
 
       // Setup shutdown hook for graceful shutdown
@@ -197,9 +216,24 @@ public class ProtoServer {
    * @throws SSLException If TLS context setup fails
    */
   private Server createServer(LandingServiceImpl landingService) throws SSLException {
-    // Apply server interceptors to the service
+    return createServer(landingService, OtelSupport.initOtel("hello-grpc-java-server"));
+  }
+
+  private Server createServer(LandingServiceImpl landingService, OpenTelemetry otel)
+      throws SSLException {
+    // Apply server interceptors to the service. The OTel interceptor
+    // is null when GRPC_HELLO_OTEL is unset, so the chain is
+    // byte-identical to before this commit.
+    var chain = new ArrayList<io.grpc.ServerInterceptor>();
+    chain.add(new HeaderServerInterceptor());
+    var otelServer = OtelSupport.serverInterceptor(otel);
+    if (otelServer != null) {
+      chain.add(otelServer);
+    }
     ServerServiceDefinition interceptedService =
-        ServerInterceptors.intercept(landingService, new HeaderServerInterceptor());
+        ServerInterceptors.intercept(
+            landingService,
+            chain.toArray(new io.grpc.ServerInterceptor[0]));
 
     // Determine if secure mode is enabled
     String secureMode = System.getenv(GRPC_HELLO_SECURE);
