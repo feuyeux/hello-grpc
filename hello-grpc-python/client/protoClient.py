@@ -29,6 +29,7 @@ import signal
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conn import connection, utils, landing_pb2_grpc, landing_pb2, error_mapper
+from conn import otel
 
 # Configuration constants
 RETRY_ATTEMPTS = 3
@@ -312,10 +313,15 @@ def run():
     """
     Main execution function that runs all four gRPC communication patterns.
     """
+    # Initialize OpenTelemetry before any grpc channel is built, so the
+    # client_interceptor() factory sees a configured global TracerProvider.
+    # No-op when the env var is off.
+    otel.init_otel("hello-grpc-python-client")
+
     # Setup signal handling for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     logger.info("Starting gRPC client [version: %s]", utils.get_version())
     
     channel = None
