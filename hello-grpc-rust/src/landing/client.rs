@@ -37,7 +37,10 @@ const DEFAULT_BATCH_SIZE: usize = 5;
 async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize rustls crypto provider
     let _ = rustls::crypto::ring::default_provider().install_default();
-    
+
+    // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. No-op otherwise.
+    crate::otel::init_otel("hello-grpc-rust-client");
+
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
     
