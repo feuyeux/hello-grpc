@@ -15,7 +15,8 @@
  * - Tracing header propagation
  */
 
-const grpc = require('@grpc/grpc-js');
+const grpc = require("@grpc/grpc-js")
+const { otelEnabled, initOtel } = require("../common/otel")
 const uuid = require('uuid');
 const { TalkResult, TalkResponse, ResultType } = require('../proto/landing_pb');
 const services = require('../proto/landing_grpc_pb');
@@ -41,6 +42,14 @@ const tracingHeaders = [
 
 // Set up logger
 const logger = conn.logger;
+
+// Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The instrumentation
+// patches @grpc/grpc-js's Server.register globally, so initOtel must
+// run before any grpc.Server instance is constructed below. No-op when
+// the env var is unset.
+if (otelEnabled()) {
+    initOtel("hello-grpc-nodejs-server");
+}
 
 // Backend client instance
 let backendClient = null;

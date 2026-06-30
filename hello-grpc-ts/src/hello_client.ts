@@ -17,6 +17,14 @@ import { logger } from './lib/conn';
 import { buildLinkRequests, getVersion, randomId } from './lib/utils';
 import { LandingServiceClient } from './proto/landing_grpc_pb';
 import { createClientCredentials } from './lib/tls';
+import { otelEnabled, initOtel } from './lib/otel';
+
+// Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. Must run before
+// any grpc.makeClientConstructor() call; the instrumentation patches
+// the @grpc/grpc-js client constructor globally. No-op when unset.
+if (otelEnabled()) {
+    initOtel("hello-grpc-ts-client");
+}
 
 // Configuration constants
 const RETRY_ATTEMPTS = 3;
