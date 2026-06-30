@@ -77,6 +77,16 @@ jobs:
         working-directory: hello-grpc-ts
         run: npm ci
 
+      # Regenerate the grpc-js protobuf .d.ts stubs from proto/.
+      # Replaces the legacy 'import grpc from "grpc"' d.ts that was
+      # checked in by an earlier commit (5e86fd0) with the @grpc/grpc-js
+      # form that matches the runtime import in hello_server.ts.
+      # Idempotent: produces no diff when the source proto is unchanged
+      # and the existing d.ts already matches the generator output.
+      - name: Regenerate TypeScript protobuf stubs
+        working-directory: hello-grpc-ts
+        run: npm run generate-proto
+
       - name: Build TypeScript project
         working-directory: hello-grpc-ts
         run: npm run build
@@ -98,4 +108,17 @@ jobs:
         with:
           name: typescript-test-results-${{ matrix.node-version }}
           path: hello-grpc-ts/test-results/
+          retention-days: 7
+
+      # Upload the freshly regenerated grpc-js TypeScript stubs as a
+      # build artifact so they can be diffed against the checked-in
+      # version. A maintainer then commits the diff in a follow-up
+      # PR (or pushes back to this PR via the GitHub UI) so the
+      # checked-in stubs track the generator output.
+      - name: Upload regenerated protobuf stubs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-proto-stubs-${{ matrix.node-version }}
+          path: hello-grpc-ts/src/proto/
           retention-days: 7
