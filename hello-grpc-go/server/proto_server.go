@@ -95,6 +95,21 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Initialize OpenTelemetry tracing when GRPC_HELLO_OTEL=Y. The returned
+	// shutdown flushes pending spans at process exit. A no-op is returned
+	// when the env var is off, so the deferred call is always safe.
+	otelShutdown, err := common.InitOtel(ctx, "hello-grpc-go-server")
+	if err != nil {
+		log.Warnf("OpenTelemetry init failed: %v (continuing without tracing)", err)
+	}
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := otelShutdown(shutdownCtx); err != nil {
+			log.Warnf("OpenTelemetry shutdown: %v", err)
+		}
+	}()
+
 	// Get server address
 	host := conn.GrpcServerHost()
 	port := conn.GrpcServerPort()
@@ -299,9 +314,19 @@ func getCommonServerOptions() []grpc.ServerOption {
 	rateLimiter := common.NewLimiter(maxRequestsPerSecond)
 	rateInterceptor := common.UnaryServerInterceptor(rateLimiter)
 
-	// Combine interceptors
-	chainedInterceptor := common.ChainUnaryInterceptors(loggingInterceptor, rateInterceptor)
-	opts = append(opts, grpc.UnaryInterceptor(chainedInterceptor))
+	// Combine unary interceptors. OTel is wired separately below as a
+	// grpc.StatsHandler (otelgrpc v0.69 API) — keeping it out of the
+	// interceptor chain avoids a double-publish of every span and lets
+	// grpc-ecosystem-style chain semantics stay clean.
+	chained := []grpc.UnaryServerInterceptor{loggingInterceptor, rateInterceptor}
+	opts = append(opts, grpc.UnaryInterceptor(common.ChainUnaryInterceptors(chained...)))
+
+	// OpenTelemetry stats handler: traces both unary and stream RPCs in
+	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
+	// is not "Y".
+	if otelServer, _ := common.OtelInterceptors(); otelServer != nil {
+		opts = append(opts, grpc.StatsHandler(otelServer))
+	}
 
 	return opts
 }

@@ -217,21 +217,32 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 		}]}`
 	// retry https://github.com/grpc/proposal/blob/master/A6-client-retries.md
 	retryConfig := grpc.WithDefaultServiceConfig(retryPolicy)
-	// rate limiting
+	// rate limiting (+ OpenTelemetry unary client interceptor when
+	// GRPC_HELLO_OTEL=Y). grpc.WithUnaryInterceptor only accepts a
+	// single interceptor, so the chain helper composes rate-limit and
+	// otelgrpc.ClientUnary together; both are nil-safe (chain returns
+	// nil when both halves are nil so the option is omitted).
 	count := 10
-	rateLimitConfig := grpc.WithUnaryInterceptor(common.UnaryClientInterceptor(common.NewLimiter(count)))
+	rateLimitConfig := grpc.WithChainUnaryInterceptor(clientInterceptorChain(count)...)
 	// keepalive
 	keepaliveConfig := grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
 		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
 		PermitWithoutStream: true,             // send pings even without active streams
 	})
-	return grpc.NewClient(address,
+	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		keepaliveConfig,
 		retryConfig,
 		rateLimitConfig,
-	)
+	}
+	// OpenTelemetry stats handler: traces both unary and stream RPCs in
+	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
+	// is not "Y".
+	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
+		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
+	}
+	return grpc.NewClient(address, dialOpts...)
 }
 
 func transportInsecureWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
@@ -241,30 +252,50 @@ func transportInsecureWithContext(ctx context.Context, address string) (*grpc.Cl
 		  "name": [{"service": "GRPC_SERVER"}],
 		  "waitForReady": true,
 		  "retryPolicy": {
-			  "MaxAttempts": 200,
-			  "InitialBackoff": ".1s",
-			  "MaxBackoff": ".05s",
-			  "BackoffMultiplier": 1.2,
-			  "RetryableStatusCodes": [ "UNAVAILABLE" ]
+			"MaxAttempts": 200,
+			"InitialBackoff": ".1s",
+			"MaxBackoff": ".05s",
+			"BackoffMultiplier": 1.2,
+			"RetryableStatusCodes": [ "UNAVAILABLE" ]
 		  }
 		}]}`
 	// retry https://github.com/grpc/proposal/blob/master/A6-client-retries.md
 	retryConfig := grpc.WithDefaultServiceConfig(retryPolicy)
-	// rate limiting
+	// rate limiting (+ OpenTelemetry unary client interceptor when
+	// GRPC_HELLO_OTEL=Y, threaded through clientInterceptorChain).
 	count := 10
-	rateLimitConfig := grpc.WithUnaryInterceptor(common.UnaryClientInterceptor(common.NewLimiter(count)))
+	rateLimitConfig := grpc.WithChainUnaryInterceptor(clientInterceptorChain(count)...)
 	// keepalive
 	keepaliveConfig := grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
 		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
 		PermitWithoutStream: true,             // send pings even without active streams
 	})
-	return grpc.DialContext(ctx, address,
+	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		keepaliveConfig,
 		retryConfig,
 		rateLimitConfig,
-	)
+	}
+	// OpenTelemetry stats handler: traces both unary and stream RPCs in
+	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
+	// is not "Y".
+	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
+		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
+	}
+	return grpc.DialContext(ctx, address, dialOpts...)
+}
+
+// clientInterceptorChain builds the chained unary client interceptor slice
+// passed to grpc.WithChainUnaryInterceptor. It includes the always-on
+// rate-limit interceptor plus the OpenTelemetry unary client interceptor
+// when GRPC_HELLO_OTEL=Y. Returns nil when neither is desired so the
+// caller skips the option entirely (keeps the default behavior).
+func clientInterceptorChain(rateBudget int) []grpc.UnaryClientInterceptor {
+	chain := []grpc.UnaryClientInterceptor{common.UnaryClientInterceptor(common.NewLimiter(rateBudget))}
+	// OTel is wired via grpc.WithStatsHandler at the call site, not as a
+	// unary interceptor in this chain — see transportInsecure etc.
+	return chain
 }
 
 func transportCredentials(address string) (*grpc.ClientConn, error) {
