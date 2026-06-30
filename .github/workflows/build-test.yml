@@ -101,8 +101,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: hello-grpc-tauri/package-lock.json
+        # cache: 'npm' removed: hello-grpc-tauri/package-lock.json is
+        # .gitignore'd (see '*.lock' rule) and not present on fresh CI
+        # runners. The older config failed with 'Some specified paths
+        # were not resolved, unable to cache dependencies.' and silently
+        # aborted the rest of the job. npm ci installs cold each run.
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable

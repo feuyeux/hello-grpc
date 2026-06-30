@@ -36,8 +36,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: hello-grpc-nodejs/package-lock.json
+        # cache: 'npm' removed: hello-grpc-{nodejs,ts}/package-lock.json
+        # files are .gitignore'd (see '*.lock' rule) and not present on
+        # fresh CI runners. The older config failed setup-node with
+        # 'Some specified paths were not resolved, unable to cache
+        # dependencies.' and silently aborted the rest of the job.
+        # npm ci installs cold each run.
 
       - name: Install Node.js dependencies
         working-directory: hello-grpc-nodejs
@@ -70,8 +74,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: hello-grpc-ts/package-lock.json
+        # cache: 'npm' removed: see nodejs-build-test step above.
 
       - name: Install TypeScript dependencies
         working-directory: hello-grpc-ts
