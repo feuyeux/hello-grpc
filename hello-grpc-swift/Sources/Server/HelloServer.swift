@@ -44,6 +44,13 @@ struct HelloServer: AsyncParsableCommand {
     /// The entry point for the server command
     func run() async throws {
         let logger = Logger(label: "HelloServer")
+
+        // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. This is a
+        // no-op when the env var is unset. Per-RPC interceptor wiring
+        // is a follow-up PR; we start with the SDK-level hook so the
+        // future tracer provider can be installed here.
+        Otel.initOtel("hello-grpc-swift-server")
+
         logger.info("Starting gRPC server...")
 
         let options = Options()
