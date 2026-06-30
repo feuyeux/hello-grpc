@@ -66,6 +66,7 @@ class Client {
           options: CallOptions(
             timeout: const Duration(seconds: requestTimeoutSeconds),
           ),
+          interceptors: [clientInterceptor],
         );
 
         // Run all gRPC patterns
