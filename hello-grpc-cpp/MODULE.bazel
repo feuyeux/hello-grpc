@@ -27,7 +27,10 @@ bazel_dep(name = "googleapis", version = "0.0.0-20240819-fe8ba054a", repo_name =
 bazel_dep(name = "protobuf", version = "26.0.bcr.2", repo_name = "com_google_protobuf")
 
 # https://registry.bazel.build/modules/grpc
-bazel_dep(name = "grpc", version = "1.65.0", repo_name = "com_github_grpc_grpc")
+bazel_dep(name = "grpc", version = "1.66.0", repo_name = "com_github_grpc_grpc")
+
+# https://registry.bazel.build/modules/opentelemetry-cpp
+bazel_dep(name = "opentelemetry-cpp", version = "1.16.1", repo_name = "io_opentelemetry_cpp")
 
 ## 2 hello_utils dependencies
 

@@ -6,6 +6,7 @@ cc_binary(
     defines = ["BAZEL_BUILD"],
     deps = [
         "//common:hello_conn",
+        "//common:otel",
         "//protos:hello_cc_grpc",
         "@catch2"
     ],
@@ -18,6 +19,7 @@ cc_binary(
     deps = [
         "//common:hello_conn",
         "//common:error_mapper",
+        "//common:otel",
         "//protos:hello_cc_grpc",
         "@catch2"
     ],

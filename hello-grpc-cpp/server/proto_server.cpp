@@ -5,6 +5,7 @@
 #include <regex>
 #include <string>
 
+#include "common/otel.h"
 #include "grpcpp/ext/proto_server_reflection_plugin.h"
 #include "grpcpp/grpcpp.h"
 #include "grpcpp/health_check_service_interface.h"
@@ -423,6 +424,11 @@ void RunServer() {
 int main(int argc, char **argv) {
   // Initialize logging
   Utils::initLog(argv);
+
+  // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The wiring is a
+  // no-op when the env var is unset, so the existing log + Server
+  // builder path is byte-identical without the flag.
+  otel::InitOtel("hello-grpc-cpp-server");
 
   // Run the server
   try {
