@@ -104,6 +104,7 @@ class Server {
         services: [
           LandingService(logger: _logger, backendClient: backendClient),
         ],
+        serverInterceptors: [serverInterceptor],
       );
 
       // Set up signal handling for graceful shutdown
