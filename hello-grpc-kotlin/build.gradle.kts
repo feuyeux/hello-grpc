@@ -24,6 +24,12 @@ ext["protobufJavaUtilVersion"] = "4.28.2"
 ext["log4jVersion"] = "2.24.0"
 //https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api-kotlin
 ext["log4jKotlinVersion"] = "1.5.0"
+// OpenTelemetry SDK + contrib gRPC instrumentations, mirroring
+// the hello-grpc-java wiring (PR #496) without the grpc-java dep
+// bump since Kotlin's grpc-java version is held at 1.68.0 by the
+// grpc-kotlin-stub dependency above.
+val opentelemetryVersion = "1.43.0"
+val opentelemetryContribVersion = "2.10.0-alpha"
 //https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
 ext["jacksonVersion"] = "2.16.1"
 

@@ -22,6 +22,14 @@ dependencies {
     api("org.apache.logging.log4j:log4j-core:${rootProject.ext["log4jVersion"]}")
     api("com.fasterxml.jackson.core:jackson-databind:${rootProject.ext["jacksonVersion"]}")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${rootProject.ext["jacksonVersion"]}")
+    // OpenTelemetry SDK + contrib gRPC instrumentations. Used by
+    // hello-grpc-kotlin's server + client to wire up env-gated
+    // tracing. Lives here (stub module) so the api/transport splits
+    // are consistent with the rest of the OTel deps in the project.
+    api("io.opentelemetry:opentelemetry-api:${opentelemetryVersion}")
+    api("io.opentelemetry:opentelemetry-sdk:${opentelemetryVersion}")
+    api("io.opentelemetry:opentelemetry-exporter-logging:${opentelemetryVersion}")
+    api("io.opentelemetry.instrumentation:opentelemetry-grpc-1.6:${opentelemetryContribVersion}")
     testImplementation(kotlin("test"))
 }
 
