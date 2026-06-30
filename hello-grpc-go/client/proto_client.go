@@ -74,6 +74,21 @@ func main() {
 		}
 	}()
 
+	// Initialize OpenTelemetry tracing when GRPC_HELLO_OTEL=Y. The returned
+	// shutdown flushes pending spans at process exit. A no-op is returned
+	// when the env var is off, so the deferred call is always safe.
+	otelShutdown, otelErr := common.InitOtel(ctx, "hello-grpc-go-client")
+	if otelErr != nil {
+		log.Warnf("OpenTelemetry init failed: %v (continuing without tracing)", otelErr)
+	}
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := otelShutdown(shutdownCtx); err != nil {
+			log.Warnf("OpenTelemetry shutdown: %v", err)
+		}
+	}()
+
 	log.Infof("Starting gRPC client [version: %s]", common.GetVersion())
 
 	// Attempt to establish connection and run all patterns
