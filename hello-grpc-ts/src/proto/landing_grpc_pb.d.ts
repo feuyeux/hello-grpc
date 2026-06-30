@@ -4,7 +4,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import * as grpc from "grpc";
+import * as grpc from "@grpc/grpc-js";
 import * as landing_pb from "./landing_pb";
 
 interface ILandingServiceService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
@@ -23,6 +23,7 @@ interface ILandingServiceService_ITalk extends grpc.MethodDefinition<landing_pb.
     responseSerialize: grpc.serialize<landing_pb.TalkResponse>;
     responseDeserialize: grpc.deserialize<landing_pb.TalkResponse>;
 }
+
 interface ILandingServiceService_ITalkOneAnswerMore extends grpc.MethodDefinition<landing_pb.TalkRequest, landing_pb.TalkResponse> {
     path: "/hello.LandingService/TalkOneAnswerMore";
     requestStream: false;
@@ -32,6 +33,7 @@ interface ILandingServiceService_ITalkOneAnswerMore extends grpc.MethodDefinitio
     responseSerialize: grpc.serialize<landing_pb.TalkResponse>;
     responseDeserialize: grpc.deserialize<landing_pb.TalkResponse>;
 }
+
 interface ILandingServiceService_ITalkMoreAnswerOne extends grpc.MethodDefinition<landing_pb.TalkRequest, landing_pb.TalkResponse> {
     path: "/hello.LandingService/TalkMoreAnswerOne";
     requestStream: true;
@@ -41,6 +43,7 @@ interface ILandingServiceService_ITalkMoreAnswerOne extends grpc.MethodDefinitio
     responseSerialize: grpc.serialize<landing_pb.TalkResponse>;
     responseDeserialize: grpc.deserialize<landing_pb.TalkResponse>;
 }
+
 interface ILandingServiceService_ITalkBidirectional extends grpc.MethodDefinition<landing_pb.TalkRequest, landing_pb.TalkResponse> {
     path: "/hello.LandingService/TalkBidirectional";
     requestStream: true;
@@ -53,7 +56,7 @@ interface ILandingServiceService_ITalkBidirectional extends grpc.MethodDefinitio
 
 export const LandingServiceService: ILandingServiceService;
 
-export interface ILandingServiceServer {
+export interface ILandingServiceServer extends grpc.UntypedServiceImplementation {
     talk: grpc.handleUnaryCall<landing_pb.TalkRequest, landing_pb.TalkResponse>;
     talkOneAnswerMore: grpc.handleServerStreamingCall<landing_pb.TalkRequest, landing_pb.TalkResponse>;
     talkMoreAnswerOne: grpc.handleClientStreamingCall<landing_pb.TalkRequest, landing_pb.TalkResponse>;
@@ -76,7 +79,7 @@ export interface ILandingServiceClient {
 }
 
 export class LandingServiceClient extends grpc.Client implements ILandingServiceClient {
-    constructor(address: string, credentials: grpc.ChannelCredentials, options?: object);
+    constructor(address: string, credentials: grpc.ChannelCredentials, options?: Partial<grpc.ClientOptions>);
     public talk(request: landing_pb.TalkRequest, callback: (error: grpc.ServiceError | null, response: landing_pb.TalkResponse) => void): grpc.ClientUnaryCall;
     public talk(request: landing_pb.TalkRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: landing_pb.TalkResponse) => void): grpc.ClientUnaryCall;
     public talk(request: landing_pb.TalkRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: landing_pb.TalkResponse) => void): grpc.ClientUnaryCall;
