@@ -6,6 +6,15 @@ import { v4 as uuidv4 } from "uuid"
 import { ans, getVersion, hellos } from "./lib/utils"
 import { createClient, getServerPort, logger } from "./lib/conn"
 import { createServerCredentials, testTlsCertificates } from "./lib/tls"
+import { otelEnabled, initOtel } from "./lib/otel"
+
+// Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The instrumentation
+// patches @grpc/grpc-js's Server constructor globally, so initOtel
+// must run before any new grpc.Server() call below. No-op when the
+// env var is unset.
+if (otelEnabled()) {
+    initOtel("hello-grpc-ts-server")
+}
 
 import * as fs from 'fs'
 import * as path from 'path'

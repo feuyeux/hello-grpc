@@ -13,9 +13,18 @@
 
 const grpc = require('@grpc/grpc-js');
 const { TalkRequest } = require('../proto/landing_pb');
+const { otelEnabled, initOtel } = require('../common/otel');
 const conn = require('../common/connection');
 const utils = require('../common/utils');
 const errorMapper = require('../common/error_mapper');
+
+// Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. Must run before
+// any grpc.makeClientConstructor() call (the instrumentation patches
+// the @grpc/grpc-js client constructor globally). No-op when the
+// env var is unset.
+if (otelEnabled()) {
+    initOtel("hello-grpc-nodejs-client");
+}
 
 // Configuration constants
 const RETRY_ATTEMPTS = 3;
