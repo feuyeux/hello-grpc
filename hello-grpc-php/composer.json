@@ -2,7 +2,7 @@
     "name": "feuyeux/hello-grpc",
     "description": "Hello gRPC for PHP",
     "require": {
-        "grpc/grpc": "^1.57.0",
+        "grpc/grpc": "^1.74.0",
         "google/protobuf": "^v4.0.0",
         "ramsey/uuid": "^4.7.5",
         "monolog/monolog": "^3.5.0"
