@@ -34,6 +34,7 @@ import grpc
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conn import connection, utils, landing_pb2, landing_pb2_grpc, error_mapper
+from conn.log_formatter import LoggingInterceptor
 
 # Configuration constants
 MAX_WORKERS = os.cpu_count() or 4
@@ -359,9 +360,16 @@ def serve():
         channel = connection.build_channel()
         backend_service = landing_pb2_grpc.LandingServiceStub(channel)
     
-    # Create and configure gRPC server
+    # Create and configure gRPC server. The LoggingInterceptor class is
+    # defined in conn/log_formatter.py with full unary-unary /
+    # unary-stream / stream-unary / stream-stream wrappers for B4
+    # (server interceptor) — see the parity audit report. Register it
+    # here so it actually runs on every RPC instead of being dead code.
     server_impl = LandingServiceServer(backend_service)
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=MAX_WORKERS))
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=MAX_WORKERS),
+        interceptors=(LoggingInterceptor(logger),),
+    )
     landing_pb2_grpc.add_LandingServiceServicer_to_server(server_impl, server)
     
     # Configure server port and optional TLS
