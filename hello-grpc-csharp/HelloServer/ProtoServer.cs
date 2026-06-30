@@ -85,6 +85,23 @@ namespace HelloServer
                 // Add gRPC services
                 builder.Services.AddGrpc();
 
+                // OpenTelemetry tracing. InitOtel returns null when
+                // GRPC_HELLO_OTEL is unset, so the AddOpenTelemetry()
+                // branch is a no-op in the default case. The shape
+                // here matches AddGrpc() above: a service registration
+                // against the DI container, where the OpenTelemetry
+                // SDK and its instrumentation are wired.
+                var otelProvider = Common.Otel.InitOtel("hello-grpc-csharp-server");
+                if (otelProvider is not null)
+                {
+                    builder.Services.AddSingleton(otelProvider);
+                    builder.Services.AddOpenTelemetry()
+                        .WithTracing(tracing => tracing
+                            .AddSource("Microsoft.AspNetCore")
+                            .AddSource("Grpc.Net.Client")
+                            .AddConsoleExporter());
+                }
+
                 // Register service implementation as singleton
                 builder.Services.AddSingleton(landingServiceImpl);
 
