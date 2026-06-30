@@ -8,6 +8,7 @@ let packageDependencies: [Package.Dependency] = [
     .package(url: "https://github.com/grpc/grpc-swift-nio-transport.git", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
     .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
+    .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", from: "2.0.0"),
 ]
 
 extension Target {
@@ -19,6 +20,9 @@ extension Target {
             .product(name: "GRPCNIOTransportHTTP2", package: "grpc-swift-nio-transport"),
             .product(name: "GRPCProtobuf", package: "grpc-swift-protobuf"),
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            .product(name: "OpenTelemetryApi", package: "opentelemetry-swift-core"),
+            .product(name: "OpenTelemetrySdk", package: "opentelemetry-swift-core"),
+            .product(name: "StdoutExporter", package: "opentelemetry-swift-core"),
         ],
         path: "Sources/Common",
     )

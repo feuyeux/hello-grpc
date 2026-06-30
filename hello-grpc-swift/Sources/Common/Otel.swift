@@ -1,26 +1,13 @@
 import Foundation
+import GRPCCore
+import OpenTelemetryApi
+import OpenTelemetrySdk
+import StdoutExporter
 
 /// hello-grpc-swift OpenTelemetry wiring.
 ///
 /// Mirrors the env-gate pattern used by the prior OTel PRs across
 /// the other languages. opt-in via `GRPC_HELLO_OTEL=Y`.
-///
-/// Caveat carried over from hello-grpc-php (#493) and hello-grpc-dart
-/// (#494): grpc-swift does not currently ship a contrib
-/// OpenTelemetry instrumentation package (the equivalent of
-/// opentelemetry-swift's URLSession or MetricKit integrations
-/// doesn't exist for grpc-swift). This PR therefore installs
-/// only the SDK + tracer scaffolding so future interceptor code
-/// can be built around the configured tracer. Per-RPC
-/// interceptor wiring (`HelloService` / `HelloClient` wrap) is
-/// intentionally a follow-up PR.
-///
-/// Why this PR is non-zero:
-/// - Other languages' OTel PRs already shipped this same
-///   SDK-and-tracer-only surface for PHP and Dart.
-/// - Operators that hook a real OTel backend into OTel.exporter
-///   here get the prepared plumbing without needing a fresh
-///   follow-up wiring after we add per-RPC spans.
 public enum Otel {
     public static let envEnabled = "GRPC_HELLO_OTEL"
 
@@ -29,61 +16,108 @@ public enum Otel {
         return ProcessInfo.processInfo.environment[envEnabled] == "Y"
     }
 
-    /// Tracer instance available to user code that wants to emit
-    /// hand-rolled sub-spans. Idiomatic usage:
-    ///
-    ///     let span = Otel.tracer.spanBuilder("in-process")
-    ///         .startSpan()
-    ///     // ...do work...
-    ///     span.end()
-    public static let tracer: OtelTracer = OtelTracer(name: "hello-grpc-swift")
+    private static let lock = NSLock()
+    private static var _initialized = false
 
-    /// Initialise SDK side. No-op when the env var is unset. In a
-    /// future wire-up (when we vendor an opentelemetry-swift + grpc-swift
-    /// adapter or write a custom interceptor), this is the place to
-    /// install the global TracerProvider.
+    /// One-time SDK setup. No-op when the env var is unset.
     public static func initOtel(_ serviceName: String) {
         guard enabled else { return }
-        // Real SDK init would go here. Kept lightweight to avoid an
-        // opentelemetry-swift dependency at this stage; the tracer
-        // below is the same identity that a real SDK would replace.
-        _ = serviceName
+        lock.lock()
+        defer { lock.unlock() }
+        guard !_initialized else { return }
+        _initialized = true
+
+        let exporter = StdoutExporter()
+        let processor = SimpleSpanProcessor(spanExporter: exporter)
+        let resource = DefaultResources.get().merging(
+            with: Resource(attributes: [
+                "service.name": AttributeValue(serviceName),
+            ])
+        )
+
+        OpenTelemetry.registerTracerProvider(
+            tracerProvider: TracerProviderBuilder()
+                .add(spanProcessor: processor)
+                .with(resource: resource)
+                .build()
+        )
+    }
+
+    /// Global tracer from the configured provider, or the no-op tracer.
+    public static var tracer: Tracer {
+        return OpenTelemetry.instance.tracerProvider.get(
+            instrumentationName: "hello-grpc-swift"
+        )
+    }
+
+    /// Starts a span with rpc.system/grpc attributes if OTel is enabled.
+    public static func startSpan(
+        _ name: String,
+        kind: SpanKind = .internal
+    ) -> Span? {
+        guard enabled else { return nil }
+        return tracer.spanBuilder(spanName: name)
+            .setSpanKind(kind)
+            .setAttribute(key: "rpc.system", value: "grpc")
+            .setAttribute(key: "rpc.method", value: name)
+            .startSpan()
     }
 }
 
-/// Placeholder tracer with the API surface needed by handler-side
-/// manual span emission. Replace with an opentelemetry-swift SDK
-/// Tracer in a follow-up PR. Today the operations are no-ops so the
-/// API surface compiles and ships with hello-grpc-swift.
-public final class OtelTracer {
-    public let name: String
-    public init(name: String) {
-        self.name = name
-    }
-    public func spanBuilder(_ operationName: String) -> OtelSpanBuilder {
-        return OtelSpanBuilder(name: operationName)
+/// gRPC Swift 2.x server interceptor that emits an inbound [SpanKind.server] span
+/// around each RPC.
+public struct HelloServerInterceptor: ServerInterceptor, Sendable {
+    public init() {}
+
+    public func intercept<Input: Sendable, Output: Sendable>(
+        request: StreamingServerRequest<Input>,
+        context: ServerContext,
+        next: @Sendable (
+            _ request: StreamingServerRequest<Input>,
+            _ context: ServerContext
+        ) async throws -> StreamingServerResponse<Output>
+    ) async throws -> StreamingServerResponse<Output> {
+        guard let span = Otel.startSpan(context.descriptor.fullName, kind: .server)
+        else {
+            return try await next(request, context)
+        }
+
+        defer { span.end() }
+
+        do {
+            return try await next(request, context)
+        } catch {
+            span.setStatus(.error, description: String(describing: error))
+            throw error
+        }
     }
 }
 
-public struct OtelSpanBuilder {
-    public let name: String
-    public init(name: String) {
-        self.name = name
-    }
-    public func startSpan() -> OtelSpan {
-        return OtelSpan(name: name)
-    }
-}
+/// gRPC Swift 2.x client interceptor that emits an outbound [SpanKind.client] span
+/// around each RPC.
+public struct HelloClientInterceptor: ClientInterceptor, Sendable {
+    public init() {}
 
-public final class OtelSpan {
-    public let name: String
-    public init(name: String) {
-        self.name = name
-    }
-    public func end() {
-        // No-op until a real SDK Tracer is wired.
-    }
-    public func setAttribute(_ key: String, _ value: String) {
-        // No-op API surface.
+    public func intercept<Input: Sendable, Output: Sendable>(
+        request: StreamingClientRequest<Input>,
+        context: ClientContext,
+        next: @Sendable (
+            _ request: StreamingClientRequest<Input>,
+            _ context: ClientContext
+        ) async throws -> StreamingClientResponse<Output>
+    ) async throws -> StreamingClientResponse<Output> {
+        guard let span = Otel.startSpan(context.descriptor.fullName, kind: .client)
+        else {
+            return try await next(request, context)
+        }
+
+        defer { span.end() }
+
+        do {
+            return try await next(request, context)
+        } catch {
+            span.setStatus(.error, description: String(describing: error))
+            throw error
+        }
     }
 }
