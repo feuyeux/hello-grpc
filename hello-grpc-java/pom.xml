@@ -37,6 +37,33 @@
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- gRPC OpenTelemetry interceptor (server + client):
+             io.grpc:grpc-opentelemetry is the grpc-java-bundled OTel
+             integration. Provides OpenTelemetryServerInterceptor /
+             OpenTelemetryClientInterceptor. -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-opentelemetry</artifactId>
+            <version>${grpc.version}</version>
+        </dependency>
+        <!-- OpenTelemetry SDK + a logging exporter so spans show up
+             without needing a sidecar Jaeger / OTLP collector. Swap
+             in OtlpGrpcSpanExporter in OtelSupport.java for prod. -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>1.43.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+            <version>1.43.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-logging</artifactId>
+            <version>1.43.0</version>
+        </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
