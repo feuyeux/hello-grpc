@@ -86,6 +86,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize rustls crypto provider
     let _ = rustls::crypto::ring::default_provider().install_default();
 
+    // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. No-op when the
+    // env var is unset so the existing log4rs + tonic/tracing pipeline
+    // is preserved by default.
+    crate::otel::init_otel("hello-grpc-rust-server");
+
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
 
