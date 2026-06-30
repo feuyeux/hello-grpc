@@ -176,14 +176,24 @@ function startSecureServer(server, address) {
 
         logger.info("Using certificate chain from: %s", fs.existsSync(certChainPath) ? certChainPath : certPath);
 
-        // Create TLS credentials - don't require client certificates (false)
+        // Create TLS credentials. The default is one-way TLS (server only);
+        // setting GRPC_HELLO_REQUIRE_CLIENT_CERT=Y switches to mutual TLS
+        // by requiring (and verifying, against the bundled client CA) a
+        // client-side cert on every connection.
+        const requireClientCert = process.env.GRPC_HELLO_REQUIRE_CLIENT_CERT === "Y";
+        const clientRootCert = requireClientCert
+            ? fs.readFileSync(path.join(
+                certBasePath.replace(/server_certs$/, "client_certs"),
+                "myssl_root.cer"
+            ))
+            : null;
         const credentials = grpc.ServerCredentials.createSsl(
-            null,  // Root certificates for client verification (null = don't verify client)
+            clientRootCert,  // root CAs for client-cert verification (null = no client auth)
             [{
                 cert_chain: certChainContent,
                 private_key: privateKeyContent
             }],
-            false // Don't require client certificate
+            requireClientCert
         );
 
         server.bindAsync(address, credentials, (err, port) => {

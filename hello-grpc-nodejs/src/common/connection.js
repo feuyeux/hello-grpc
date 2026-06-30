@@ -87,24 +87,43 @@ function getClient() {
     if (secure === "Y") {
         try {
             logger.info("Connect With TLS to %s", address);
-            
+
             // Check if root certificate file exists
             if (!fs.existsSync(rootCert)) {
                 logger.error("Root certificate file not found: %s", rootCert);
                 throw new Error(`Root certificate file not found: ${rootCert}`);
             }
-            
+
             // Read root certificate
             const rootCertContent = fs.readFileSync(rootCert);
             logger.info("Loaded root certificate from: %s", rootCert);
-            logger.info("Using server-only TLS (no client certificate)");
-            
-            // Create TLS credentials without client certificates
-            const credentials = grpc.credentials.createSsl(
-                rootCertContent,
-                null,  // No client private key
-                null   // No client certificate
-            );
+
+            // When GRPC_HELLO_REQUIRE_CLIENT_CERT=Y is set, mirror server-side
+            // mTLS by attaching the client cert + key to the channel. Path is
+            // <certBasePath>/{cert.pem,private.key}. Default is one-way TLS
+            // (no client identity, matches the default on the server side).
+            const requireClientCert = process.env.GRPC_HELLO_REQUIRE_CLIENT_CERT === "Y";
+            const clientKeyPath = path.join(certPath, "private.key");
+            const clientCertPath = path.join(certPath, "cert.pem");
+            const hasClientKey = fs.existsSync(clientKeyPath);
+            const hasClientCert = fs.existsSync(clientCertPath);
+
+            let credentials;
+            if (requireClientCert && hasClientKey && hasClientCert) {
+                logger.info("Using mTLS (client certificate supplied)");
+                credentials = grpc.credentials.createSsl(
+                    rootCertContent,
+                    fs.readFileSync(clientKeyPath),
+                    fs.readFileSync(clientCertPath)
+                );
+            } else {
+                logger.info("Using server-only TLS (no client certificate)");
+                credentials = grpc.credentials.createSsl(
+                    rootCertContent,
+                    null,  // No client private key
+                    null   // No client certificate
+                );
+            }
             
             // Configure channel options
             const options = {
