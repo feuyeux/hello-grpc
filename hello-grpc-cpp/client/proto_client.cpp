@@ -418,6 +418,9 @@ int main(int argc, char **argv) {
   // Initialize logging
   Utils::initLog(argv);
 
+  // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. No-op otherwise.
+  otel::InitOtel("hello-grpc-cpp-client");
+
   // Setup signal handling for graceful shutdown
   std::signal(SIGINT, signal_handler);
   std::signal(SIGTERM, signal_handler);
