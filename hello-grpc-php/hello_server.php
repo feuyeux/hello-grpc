@@ -15,6 +15,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Formatter\LineFormatter;
 use Common\Utils\VersionUtils;
+use Common\Utils\Otel;
 
 // Include required files
 require dirname(__FILE__) . '/vendor/autoload.php';
@@ -100,7 +101,17 @@ function getVersion(): string {
 
 try {
     $log->info("Initializing gRPC server");
-    
+
+    // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. Returns null
+    // when the env var is unset; a follow-up PR will wrap each
+    // service handler in hello_server.php / LandingServiceImpl.php
+    // with a tracer->spanBuilder() call so per-gRPC-call spans get
+    // emitted. The C extension's grpc RpcServer does not currently
+    // expose an interceptor slot, so the wiring is partial in this
+    // PR; OTel::initOtel just installs the SDK + exporter so future
+    // handler-side spans have a configured Tracer to use.
+    Otel::initOtel("hello-grpc-php-server");
+
     // Initialize connection configuration
     $conn = new Connection();
     

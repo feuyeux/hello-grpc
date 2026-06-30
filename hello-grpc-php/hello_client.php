@@ -12,6 +12,7 @@ use Monolog\Formatter\LineFormatter;
 
 require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/conn/Connection.php';
+require dirname(__FILE__) . '/common/utils/Otel.php';
 
 // Constants for configuration
 const MAX_RETRIES = 3;
@@ -19,6 +20,14 @@ const BASE_BACKOFF_MS = 500;
 const STREAM_TIMEOUT_MS = 10000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 5000;
 const BIDIRECTIONAL_READ_TIMEOUT_MS = 100;
+
+// Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The PHP C
+// extension does not currently expose interceptor callbacks at the
+// per-gRPC-call level (RpcServer takes service handlers directly,
+// without an interceptor chain), so the wiring is partial in this
+// PR: the SDK + exporter are installed so future handler-side span
+// calls have a configured Tracer to use.
+Otel::initOtel("hello-grpc-php-client");
 
 // Create logger
 $log = new Logger('HelloClient');
