@@ -55,7 +55,10 @@ struct HelloClient: AsyncParsableCommand {
             do {
                 let transport = try await createTransport(logger: logger)
                 
-                try await withGRPCClient(transport: transport) { client in
+                try await withGRPCClient(
+                    transport: transport,
+                    interceptors: Otel.enabled ? [HelloClientInterceptor()] : []
+                ) { client in
                     let serviceClient: Hello_LandingService.Client<HTTP2ClientTransport.Posix> =
                         Hello_LandingService.Client(wrapping: client)
                     
