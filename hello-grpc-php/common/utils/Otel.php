@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 namespace Common\Utils;
 
+use Exception;
+use OpenTelemetry\API\Common\Attribute\Attributes;
+use OpenTelemetry\API\Trace\TracerInterface;
+use OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory;
+use OpenTelemetry\Contrib\Otlp\SpanExporter;
+use OpenTelemetry\SDK\Resource\ResourceInfo;
+use OpenTelemetry\SDK\Resource\ResourceInfoFactory;
+use OpenTelemetry\SDK\Trace\SpanProcessor\SimpleSpanProcessor;
+use OpenTelemetry\SDK\Trace\TracerProvider;
+use Throwable;
+
 /**
  * hello-grpc-php OpenTelemetry wiring.
  *
@@ -11,30 +22,23 @@ namespace Common\Utils;
  * repository: read GRPC_HELLO_OTEL, install an OpenTelemetry SDK +
  * tracer provider when it is "Y", otherwise stay a no-op.
  *
- * Note on PHP gRPC interceptor support
- * -----------------------------------
- * The grpc PHP extension does not currently expose interceptor
- * callbacks at the ServerBuilder / Channel construction level
- * (c-extension gRPC server API takes service handlers, not
- * interceptor chains). That means gRPC per-call spans cannot be
- * emitted from PHP without either: (a) a future gRPC PHP extension
- * change, (b) running grpcphp / grpcio on top of the underlying PHP
- * extension and instrumenting at that layer, or (c) running
- * post-response hooks via the noop-on-success + exception-based
- * filter that wraps each handler in user code.
- *
- * Approach (c) is what `Otel::initOtel` enables here: the SDK + a
- * tracer are installed so that handler-side `tracer->spanBuilder()`
- * calls work today; the per-gRPC-call wiring will be added in a
- * follow-up PR that touches hello_server.php /
- * LandingServiceImpl.php to wrap each handler.
+ * PHP gRPC extension note
+ * -----------------------
+ * The grpc PHP extension does not expose interceptor callbacks at the
+ * ServerBuilder / Channel construction level. Therefore per-gRPC-call
+ * spans are emitted by wrapping each service handler in user code
+ * with `Otel::wrapper($name, $callback, $attrs)`. This is the same
+ * approach documented in our initial OTel PR (#493).
  */
 final class Otel
 {
     public const ENV_ENABLED = 'GRPC_HELLO_OTEL';
 
     /** Cached tracer provider to avoid double-init. */
-    private static $tracerProvider = null;
+    private static ?TracerProvider $tracerProvider = null;
+
+    /** Cached tracer. */
+    private static ?TracerInterface $tracer = null;
 
     public static function enabled(): bool
     {
@@ -42,41 +46,79 @@ final class Otel
     }
 
     /**
-     * Returns a no-op TracerProvider when env var is unset, or the
-     * configured exporter-backed one when set. Idempotent.
+     * Build (or return cached) Sdk TracerProvider and tracer.
      */
-    public static function initOtel(string $serviceName)
+    public static function tracer(): TracerInterface
+    {
+        if (self::$tracer !== null) {
+            return self::$tracer;
+        }
+
+        if (!self::enabled()) {
+            // Should not be called when disabled; wrapper() gates before
+            // calling tracer(). Returning the SDK no-op tracer is safe.
+            return \OpenTelemetry\API\Trace\NoopTracer::getInstance();
+        }
+
+        $endpoint = $_ENV['OTEL_EXPORTER_OTLP_ENDPOINT']
+            ?? $_SERVER['OTEL_EXPORTER_OTLP_ENDPOINT']
+            ?? 'http://localhost:4318';
+
+        $transport = OtlpHttpTransportFactory::create(
+            rtrim($endpoint, '/') . '/v1/traces',
+            'application/x-protobuf'
+        );
+        $exporter = new SpanExporter($transport);
+
+        $resource = ResourceInfoFactory::defaultResource()->merge(
+            ResourceInfo::create(Attributes::create([
+                'service.name' => 'hello-grpc-php',
+            ]))
+        );
+
+        self::$tracerProvider = TracerProvider::builder()
+            ->addSpanProcessor(new SimpleSpanProcessor($exporter))
+            ->setResource($resource)
+            ->build();
+
+        self::$tracer = self::$tracerProvider->getTracer('hello-grpc-php');
+        return self::$tracer;
+    }
+
+    /**
+     * Execute `$callback` inside an OTel span. When GRPC_HELLO_OTEL is
+     * unset this degrades to a plain callback invocation with near-zero
+     * overhead.
+     *
+     * @param string   $name     span name, typically the gRPC method
+     * @param callable $callback body to wrap
+     * @param array    $attrs    key/value pairs added as span attributes
+     *
+     * @return mixed the value returned by $callback
+     * @throws Throwable any exception thrown by $callback is re-thrown
+     *                   after being recorded on the span
+     */
+    public static function wrapper(string $name, callable $callback, array $attrs = [])
     {
         if (!self::enabled()) {
-            // No-op provider. Returning the interface symbol a real
-            // consumer might resolve is overkill — the call sites
-            // currently gate on `enabled()` themselves.
-            return null;
+            return $callback();
         }
-        if (self::$tracerProvider !== null) {
-            return self::$tracerProvider;
+
+        $tracer = self::tracer();
+        $builder = $tracer->spanBuilder($name);
+        foreach ($attrs as $key => $value) {
+            $builder = $builder->setAttribute((string) $key, $value);
         }
-        // The SDK lives across the bundled open-telemetry/sdk +
-        // open-telemetry/exporter-otlp packages, both of which this
-        // PR's composer.json addition pulls. Operator swap from
-        // OTLP to stdout here is a single line.
-        $tracerProvider = \OpenTelemetry\SDK\Trace\TracerProvider::builder()
-            ->addSpanProcessor(
-                (new \OpenTelemetry\Contrib\Otlp\SpanExporter(\OpenTelemetry\Contrib\Otlp\OtlpHttpTransportFactory::create(
-                    $_ENV['OTEL_EXPORTER_OTLP_ENDPOINT'] ?? 'http://localhost:4318',
-                    'application/x-protobuf'
-                )))->getSpanExporter()
-            )
-            ->setResource(\OpenTelemetry\SDK\Resource\ResourceInfoFactory::defaultResource()->merge(
-                \OpenTelemetry\SDK\Resource\ResourceInfoFactory::emptyResource()->withAttributes(
-                    \OpenTelemetry\SDK\Common\Attribute::factory()
-                        ->key('service.name')
-                        ->string($serviceName)
-                        ->build()
-                )
-            ))
-            ->build();
-        self::$tracerProvider = $tracerProvider;
-        return $tracerProvider;
+        $span = $builder->startSpan();
+
+        try {
+            $result = $callback();
+            return $result;
+        } catch (Throwable $e) {
+            $span->recordException($e);
+            throw $e;
+        } finally {
+            $span->end();
+        }
     }
 }

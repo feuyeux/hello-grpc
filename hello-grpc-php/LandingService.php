@@ -26,6 +26,7 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Formatter\LineFormatter;
+use Common\Utils\Otel;
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/common/msg/Hello/TalkRequest.php';
@@ -33,6 +34,7 @@ require_once __DIR__ . '/common/msg/Hello/TalkResponse.php';
 require_once __DIR__ . '/common/msg/Hello/TalkResult.php';
 require_once __DIR__ . '/common/svc/Hello/LandingServiceInterface.php';
 require_once __DIR__ . '/common/svc/Hello/LandingServiceStub.php';
+require_once __DIR__ . '/common/utils/Otel.php';
 
 /**
  * Translation responses for different greetings
@@ -382,51 +384,53 @@ class LandingService extends LandingServiceStub
      */
     public function Talk(TalkRequest $request, \Grpc\ServerContext $context): ?TalkResponse
     {
-        $this->logRequest('Talk', $context, $request);
-        $metadata = $this->extractMetadata($context);
-        
-        // If proxy mode is enabled, try to call backend first
-        if ($this->isProxyMode) {
-            try {
-                // Convert our internal metadata format to gRPC format
-                $md = [];
-                foreach ($metadata as $key => $values) {
-                    foreach ($values as $value) {
-                        $md[$key] = $value;
+        return Otel::wrapper('Talk', function () use ($request, $context) {
+            $this->logRequest('Talk', $context, $request);
+            $metadata = $this->extractMetadata($context);
+
+            // If proxy mode is enabled, try to call backend first
+            if ($this->isProxyMode) {
+                try {
+                    // Convert our internal metadata format to gRPC format
+                    $md = [];
+                    foreach ($metadata as $key => $values) {
+                        foreach ($values as $value) {
+                            $md[$key] = $value;
+                        }
                     }
+
+                    // Set timeout
+                    $options = ['timeout' => 5000000]; // 5 seconds (in microseconds)
+
+                    // Call backend
+                    list($response, $status) = $this->backendClient->Talk($request, $md, $options)->wait();
+
+                    // Handle response from backend
+                    if ($status->code === 0 && $response instanceof TalkResponse) {
+                        $this->metrics['proxy_success']++;
+                        $this->logSuccess('Talk', $response);
+                        return $response;
+                    } else {
+                        throw new \Exception("Backend returned error code: " . $status->code);
+                    }
+                } catch (\Exception $e) {
+                    $this->logError('Talk', $e->getMessage(), true);
+
+                    // Fall back to local processing
+                    $this->metrics['local_fallback']++;
                 }
-                
-                // Set timeout
-                $options = ['timeout' => 5000000]; // 5 seconds (in microseconds)
-                
-                // Call backend
-                list($response, $status) = $this->backendClient->Talk($request, $md, $options)->wait();
-                
-                // Handle response from backend
-                if ($status->code === 0 && $response instanceof TalkResponse) {
-                    $this->metrics['proxy_success']++;
-                    $this->logSuccess('Talk', $response);
-                    return $response;
-                } else {
-                    throw new \Exception("Backend returned error code: " . $status->code);
-                }
-            } catch (\Exception $e) {
-                $this->logError('Talk', $e->getMessage(), true);
-                
-                // Fall back to local processing
-                $this->metrics['local_fallback']++;
             }
-        }
-        
-        // Process locally
-        try {
-            $response = $this->processLocally($request, $metadata);
-            $this->logSuccess('Talk', $response);
-            return $response;
-        } catch (\Exception $e) {
-            $this->logError('Talk', $e->getMessage());
-            throw $e;
-        }
+
+            // Process locally
+            try {
+                $response = $this->processLocally($request, $metadata);
+                $this->logSuccess('Talk', $response);
+                return $response;
+            } catch (\Exception $e) {
+                $this->logError('Talk', $e->getMessage());
+                throw $e;
+            }
+        }, ['rpc.method' => 'Talk', 'rpc.system' => 'grpc']);
     }
     
     /**
@@ -438,77 +442,79 @@ class LandingService extends LandingServiceStub
         \Grpc\ServerContext $context
     ): void
     {
-        $this->logRequest('TalkOneAnswerMore', $context, $request);
-        $metadata = $this->extractMetadata($context);
-        
-        // If proxy mode, try to handle through backend
-        if ($this->isProxyMode) {
+        Otel::wrapper('TalkOneAnswerMore', function () use ($request, $writer, $context) {
+            $this->logRequest('TalkOneAnswerMore', $context, $request);
+            $metadata = $this->extractMetadata($context);
+
+            // If proxy mode, try to handle through backend
+            if ($this->isProxyMode) {
+                try {
+                    // Convert metadata to gRPC format
+                    $md = [];
+                    foreach ($metadata as $key => $values) {
+                        foreach ($values as $value) {
+                            $md[$key] = $value;
+                        }
+                    }
+
+                    $options = ['timeout' => 15000000]; // 15 seconds
+                    $call = $this->backendClient->TalkOneAnswerMore($request, $md, $options);
+                    $responseStream = $call->responses();
+
+                    // Proxy each response from backend
+                    $responseCount = 0;
+                    foreach ($responseStream as $response) {
+                        // PHP gRPC doesn't support cancellation check
+
+                        if ($response instanceof TalkResponse) {
+                            $responseCount++;
+                            $writer->write($response);
+                        }
+                    }
+
+                    $this->metrics['proxy_success']++;
+                    $this->logSuccess('TalkOneAnswerMore');
+                    return;
+                } catch (\Exception $e) {
+                    $this->logError('TalkOneAnswerMore', $e->getMessage(), true);
+                    // Fall back to local processing
+                    $this->metrics['local_fallback']++;
+                }
+            }
+
+            // Process locally - generate multiple responses
             try {
-                // Convert metadata to gRPC format
-                $md = [];
-                foreach ($metadata as $key => $values) {
-                    foreach ($values as $value) {
-                        $md[$key] = $value;
-                    }
-                }
-                
-                $options = ['timeout' => 15000000]; // 15 seconds
-                $call = $this->backendClient->TalkOneAnswerMore($request, $md, $options);
-                $responseStream = $call->responses();
-                
-                // Proxy each response from backend
-                $responseCount = 0;
-                foreach ($responseStream as $response) {
+                // Parse data parameter (comma-separated indices)
+                $dataParam = $request->getData();
+                $indices = explode(',', $dataParam);
+
+                // For each index, create a separate response
+                foreach ($indices as $idx => $index) {
                     // PHP gRPC doesn't support cancellation check
-                    
-                    if ($response instanceof TalkResponse) {
-                        $responseCount++;
-                        $writer->write($response);
-                    }
+
+                    // Create individual response
+                    $results = [[
+                        'id' => $idx,
+                        'idx' => $index,
+                        'type' => 2,
+                        'data' => 'Stream message ' . ($idx + 1),
+                        'meta' => $request->getMeta()
+                    ]];
+
+                    $response = $this->createResponse(0, $results);
+                    $writer->write($response);
+
+                    // Small delay between responses to simulate processing time
+                    usleep(200000); // 200ms
                 }
-                
-                $this->metrics['proxy_success']++;
+
                 $this->logSuccess('TalkOneAnswerMore');
-                return;
+                $this->metrics['success_count']++;
             } catch (\Exception $e) {
-                $this->logError('TalkOneAnswerMore', $e->getMessage(), true);
-                // Fall back to local processing
-                $this->metrics['local_fallback']++;
+                $this->logError('TalkOneAnswerMore', $e->getMessage());
+                throw $e;
             }
-        }
-        
-        // Process locally - generate multiple responses
-        try {
-            // Parse data parameter (comma-separated indices)
-            $dataParam = $request->getData();
-            $indices = explode(',', $dataParam);
-            
-            // For each index, create a separate response
-            foreach ($indices as $idx => $index) {
-                // PHP gRPC doesn't support cancellation check
-                
-                // Create individual response
-                $results = [[
-                    'id' => $idx,
-                    'idx' => $index,
-                    'type' => 2,
-                    'data' => 'Stream message ' . ($idx + 1),
-                    'meta' => $request->getMeta()
-                ]];
-                
-                $response = $this->createResponse(0, $results);
-                $writer->write($response);
-                
-                // Small delay between responses to simulate processing time
-                usleep(200000); // 200ms
-            }
-            
-            $this->logSuccess('TalkOneAnswerMore');
-            $this->metrics['success_count']++;
-        } catch (\Exception $e) {
-            $this->logError('TalkOneAnswerMore', $e->getMessage());
-            throw $e;
-        }
+        }, ['rpc.method' => 'TalkOneAnswerMore', 'rpc.system' => 'grpc']);
     }
     
     /**
@@ -523,87 +529,89 @@ class LandingService extends LandingServiceStub
         \Grpc\ServerContext $context
     ): ?TalkResponse
     {
-        $this->logRequest('TalkMoreAnswerOne', $context);
-        $metadata = $this->extractMetadata($context);
-        $allResults = [];
-        $requestCount = 0;
-        $meta = '';
-        
-        // If proxy mode, try to handle through backend
-        if ($this->isProxyMode) {
-            try {
-                // Convert metadata
-                $md = [];
-                foreach ($metadata as $key => $values) {
-                    foreach ($values as $value) {
-                        $md[$key] = $value;
+        return Otel::wrapper('TalkMoreAnswerOne', function () use ($reader, $context) {
+            $this->logRequest('TalkMoreAnswerOne', $context);
+            $metadata = $this->extractMetadata($context);
+            $allResults = [];
+            $requestCount = 0;
+            $meta = '';
+
+            // If proxy mode, try to handle through backend
+            if ($this->isProxyMode) {
+                try {
+                    // Convert metadata
+                    $md = [];
+                    foreach ($metadata as $key => $values) {
+                        foreach ($values as $value) {
+                            $md[$key] = $value;
+                        }
                     }
-                }
-                
-                $options = ['timeout' => 10000000]; // 10 seconds
-                $backendCall = $this->backendClient->TalkMoreAnswerOne($md, $options);
-                
-                // Read all requests from the client and forward to backend
-                while ($request = $reader->read()) {
-                    if ($request instanceof TalkRequest) {
+
+                    $options = ['timeout' => 10000000]; // 10 seconds
+                    $backendCall = $this->backendClient->TalkMoreAnswerOne($md, $options);
+
+                    // Read all requests from the client and forward to backend
+                    while ($requestObj = $reader->read()) {
+                        if ($requestObj instanceof TalkRequest) {
+                            $requestCount++;
+                            // Store the meta from the last request received
+                            $meta = $requestObj->getMeta();
+
+                            // Forward to backend
+                            $backendCall->write($requestObj);
+                        }
+                    }
+
+                    // Close the call and wait for the response
+                    list($response, $status) = $backendCall->wait();
+
+                    if ($status->code === 0 && $response instanceof TalkResponse) {
+                        $this->metrics['proxy_success']++;
+                        $this->logSuccess('TalkMoreAnswerOne', $response);
+                        return $response;
+                    } else {
+                        throw new \Exception("Backend returned error code: " . $status->code);
+                    }
+                } catch (\Exception $e) {
+                    $this->logError('TalkMoreAnswerOne', $e->getMessage(), true);
+                    // Fall back to local processing - but we need to read all requests first
+                    while ($reader->read()) {
                         $requestCount++;
-                        // Store the meta from the last request received
-                        $meta = $request->getMeta();
-                        
-                        // Forward to backend
-                        $backendCall->write($request);
+                    }
+                    $this->metrics['local_fallback']++;
+                }
+            } else {
+                // Read all requests and accumulate results
+                while ($requestObj = $reader->read()) {
+                    if ($requestObj instanceof TalkRequest) {
+                        $requestCount++;
+
+                        // Use meta from the last request
+                        $meta = $requestObj->getMeta();
+
+                        // Process each request
+                        $data = $requestObj->getData();
+                        $allResults[] = [
+                            'id' => $requestCount,
+                            'idx' => $data,
+                            'type' => 3,
+                            'data' => 'Response from request ' . $requestCount,
+                            'meta' => $meta
+                        ];
                     }
                 }
-                
-                // Close the call and wait for the response
-                list($response, $status) = $backendCall->wait();
-                
-                if ($status->code === 0 && $response instanceof TalkResponse) {
-                    $this->metrics['proxy_success']++;
-                    $this->logSuccess('TalkMoreAnswerOne', $response);
-                    return $response;
-                } else {
-                    throw new \Exception("Backend returned error code: " . $status->code);
-                }
+            }
+
+            // Process locally - create one response with all results
+            try {
+                $response = $this->createResponse(0, $allResults);
+                $this->logSuccess('TalkMoreAnswerOne', $response);
+                return $response;
             } catch (\Exception $e) {
-                $this->logError('TalkMoreAnswerOne', $e->getMessage(), true);
-                // Fall back to local processing - but we need to read all requests first
-                while ($reader->read()) {
-                    $requestCount++;
-                }
-                $this->metrics['local_fallback']++;
+                $this->logError('TalkMoreAnswerOne', $e->getMessage());
+                throw $e;
             }
-        } else {
-            // Read all requests and accumulate results
-            while ($request = $reader->read()) {
-                if ($request instanceof TalkRequest) {
-                    $requestCount++;
-                    
-                    // Use meta from the last request
-                    $meta = $request->getMeta();
-                    
-                    // Process each request
-                    $data = $request->getData();
-                    $allResults[] = [
-                        'id' => $requestCount,
-                        'idx' => $data,
-                        'type' => 3,
-                        'data' => 'Response from request ' . $requestCount,
-                        'meta' => $meta
-                    ];
-                }
-            }
-        }
-        
-        // Process locally - create one response with all results
-        try {
-            $response = $this->createResponse(0, $allResults);
-            $this->logSuccess('TalkMoreAnswerOne', $response);
-            return $response;
-        } catch (\Exception $e) {
-            $this->logError('TalkMoreAnswerOne', $e->getMessage());
-            throw $e;
-        }
+        }, ['rpc.method' => 'TalkMoreAnswerOne', 'rpc.system' => 'grpc']);
     }
     
     /**
@@ -615,113 +623,115 @@ class LandingService extends LandingServiceStub
         \Grpc\ServerContext $context
     ): void
     {
-        $this->logRequest('TalkBidirectional', $context);
-        $metadata = $this->extractMetadata($context);
-        $requestCount = 0;
-        $responseCount = 0;
-        
-        // If proxy mode, try to handle through backend
-        if ($this->isProxyMode) {
-            try {
-                // Convert metadata
-                $md = [];
-                foreach ($metadata as $key => $values) {
-                    foreach ($values as $value) {
-                        $md[$key] = $value;
+        Otel::wrapper('TalkBidirectional', function () use ($reader, $writer, $context) {
+            $this->logRequest('TalkBidirectional', $context);
+            $metadata = $this->extractMetadata($context);
+            $requestCount = 0;
+            $responseCount = 0;
+
+            // If proxy mode, try to handle through backend
+            if ($this->isProxyMode) {
+                try {
+                    // Convert metadata
+                    $md = [];
+                    foreach ($metadata as $key => $values) {
+                        foreach ($values as $value) {
+                            $md[$key] = $value;
+                        }
                     }
-                }
-                
-                $options = ['timeout' => 20000000]; // 20 seconds
-                $backendCall = $this->backendClient->TalkBidirectional($md, $options);
-                
-                // Use non-blocking processing with cooperative multitasking
-                while (true) {
-                    // PHP gRPC doesn't support cancellation check
-                    
-                    // Try to read from client
-                    $request = $reader->read();
-                    if ($request !== null) {
-                        $requestCount++;
-                        // Forward to backend
-                        $backendCall->write($request);
-                    } else if ($reader->writesDone()) {
-                        // Client is done writing
-                        $backendCall->writesDone();
-                        break;
+
+                    $options = ['timeout' => 20000000]; // 20 seconds
+                    $backendCall = $this->backendClient->TalkBidirectional($md, $options);
+
+                    // Use non-blocking processing with cooperative multitasking
+                    while (true) {
+                        // PHP gRPC doesn't support cancellation check
+
+                        // Try to read from client
+                        $request = $reader->read();
+                        if ($request !== null) {
+                            $requestCount++;
+                            // Forward to backend
+                            $backendCall->write($request);
+                        } else if ($reader->writesDone()) {
+                            // Client is done writing
+                            $backendCall->writesDone();
+                            break;
+                        }
+
+                        // Try to read response from backend
+                        $response = $backendCall->read();
+                        if ($response !== null) {
+                            $responseCount++;
+                            // Forward to client
+                            $writer->write($response);
+                        }
+
+                        // Small yield to avoid CPU spinning
+                        usleep(50000); // 50ms
                     }
-                    
-                    // Try to read response from backend
-                    $response = $backendCall->read();
-                    if ($response !== null) {
-                        $responseCount++;
-                        // Forward to client
+
+                    // Continue reading responses until end of stream
+                    while ($response = $backendCall->read()) {
+                        // PHP gRPC doesn't support cancellation check
                         $writer->write($response);
                     }
-                    
-                    // Small yield to avoid CPU spinning
-                    usleep(50000); // 50ms
+
+                    $this->metrics['proxy_success']++;
+                    $this->logSuccess('TalkBidirectional');
+                    return;
+                } catch (\Exception $e) {
+                    $this->logError('TalkBidirectional', $e->getMessage(), true);
+                    // Fall back to local processing
+                    $this->metrics['local_fallback']++;
+
+                    // Clear the read buffer to avoid hanging
+                    while ($reader->read() !== null) {
+                        // Just drain the buffer
+                    }
                 }
-                
-                // Continue reading responses until end of stream
-                while ($response = $backendCall->read()) {
-                    // PHP gRPC doesn't support cancellation check
-                    $writer->write($response);
+            }
+
+            // Process locally with bidirectional streaming
+            try {
+                $requestIndex = 0;
+
+                // Keep processing until client is done or call is cancelled
+                while (true) {
+                    // Read request
+                    $request = $reader->read();
+
+                    if ($request === null) {
+                        // Client closed the writing stream, we're done
+                        break;
+                    }
+
+                    // Got a request, process it
+                    $requestIndex++;
+                    $requestCount++;
+
+                    if ($request instanceof TalkRequest) {
+                        // Create and send response
+                        $results = [[
+                            'id' => $requestIndex,
+                            'idx' => $request->getData(),
+                            'type' => 4,
+                            'data' => "Bidirectional response $requestIndex",
+                            'meta' => $request->getMeta()
+                        ]];
+
+                        $response = $this->createResponse(0, $results);
+                        $writer->write($response);
+                        $responseCount++;
+                    }
                 }
-                
-                $this->metrics['proxy_success']++;
+
                 $this->logSuccess('TalkBidirectional');
-                return;
+                $this->metrics['success_count']++;
             } catch (\Exception $e) {
-                $this->logError('TalkBidirectional', $e->getMessage(), true);
-                // Fall back to local processing
-                $this->metrics['local_fallback']++;
-                
-                // Clear the read buffer to avoid hanging
-                while ($reader->read() !== null) {
-                    // Just drain the buffer
-                }
+                $this->logError('TalkBidirectional', $e->getMessage());
+                throw $e;
             }
-        }
-        
-        // Process locally with bidirectional streaming
-        try {
-            $requestIndex = 0;
-            
-            // Keep processing until client is done or call is cancelled
-            while (true) {
-                // Read request
-                $request = $reader->read();
-                
-                if ($request === null) {
-                    // Client closed the writing stream, we're done
-                    break;
-                }
-                
-                // Got a request, process it
-                $requestIndex++;
-                $requestCount++;
-                
-                if ($request instanceof TalkRequest) {
-                    // Create and send response
-                    $results = [[
-                        'id' => $requestIndex,
-                        'idx' => $request->getData(),
-                        'type' => 4,
-                        'data' => "Bidirectional response $requestIndex",
-                        'meta' => $request->getMeta()
-                    ]];
-                    
-                    $response = $this->createResponse(0, $results);
-                    $writer->write($response);
-                    $responseCount++;
-                }
-            }
-            
-            $this->logSuccess('TalkBidirectional');
-            $this->metrics['success_count']++;
-        } catch (\Exception $e) {
-            $this->logError('TalkBidirectional', $e->getMessage());
-            throw $e;
-        }
+        }, ['rpc.method' => 'TalkBidirectional', 'rpc.system' => 'grpc']);
     }
 }
