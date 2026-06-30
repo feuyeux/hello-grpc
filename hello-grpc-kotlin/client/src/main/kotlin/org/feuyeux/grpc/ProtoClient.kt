@@ -57,7 +57,18 @@ suspend fun main() = coroutineScope {
         logger.info("Connection attempt $attempt/$RETRY_ATTEMPTS")
 
         try {
-            val channel = Connection.getChannel(HeaderClientInterceptor())
+            // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y, then
+            // build the interceptor chain. Otel.clientInterceptor()
+            // returns null when the env var is unset, so the chain
+            // degrades to the pre-OTel single-interceptor shape.
+            val otel = Otel.initOtel("hello-grpc-kotlin-client")
+            val otelClient = Otel.clientInterceptor(otel)
+            val interceptors = if (otelClient != null) {
+                arrayOf(HeaderClientInterceptor(), otelClient)
+            } else {
+                arrayOf<io.grpc.ClientInterceptor>(HeaderClientInterceptor())
+            }
+            val channel = Connection.getChannel(*interceptors)
             ProtoClient(channel).use { client ->
                 val success = runGrpcCalls(client, REQUEST_DELAY_MS, ITERATION_COUNT)
                 if (success || shutdownRequested) {

@@ -11,6 +11,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import javax.net.ssl.SSLException
+import io.opentelemetry.api.OpenTelemetry
 
 /**
  * Certificate paths for TLS configuration
@@ -125,9 +126,26 @@ class ProtoServer {
     private fun createServer(): Server? {
         // Create service implementation
         val landingService = LandingService()
-        
-        // Apply server interceptors
-        val interceptedService = ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
+
+        // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The init
+        // hook returns OpenTelemetry.noop() when the env var is
+        // unset, so the server interceptor factory below degrades to
+        // a no-op chain in the default case.
+        val otel = Otel.initOtel("hello-grpc-kotlin-server")
+
+        // Apply server interceptors: header propagation always;
+        // OTel appended when enabled.
+        val otelServer = Otel.serverInterceptor(otel)
+        val serverChain = if (otelServer != null) {
+            ServerInterceptors.intercept(
+                landingService,
+                HeaderServerInterceptor(),
+                otelServer
+            )
+        } else {
+            ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
+        }
+        val interceptedService = serverChain
         
         // Determine if secure mode is enabled
         val secureMode = System.getenv("GRPC_HELLO_SECURE")
