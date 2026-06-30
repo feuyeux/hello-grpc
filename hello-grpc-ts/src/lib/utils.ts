@@ -1,4 +1,4 @@
-import { TalkRequest } from "../generated/landing_pb"
+import { TalkRequest } from "../proto/landing_pb"
 import { LinkedList } from "fast-linked-list";
 import * as grpc from '@grpc/grpc-js'
 import * as fs from 'fs'

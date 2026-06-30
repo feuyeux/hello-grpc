@@ -12,10 +12,10 @@
  */
 
 import * as grpc from '@grpc/grpc-js';
-import { TalkRequest, TalkResponse } from './generated/landing_pb';
+import { TalkRequest, TalkResponse } from './proto/landing_pb';
 import { logger } from './lib/conn';
 import { buildLinkRequests, getVersion, randomId } from './lib/utils';
-import { LandingServiceClient } from './generated/landing_grpc_pb';
+import { LandingServiceClient } from './proto/landing_grpc_pb';
 import { createClientCredentials } from './lib/tls';
 
 // Configuration constants

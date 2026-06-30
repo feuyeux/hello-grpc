@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import { sendUnaryData } from '@grpc/grpc-js/build/src/server-call'
-import { ILandingServiceServer, LandingServiceService } from "./generated/landing_grpc_pb"
-import { ResultType, TalkRequest, TalkResponse, TalkResult } from "./generated/landing_pb"
+import { ILandingServiceServer, LandingServiceService } from "./proto/landing_grpc_pb"
+import { ResultType, TalkRequest, TalkResponse, TalkResult } from "./proto/landing_pb"
 import { v4 as uuidv4 } from "uuid"
 import { ans, getVersion, hellos } from "./lib/utils"
 import { createClient, getServerPort, logger } from "./lib/conn"
