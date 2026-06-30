@@ -8,11 +8,11 @@
 
   <ItemGroup>
     <!-- 依赖包升级到最新稳定版本 -->
-    <PackageReference Include="Google.Protobuf" Version="3.26.1" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.61.0" />
-    <PackageReference Include="Grpc.Net.Common" Version="2.61.0" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.61.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
+    <PackageReference Include="Google.Protobuf" Version="3.31.1" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
+    <PackageReference Include="Grpc.Net.Common" Version="2.80.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.80.0" PrivateAssets="All" />
     <PackageReference Include="log4net" Version="3.0.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
