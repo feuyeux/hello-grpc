@@ -35,6 +35,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conn import connection, utils, landing_pb2, landing_pb2_grpc, error_mapper
 from conn.log_formatter import LoggingInterceptor
+from conn import otel
 
 # Configuration constants
 MAX_WORKERS = os.cpu_count() or 4
@@ -340,12 +341,21 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
 def serve():
     """
     Start the gRPC server with the LandingService implementation.
-    
+
     The server can be configured with the following environment variables:
     - GRPC_HELLO_BACKEND: Backend service to proxy requests to
     - GRPC_SERVER_PORT: Port to listen on (default: 9996)
     - GRPC_HELLO_SECURE: Whether to use TLS ('Y' for TLS)
+    - GRPC_HELLO_OTEL: Set to 'Y' to install the OpenTelemetry tracing
+      pipeline (conn/otel.init_otel). Spans go to stdout via the
+      ConsoleSpanExporter; swap for OtlpExporter at the conn/otel
+      call site to ship to a real backend.
     """
+    # Initialize OpenTelemetry before constructing the server so
+    # the server-side interceptor factory (below) sees a configured
+    # global TracerProvider. No-op when the env var is off.
+    otel.init_otel("hello-grpc-python-server")
+
     # Setup signal handling for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -365,10 +375,16 @@ def serve():
     # unary-stream / stream-unary / stream-stream wrappers for B4
     # (server interceptor) — see the parity audit report. Register it
     # here so it actually runs on every RPC instead of being dead code.
+    # The OpenTelemetry interceptor is added to the same chain when
+    # GRPC_HELLO_OTEL=Y; conn/otel.py returns None otherwise.
     server_impl = LandingServiceServer(backend_service)
+    chain = [LoggingInterceptor(logger)]
+    otel_server = otel.server_interceptor()
+    if otel_server is not None:
+        chain.append(otel_server)
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=MAX_WORKERS),
-        interceptors=(LoggingInterceptor(logger),),
+        interceptors=tuple(chain),
     )
     landing_pb2_grpc.add_LandingServiceServicer_to_server(server_impl, server)
     

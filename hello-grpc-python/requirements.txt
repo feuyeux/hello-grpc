@@ -5,3 +5,13 @@ grpcio-tools==1.81.1
 # https://pypi.org/project/protobuf/
 # grpcio-tools 1.71.0 depends on protobuf<6.0dev and >=5.26.1
 protobuf==6.33.5
+# OpenTelemetry SDK + stdout exporter. Pinned to the same minor
+# versions as opentelemetry-instrumentation-grpc to avoid the
+# "Allerlei" / "Alligator" distro split. No-op when GRPC_HELLO_OTEL
+# is not "Y" so this is purely additional install cost, no runtime
+# behavior change in the default case.
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-exporter-otlp-proto-common==1.27.0
+# https://pypi.org/project/opentelemetry-instrumentation-grpc/
+opentelemetry-instrumentation-grpc==0.48b0
