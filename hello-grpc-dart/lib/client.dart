@@ -18,6 +18,7 @@ import 'package:logging/logging.dart';
 
 import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
+import 'common/otel.dart';
 import 'conn/conn.dart';
 
 // Configuration constants
@@ -38,6 +39,11 @@ class Client {
 
   /// Main entry point for the client
   Future<void> main(List<String> args) async {
+    // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. Awaiting
+    // here is cheap (in-memory provider setup) and the SDK is then
+    // available for any handler-side span emission added later.
+    await initOtel('hello-grpc-dart-client');
+
     _configureLogging();
     _logger = Logger('HelloClient');
     _setupSignalHandling();

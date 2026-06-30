@@ -15,6 +15,11 @@ dependencies:
   grpc: ^4.0.1
   # https://pub.dev/packages/protobuf
   protobuf: ^4.0.0
+  # OpenTelemetry (for env-gated tracing behind GRPC_HELLO_OTEL=Y).
+  # The opentelemetry_dart package is still at 0.0.2 (2025) — the API
+  # surface it exposes is the minimal Provider/Exporter pair used in
+  # lib/common/otel.dart. See Otel.dart for the wiring.
+  opentelemetry_dart: ^0.0.2
   # https://pub.dev/packages/collection
   collection: ^1.19.0
   # https://pub.dev/packages/logging

@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 
 import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
+import 'common/otel.dart';
 import 'conn/conn.dart';
 
 /// Available greetings in different languages
@@ -51,6 +52,11 @@ class Server {
 
   /// Main entry point for the server
   Future<void> main(List<String> args) async {
+    // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y, before any
+    // grpc.Server() is constructed so a configured global tracer is
+    // available for any subsequent handler-side span emission.
+    await initOtel('hello-grpc-dart-server');
+
     // Set up logging
     _configureLogging();
     _logger = Logger('HelloServer');
