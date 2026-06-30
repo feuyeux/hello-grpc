@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "hello grpc",
   "dependencies": {
-    "@grpc/grpc-js": "^1.13.3",
+    "@grpc/grpc-js": "^1.14.0",
     "@grpc/proto-loader": "^0.7.15",
     "async": "^3.2.5",
     "fast-linked-list": "^3.2.3",
