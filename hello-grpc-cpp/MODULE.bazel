@@ -14,6 +14,15 @@ bazel_dep(name = "rules_cc", version = "0.1.2", repo_name = "rules_cc")
 # https://registry.bazel.build/modules/rules_proto
 bazel_dep(name = "rules_proto", version = "7.1.0")
 
+# https://registry.bazel.build/modules/rules_python
+bazel_dep(name = "rules_python", version = "2.1.0")
+
+# https://registry.bazel.build/modules/rules_go
+bazel_dep(name = "rules_go", version = "0.61.1", repo_name = "io_bazel_rules_go")
+
+# https://registry.bazel.build/modules/gazelle
+bazel_dep(name = "gazelle", version = "0.51.3", repo_name = "bazel_gazelle")
+
 # https://registry.bazel.build/modules/apple_support
 bazel_dep(name = "apple_support", version = "1.23.1", repo_name = "build_bazel_apple_support")
 
@@ -30,7 +39,7 @@ bazel_dep(name = "protobuf", version = "26.0.bcr.2", repo_name = "com_google_pro
 bazel_dep(name = "grpc", version = "1.66.0", repo_name = "com_github_grpc_grpc")
 
 # https://registry.bazel.build/modules/opentelemetry-cpp
-bazel_dep(name = "opentelemetry-cpp", version = "1.16.1", repo_name = "io_opentelemetry_cpp")
+bazel_dep(name = "opentelemetry-cpp", version = "1.16.0", repo_name = "io_opentelemetry_cpp")
 
 ## 2 hello_utils dependencies
 

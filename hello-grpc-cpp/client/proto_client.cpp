@@ -24,6 +24,7 @@
 
 #include "common/connection.h"
 #include "common/error_mapper.h"
+#include "common/otel.h"
 #include "common/utils.h"
 #include "protos/landing.grpc.pb.h"
 
@@ -80,6 +81,7 @@ public:
    * @return The response from the server
    */
   TalkResponse execute_unary_call(const TalkRequest &request) {
+    otel::SpanScope span("hello.LandingService/Talk client");
     std::string request_id = "unary-" + std::to_string(Utils::now());
     LOG(INFO) << "Sending unary request: data=" << request.data()
               << ", meta=" << request.meta();
@@ -100,6 +102,7 @@ public:
       LOG(INFO) << "Unary call successful in " << duration << "ms";
       return response;
     } else {
+      span.SetError(status.error_message());
       log_error(status, request_id, "Talk");
       throw std::runtime_error("Unary call failed: " + status.error_message());
     }
@@ -111,6 +114,7 @@ public:
    * @param request The request to send
    */
   void execute_server_streaming_call(const TalkRequest &request) {
+    otel::SpanScope span("hello.LandingService/TalkOneAnswerMore client");
     std::string request_id = "server-stream-" + std::to_string(Utils::now());
     LOG(INFO) << "Starting server streaming with request: data="
               << request.data() << ", meta=" << request.meta();
@@ -146,6 +150,7 @@ public:
       LOG(INFO) << "Server streaming completed: received " << response_count
                 << " responses in " << duration << "ms";
     } else {
+      span.SetError(status.error_message());
       log_error(status, request_id, "TalkOneAnswerMore");
       throw std::runtime_error("Server streaming failed: " +
                                status.error_message());
@@ -160,6 +165,7 @@ public:
    */
   TalkResponse
   execute_client_streaming_call(const std::list<TalkRequest> &requests) {
+    otel::SpanScope span("hello.LandingService/TalkMoreAnswerOne client");
     std::string request_id = "client-stream-" + std::to_string(Utils::now());
     LOG(INFO) << "Starting client streaming with " << requests.size()
               << " requests";
@@ -204,6 +210,7 @@ public:
                 << " requests in " << duration << "ms";
       return response;
     } else {
+      span.SetError(status.error_message());
       log_error(status, request_id, "TalkMoreAnswerOne");
       throw std::runtime_error("Client streaming failed: " +
                                status.error_message());
@@ -217,6 +224,7 @@ public:
    */
   void execute_bidirectional_streaming_call(
       const std::list<TalkRequest> &requests) {
+    otel::SpanScope span("hello.LandingService/TalkBidirectional client");
     std::string request_id =
         "bidirectional-" + std::to_string(Utils::now());
     LOG(INFO) << "Starting bidirectional streaming with " << requests.size()
@@ -280,6 +288,7 @@ public:
     if (status.ok()) {
       LOG(INFO) << "Bidirectional streaming completed in " << duration << "ms";
     } else {
+      span.SetError(status.error_message());
       log_error(status, request_id, "TalkBidirectional");
       throw std::runtime_error("Bidirectional streaming failed: " +
                                status.error_message());

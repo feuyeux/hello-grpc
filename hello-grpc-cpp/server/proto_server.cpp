@@ -92,12 +92,15 @@ public:
    */
   Status Talk(ServerContext *context, const TalkRequest *request,
               TalkResponse *response) override {
+    otel::SpanScope span("hello.LandingService/Talk server");
     if (client) {
       // Proxy mode - forward request to backend
       grpc::ClientContext c;
       propagateHeaders(context, c);
       LOG(INFO) << "Proxying unary request to backend";
-      return client->Talk(&c, *request, response);
+      Status status = client->Talk(&c, *request, response);
+      if (!status.ok()) span.SetError(status.error_message());
+      return status;
     } else {
       // Direct mode - handle locally
       logHeaders(context, "Talk");
@@ -124,6 +127,7 @@ public:
    */
   Status TalkOneAnswerMore(ServerContext *context, const TalkRequest *request,
                            ServerWriter<TalkResponse> *writer) override {
+    otel::SpanScope span("hello.LandingService/TalkOneAnswerMore server");
     logHeaders(context, "TalkOneAnswerMore");
 
     if (client) {
@@ -169,6 +173,7 @@ public:
   Status TalkMoreAnswerOne(ServerContext *context,
                            ServerReader<TalkRequest> *reader,
                            TalkResponse *response) override {
+    otel::SpanScope span("hello.LandingService/TalkMoreAnswerOne server");
     logHeaders(context, "TalkMoreAnswerOne");
 
     if (client) {
@@ -189,7 +194,9 @@ public:
       }
 
       writer->WritesDone();
-      return writer->Finish();
+      Status status = writer->Finish();
+      if (!status.ok()) span.SetError(status.error_message());
+      return status;
     } else {
       // Direct mode - handle locally
       response->set_status(200);
@@ -214,6 +221,7 @@ public:
   Status TalkBidirectional(
       ServerContext *context,
       ServerReaderWriter<TalkResponse, TalkRequest> *stream) override {
+    otel::SpanScope span("hello.LandingService/TalkBidirectional server");
     logHeaders(context, "TalkBidirectional");
 
     if (client) {
@@ -236,7 +244,9 @@ public:
         stream->Write(talkResponse);
       }
 
-      return s->Finish();
+      Status status = s->Finish();
+      if (!status.ok()) span.SetError(status.error_message());
+      return status;
     } else {
       // Direct mode - handle locally
       TalkRequest request;
