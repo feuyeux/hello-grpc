@@ -34,6 +34,9 @@ final class Otel
 {
     public const ENV_ENABLED = 'GRPC_HELLO_OTEL';
 
+    /** Service name used when constructing the tracer provider. */
+    private static string $serviceName = 'hello-grpc-php';
+
     /** Cached tracer provider to avoid double-init. */
     private static ?TracerProvider $tracerProvider = null;
 
@@ -43,6 +46,20 @@ final class Otel
     public static function enabled(): bool
     {
         return getenv(self::ENV_ENABLED) === 'Y';
+    }
+
+    /**
+     * Initialize the SDK when tracing is enabled. Returns null when
+     * GRPC_HELLO_OTEL is unset so startup remains a no-op by default.
+     */
+    public static function initOtel(string $serviceName): ?TracerInterface
+    {
+        if (!self::enabled()) {
+            return null;
+        }
+
+        self::$serviceName = $serviceName;
+        return self::tracer();
     }
 
     /**
@@ -72,7 +89,7 @@ final class Otel
 
         $resource = ResourceInfoFactory::defaultResource()->merge(
             ResourceInfo::create(Attributes::create([
-                'service.name' => 'hello-grpc-php',
+                'service.name' => self::$serviceName,
             ]))
         );
 

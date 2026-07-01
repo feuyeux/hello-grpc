@@ -9,6 +9,7 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Formatter\LineFormatter;
+use Common\Utils\Otel;
 
 require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/conn/Connection.php';

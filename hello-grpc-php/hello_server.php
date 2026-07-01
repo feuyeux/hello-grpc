@@ -21,6 +21,7 @@ use Common\Utils\Otel;
 require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/LandingService.php';
 require dirname(__FILE__) . '/conn/Connection.php';
+require dirname(__FILE__) . '/common/utils/Otel.php';
 require dirname(__FILE__) . '/common/utils/VersionUtils.php';
 
 // Set up global logger with improved formatting first
