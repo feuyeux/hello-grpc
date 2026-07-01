@@ -15,7 +15,9 @@ bool _enabled = false;
 bool _initialized = false;
 
 bool otelEnabled() {
-  if (_enabled) return true;
+  if (_enabled) {
+    return true;
+  }
   final v = Platform.environment['GRPC_HELLO_OTEL'];
   _enabled = v == 'Y';
   return _enabled;
@@ -44,13 +46,17 @@ Future<void> initOtel(String serviceName) async {
 
 /// Returns the global [api.Tracer], or `null` if OTel is disabled.
 api.Tracer? get _tracer {
-  if (!otelEnabled()) return null;
+  if (!otelEnabled()) {
+    return null;
+  }
   return api.globalTracerProvider.getTracer('hello-grpc-dart');
 }
 
 api.Span? _startSpan(String name, api.SpanKind kind) {
   final tracer = _tracer;
-  if (tracer == null) return null;
+  if (tracer == null) {
+    return null;
+  }
   return tracer.startSpan(
     name,
     kind: kind,
@@ -82,17 +88,20 @@ class OtelClientInterceptor implements grpc.ClientInterceptor {
     grpc.ClientUnaryInvoker<Q, R> invoker,
   ) {
     final span = _startSpan(method.path, api.SpanKind.client);
-    if (span == null) return invoker(method, request, options);
+    if (span == null) {
+      return invoker(method, request, options);
+    }
 
-    final response = invoker(method, request, options);
-    response.then((_) {
-      span.end();
-    }, onError: (Object error) {
-      span
-        ..setStatus(api.StatusCode.error, error.toString())
-        ..end();
-    });
-    return response;
+    return invoker(method, request, options)..then(
+      (_) {
+        span.end();
+      },
+      onError: (Object error) {
+        span
+          ..setStatus(api.StatusCode.error, error.toString())
+          ..end();
+      },
+    );
   }
 
   @override
@@ -103,22 +112,24 @@ class OtelClientInterceptor implements grpc.ClientInterceptor {
     grpc.ClientStreamingInvoker<Q, R> invoker,
   ) {
     final span = _startSpan(method.path, api.SpanKind.client);
-    if (span == null) return invoker(method, requests, options);
+    if (span == null) {
+      return invoker(method, requests, options);
+    }
 
     final response = invoker(method, requests, options);
 
-    // ResponseStream hides the underlying stream; grpc-dart does not expose a
-    // public way to wrap the response stream itself. We therefore end the span
-    // when the single-response future resolves (which is derived from the same
-    // underlying stream). For true full-stream tracing, the server side is the
-    // more reliable span boundary because it can observe stream completion.
-    response.single.then((_) {
-      span.end();
-    }, onError: (Object error) {
-      span
-        ..setStatus(api.StatusCode.error, error.toString())
-        ..end();
-    });
+    // The trailers future completes after the response stream is drained,
+    // without adding a second subscription to the single-subscription stream.
+    response.trailers.then(
+      (_) {
+        span.end();
+      },
+      onError: (Object error) {
+        span
+          ..setStatus(api.StatusCode.error, error.toString())
+          ..end();
+      },
+    );
 
     return response;
   }
@@ -139,18 +150,19 @@ class OtelServerInterceptor implements grpc.ServerInterceptor {
     grpc.ServerStreamingInvoker<Q, R> invoker,
   ) {
     final span = _startSpan(method.name, api.SpanKind.server);
-    if (span == null) return invoker(call, method, requests);
+    if (span == null) {
+      return invoker(call, method, requests);
+    }
 
-    final response = api.contextWithSpan(api.Context.current, span).execute(
-      () => invoker(call, method, requests),
-    );
+    final response = invoker(call, method, requests);
     return _SpanFinishingTransformer<R>(span).bind(response);
   }
 }
 
 class _SpanFinishingTransformer<T> extends StreamTransformerBase<T, T> {
-  final api.Span span;
   _SpanFinishingTransformer(this.span);
+
+  final api.Span span;
 
   @override
   Stream<T> bind(Stream<T> stream) {
@@ -162,14 +174,16 @@ class _SpanFinishingTransformer<T> extends StreamTransformerBase<T, T> {
 }
 
 class _SpanFinishingSink<T> implements EventSink<T> {
+  _SpanFinishingSink(this._sink, this._span);
+
   final EventSink<T> _sink;
   final api.Span _span;
   bool _ended = false;
 
-  _SpanFinishingSink(this._sink, this._span);
-
   void _end({Object? error}) {
-    if (_ended) return;
+    if (_ended) {
+      return;
+    }
     _ended = true;
     if (error != null) {
       _span.setStatus(api.StatusCode.error, error.toString());
