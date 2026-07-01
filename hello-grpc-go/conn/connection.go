@@ -127,20 +127,26 @@ func buildConnByDisc() *grpc.ClientConn {
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      GetCertPool(rootCert),
 		}
-		conn, err := grpc.NewClient("etcd:///",
+		dialOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(credentials.NewTLS(c)),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		dialOpts = appendOtelClientStatsHandler(dialOpts)
+		conn, err := grpc.NewClient("etcd:///", dialOpts...)
 		if err != nil {
 			panic(err)
 		}
 		return conn
 	} else {
 		log.Infof("Connect With InSecure through discovery")
-		conn, err := grpc.NewClient("etcd:///",
+		dialOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		dialOpts = appendOtelClientStatsHandler(dialOpts)
+		conn, err := grpc.NewClient("etcd:///", dialOpts...)
 		if err != nil {
 			panic(err)
 		}
@@ -164,16 +170,22 @@ func buildConnByDiscWithContext(ctx context.Context) (*grpc.ClientConn, error) {
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      GetCertPool(rootCert),
 		}
-		return grpc.DialContext(ctx, "etcd:///",
+		dialOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(credentials.NewTLS(c)),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		dialOpts = appendOtelClientStatsHandler(dialOpts)
+		return grpc.DialContext(ctx, "etcd:///", dialOpts...)
 	} else {
 		log.Infof("Connect With InSecure through discovery")
-		return grpc.DialContext(ctx, "etcd:///",
+		dialOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		dialOpts = appendOtelClientStatsHandler(dialOpts)
+		return grpc.DialContext(ctx, "etcd:///", dialOpts...)
 	}
 }
 
@@ -236,12 +248,7 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 		retryConfig,
 		rateLimitConfig,
 	}
-	// OpenTelemetry stats handler: traces both unary and stream RPCs in
-	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
-	// is not "Y".
-	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
-		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
-	}
+	dialOpts = appendOtelClientStatsHandler(dialOpts)
 	return grpc.NewClient(address, dialOpts...)
 }
 
@@ -277,13 +284,15 @@ func transportInsecureWithContext(ctx context.Context, address string) (*grpc.Cl
 		retryConfig,
 		rateLimitConfig,
 	}
-	// OpenTelemetry stats handler: traces both unary and stream RPCs in
-	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
-	// is not "Y".
+	dialOpts = appendOtelClientStatsHandler(dialOpts)
+	return grpc.DialContext(ctx, address, dialOpts...)
+}
+
+func appendOtelClientStatsHandler(dialOpts []grpc.DialOption) []grpc.DialOption {
 	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
 		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
 	}
-	return grpc.DialContext(ctx, address, dialOpts...)
+	return dialOpts
 }
 
 // clientInterceptorChain builds the chained unary client interceptor slice
@@ -303,11 +312,13 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 	if err != nil {
 		panic(err)
 	}
-	return grpc.NewClient(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      GetCertPool(rootCert),
-	})))
+	}))}
+	dialOpts = appendOtelClientStatsHandler(dialOpts)
+	return grpc.NewClient(address, dialOpts...)
 }
 
 func transportCredentialsWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
@@ -315,11 +326,13 @@ func transportCredentialsWithContext(ctx context.Context, address string) (*grpc
 	if err != nil {
 		return nil, fmt.Errorf("failed to load key pair: %w", err)
 	}
-	return grpc.DialContext(ctx, address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      GetCertPool(rootCert),
-	})))
+	}))}
+	dialOpts = appendOtelClientStatsHandler(dialOpts)
+	return grpc.DialContext(ctx, address, dialOpts...)
 }
 
 func GetCertPool(rootCert string) *x509.CertPool {
