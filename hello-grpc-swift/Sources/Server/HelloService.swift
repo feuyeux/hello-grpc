@@ -69,16 +69,15 @@ final class HelloService: Hello_LandingService.SimpleServiceProtocol {
     // Unary RPC implementation
     func talk(
         request: Hello_TalkRequest,
-        context _: GRPCCore.ServerContext
+        context: GRPCCore.ServerContext
     ) async throws -> Hello_TalkResponse {
         logger.info("[\(request.data)] talk request: data=\(request.data), meta=\(request.meta)")
 
         if let backendClient = try getBackendClient() {
             // Forward request to backend service
-            // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(request.data)] 开始调用后端服务: \(startTime)")
-            let response = try await backendClient.talk(request, metadata: [:])
+            let response = try await backendClient.talk(request, metadata: context.metadata)
             let endTime = Date()
             let elapsedTime = endTime.timeIntervalSince(startTime)
             logger.info("[\(request.data)] 后端服务调用完成: \(endTime), 耗时: \(elapsedTime)秒")
@@ -95,17 +94,16 @@ final class HelloService: Hello_LandingService.SimpleServiceProtocol {
     func talkOneAnswerMore(
         request: Hello_TalkRequest,
         response: GRPCCore.RPCWriter<Hello_TalkResponse>,
-        context _: GRPCCore.ServerContext
+        context: GRPCCore.ServerContext
     ) async throws {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] talkOneAnswerMore request: data=\(request.data), meta=\(request.meta)")
 
         if let backendClient = try getBackendClient() {
             // Forward request to backend service
-            // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkOneAnswerMore: \(startTime)")
-            let _ = try await backendClient.talkOneAnswerMore(request, metadata: [:]) { [self] streamResponse in
+            let _ = try await backendClient.talkOneAnswerMore(request, metadata: context.metadata) { [self] streamResponse in
                 self.logger.info("[\(requestId)] 开始处理 talkOneAnswerMore 流响应")
                 for try await responseMessage in streamResponse.messages {
                     try await response.write(responseMessage)
@@ -134,17 +132,16 @@ final class HelloService: Hello_LandingService.SimpleServiceProtocol {
     // Client Streaming RPC implementation
     func talkMoreAnswerOne(
         request: GRPCCore.RPCAsyncSequence<Hello_TalkRequest, any Swift.Error>,
-        context _: GRPCCore.ServerContext
+        context: GRPCCore.ServerContext
     ) async throws -> Hello_TalkResponse {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] 开始处理 talkMoreAnswerOne 请求")
 
         if let backendClient = try getBackendClient() {
             // Forward request to backend service
-            // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkMoreAnswerOne: \(startTime)")
-            let response = try await backendClient.talkMoreAnswerOne(metadata: [:]) { [self] writer in
+            let response = try await backendClient.talkMoreAnswerOne(metadata: context.metadata) { [self] writer in
                 for try await req in request {
                     self.logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
                     try await writer.write(req)
@@ -174,17 +171,16 @@ final class HelloService: Hello_LandingService.SimpleServiceProtocol {
     func talkBidirectional(
         request: GRPCCore.RPCAsyncSequence<Hello_TalkRequest, any Swift.Error>,
         response: GRPCCore.RPCWriter<Hello_TalkResponse>,
-        context _: GRPCCore.ServerContext
+        context: GRPCCore.ServerContext
     ) async throws {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] 开始处理 talkBidirectional 请求")
 
         if let backendClient = try getBackendClient() {
             // Forward request to backend service
-            // Create empty metadata since we can't access the client's headers directly
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkBidirectional: \(startTime)")
-            try await backendClient.talkBidirectional(metadata: [:]) { writer in
+            try await backendClient.talkBidirectional(metadata: context.metadata) { writer in
                 Task { [self] in
                     self.logger.info("[\(requestId)] 开始转发请求到后端服务")
                     for try await req in request {
