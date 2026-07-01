@@ -5,7 +5,6 @@ import static org.feuyeux.grpc.common.HelloUtils.buildLinkRequests;
 import static org.feuyeux.grpc.common.HelloUtils.getVersion;
 
 import io.grpc.Channel;
-import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
@@ -431,9 +430,8 @@ public class ProtoClient {
     if (otelClient != null) {
       chain.add(otelClient);
     }
-    Channel interceptChannel = ClientInterceptors.intercept(
-        channel,
-        chain.toArray(new io.grpc.ClientInterceptor[0]));
+    Channel interceptChannel =
+        ClientInterceptors.intercept(channel, chain.toArray(new io.grpc.ClientInterceptor[0]));
     blockingStub = LandingServiceGrpc.newBlockingStub(interceptChannel);
     asyncStub = LandingServiceGrpc.newStub(interceptChannel);
   }

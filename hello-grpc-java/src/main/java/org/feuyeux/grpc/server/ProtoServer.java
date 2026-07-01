@@ -18,6 +18,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -27,9 +28,8 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import org.feuyeux.grpc.client.HeaderClientInterceptor;
 import org.feuyeux.grpc.common.Connection;
-import org.feuyeux.grpc.proto.LandingServiceGrpc;
-import io.opentelemetry.api.OpenTelemetry;
 import org.feuyeux.grpc.common.OtelSupport;
+import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -220,8 +220,7 @@ public class ProtoServer {
     }
     ServerServiceDefinition interceptedService =
         ServerInterceptors.intercept(
-            landingService,
-            chain.toArray(new io.grpc.ServerInterceptor[0]));
+            landingService, chain.toArray(new io.grpc.ServerInterceptor[0]));
 
     // Determine if secure mode is enabled
     String secureMode = System.getenv(GRPC_HELLO_SECURE);
