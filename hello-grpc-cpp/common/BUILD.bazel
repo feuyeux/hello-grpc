@@ -9,18 +9,17 @@ cc_library(
     ],
 )
 
-# OTel SDK + ostream (stdout) exporter. Pinned to the same 1.16
-# line that grpc-cpp 1.66 documents as compatible in its
-# /contrib/ directory.
 cc_library(
     name = "otel",
     srcs = ["otel.cc"],
     hdrs = ["otel.h"],
     deps = [
-        "@com_github_grpc_grpc//:grpc++_otel_plugin",
         "@io_opentelemetry_cpp//api",
-        "@io_opentelemetry_cpp//sdk",
+        "@io_opentelemetry_cpp//exporters/ostream:ostream_metric_exporter",
         "@io_opentelemetry_cpp//exporters/ostream:ostream_span_exporter",
+        "@io_opentelemetry_cpp//sdk/src/metrics:metrics",
+        "@io_opentelemetry_cpp//sdk/src/resource:resource",
+        "@io_opentelemetry_cpp//sdk/src/trace:trace",
     ],
 )
 

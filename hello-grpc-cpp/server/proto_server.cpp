@@ -9,6 +9,7 @@
 #include "grpcpp/ext/proto_server_reflection_plugin.h"
 #include "grpcpp/grpcpp.h"
 #include "grpcpp/health_check_service_interface.h"
+#include "grpcpp/support/server_interceptor.h"
 
 #include "protos/landing.grpc.pb.h"
 
@@ -58,6 +59,33 @@ const std::vector<std::string> TRACING_HEADERS = {
 
 } // namespace
 
+// C5 — Server interceptor: logs method name for every incoming RPC.
+class LoggingInterceptor : public grpc::experimental::Interceptor {
+public:
+  explicit LoggingInterceptor(grpc::experimental::ServerRpcInfo *info)
+      : info_(info) {}
+
+  void Intercept(grpc::experimental::InterceptorBatchMethods *methods) override {
+    if (methods->QueryInterceptionHookPoint(
+            grpc::experimental::InterceptionHookPoints::PRE_SEND_INITIAL_METADATA)) {
+      LOG(INFO) << "[interceptor] RPC " << info_->method();
+    }
+    methods->Proceed();
+  }
+
+private:
+  grpc::experimental::ServerRpcInfo *info_;
+};
+
+class LoggingInterceptorFactory
+    : public grpc::experimental::ServerInterceptorFactoryInterface {
+public:
+  grpc::experimental::Interceptor *
+  CreateServerInterceptor(grpc::experimental::ServerRpcInfo *info) override {
+    return new LoggingInterceptor(info);
+  }
+};
+
 using google::protobuf::Map;
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -92,6 +120,7 @@ public:
    */
   Status Talk(ServerContext *context, const TalkRequest *request,
               TalkResponse *response) override {
+    logRpcAttrs("Talk");
     if (client) {
       // Proxy mode - forward request to backend
       grpc::ClientContext c;
@@ -124,6 +153,7 @@ public:
    */
   Status TalkOneAnswerMore(ServerContext *context, const TalkRequest *request,
                            ServerWriter<TalkResponse> *writer) override {
+    logRpcAttrs("TalkOneAnswerMore");
     logHeaders(context, "TalkOneAnswerMore");
 
     if (client) {
@@ -169,6 +199,7 @@ public:
   Status TalkMoreAnswerOne(ServerContext *context,
                            ServerReader<TalkRequest> *reader,
                            TalkResponse *response) override {
+    logRpcAttrs("TalkMoreAnswerOne");
     logHeaders(context, "TalkMoreAnswerOne");
 
     if (client) {
@@ -214,6 +245,7 @@ public:
   Status TalkBidirectional(
       ServerContext *context,
       ServerReaderWriter<TalkResponse, TalkRequest> *stream) override {
+    logRpcAttrs("TalkBidirectional");
     logHeaders(context, "TalkBidirectional");
 
     if (client) {
@@ -279,6 +311,19 @@ public:
     // Get greeting and response
     const auto &hello = Utils::hello(index);
     (*pMap)["data"] = hello + "," + Utils::thanks(hello);
+  }
+
+  /**
+   * @brief Records RPC telemetry when GRPC_HELLO_OTEL=Y.
+   *
+   * Increments the rpc_calls_total counter and creates a per-RPC span with
+   * rpc.system, rpc.method and rpc.service semantic attributes.
+   *
+   * @param methodName Name of the RPC method (e.g. "Talk")
+   */
+  static void logRpcAttrs(const std::string &methodName) {
+    otel::RecordRpcCall(methodName);
+    otel::EmitRpcSpan(methodName);
   }
 
   /**
@@ -355,6 +400,10 @@ void RunServer() {
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
   ServerBuilder builder;
+  // C5 — register logging interceptor for all RPCs
+  std::vector<std::unique_ptr<grpc::experimental::ServerInterceptorFactoryInterface>> creators;
+  creators.push_back(std::make_unique<LoggingInterceptorFactory>());
+  builder.experimental().SetInterceptorCreators(std::move(creators));
   const auto &secure = Utils::getSecure();
 
   // Configure server with TLS if enabled

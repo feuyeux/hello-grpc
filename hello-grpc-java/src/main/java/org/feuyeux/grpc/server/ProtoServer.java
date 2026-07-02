@@ -13,11 +13,14 @@ import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.ServerTransportFilter;
+import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
+import io.grpc.services.HealthStatusManager;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -27,9 +30,8 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import org.feuyeux.grpc.client.HeaderClientInterceptor;
 import org.feuyeux.grpc.common.Connection;
-import org.feuyeux.grpc.proto.LandingServiceGrpc;
-import io.opentelemetry.api.OpenTelemetry;
 import org.feuyeux.grpc.common.OtelSupport;
+import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,8 @@ public class ProtoServer {
 
   private static ManagedChannel channel;
   private final Server server;
+  // B7 — gRPC Health Check
+  private final HealthStatusManager healthStatusManager = new HealthStatusManager();
 
   // Certificate file paths
   private static final String certPath;
@@ -135,11 +139,13 @@ public class ProtoServer {
     log.info("Starting gRPC server [version: {}]", getVersion());
 
     try {
+      OpenTelemetry otel = OtelSupport.initOtel("hello-grpc-java-server");
+
       // Initialize server implementation
-      LandingServiceImpl landingService = createServiceImplementation();
+      LandingServiceImpl landingService = createServiceImplementation(otel);
 
       // Create and start server
-      ProtoServer server = new ProtoServer(landingService);
+      ProtoServer server = new ProtoServer(landingService, otel);
       log.info("Server started successfully");
 
       // Setup shutdown hook for graceful shutdown
@@ -163,8 +169,8 @@ public class ProtoServer {
    *
    * @return Initialized LandingServiceImpl instance
    */
-  private static LandingServiceImpl createServiceImplementation() {
-    LandingServiceImpl landingService = new LandingServiceImpl();
+  private static LandingServiceImpl createServiceImplementation(OpenTelemetry otel) {
+    LandingServiceImpl landingService = new LandingServiceImpl(otel);
 
     // Configure backend connection if needed
     if (Connection.hasBackend()) {
@@ -220,8 +226,7 @@ public class ProtoServer {
     }
     ServerServiceDefinition interceptedService =
         ServerInterceptors.intercept(
-            landingService,
-            chain.toArray(new io.grpc.ServerInterceptor[0]));
+            landingService, chain.toArray(new io.grpc.ServerInterceptor[0]));
 
     // Determine if secure mode is enabled
     String secureMode = System.getenv(GRPC_HELLO_SECURE);
@@ -232,6 +237,7 @@ public class ProtoServer {
         NettyServerBuilder.forPort(port)
             .addService(interceptedService)
             .addService(ProtoReflectionService.newInstance())
+            .addService(healthStatusManager.getHealthService())
             .addTransportFilter(
                 new ServerTransportFilter() {
                   @Override
@@ -294,12 +300,16 @@ public class ProtoServer {
   private void start(BindableService service)
       throws IOException, ExecutionException, InterruptedException {
     server.start();
+    // B7 — mark the overall health as SERVING once the server is up
+    healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);
     register(service);
   }
 
   /** Stops the server and releases resources with graceful shutdown. */
   public void stop() {
     log.info("Initiating graceful shutdown...");
+    // B7 — signal NOT_SERVING before shutting down so health probes fail fast
+    healthStatusManager.enterTerminalState();
 
     if (server != null) {
       try {

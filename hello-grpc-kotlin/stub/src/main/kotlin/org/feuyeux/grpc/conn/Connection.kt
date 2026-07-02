@@ -58,7 +58,7 @@ object Connection {
         return builder.build()
     }
 
-    fun getChannel(clientInterceptor: ClientInterceptor): ManagedChannel {
+    fun getChannel(vararg clientInterceptors: ClientInterceptor): ManagedChannel {
         val backend = System.getenv("GRPC_HELLO_BACKEND")
         val grcServer = System.getenv("GRPC_SERVER") ?: "localhost"
         val host = backend ?: grcServer
@@ -68,7 +68,7 @@ object Connection {
             log.info("Connect With InSecure(:$serverPort)")
             ManagedChannelBuilder.forAddress(host, serverPort)
                 .usePlaintext()
-                .intercept(clientInterceptor)
+                .intercept(clientInterceptors.toList())
                 .build()
         } else {
             log.info("Connect With TLS(:$serverPort)")
@@ -76,7 +76,7 @@ object Connection {
                 .overrideAuthority(serverName) /* Only for using provided test certs. */
                 .sslContext(buildSslContext())
                 .negotiationType(NegotiationType.TLS)
-                .intercept(clientInterceptor)
+                .intercept(clientInterceptors.toList())
                 .build()
         }
     }

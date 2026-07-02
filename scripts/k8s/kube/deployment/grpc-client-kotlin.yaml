@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: grpc-best
+  name: grpc-client-kotlin
+  labels:
+    app: grpc-client-kotlin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-client-kotlin
+  template:
+    metadata:
+      labels:
+        app: grpc-client-kotlin
+    spec:
+      serviceAccountName: grpc-best-sa
+      containers:
+        - name: grpc-client-kotlin
+          image: feuyeux/grpc_client_kotlin:1.0.0
+          command: ["/bin/sleep", "3650d"]
+          env:
+            - name: GRPC_SERVER
+              value: "grpc-server-svc.grpc-best.svc.cluster.local"
+          imagePullPolicy: Always

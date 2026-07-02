@@ -158,10 +158,10 @@ void Utils::initLog(char *const *argv) {
   FLAGS_alsologtostderr = true;
 
   // Set log file destination
-  google::SetLogDestination(google::INFO, "log/hello-grpc.");
+  google::SetLogDestination(google::GLOG_INFO, "log/hello-grpc.");
 
   // Set minimum log level
-  FLAGS_minloglevel = google::INFO;
+  FLAGS_minloglevel = google::GLOG_INFO;
 
   // Disable default log prefix for cleaner output
   FLAGS_log_prefix = false;

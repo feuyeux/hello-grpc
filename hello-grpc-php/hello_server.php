@@ -22,6 +22,8 @@ require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/LandingService.php';
 require dirname(__FILE__) . '/conn/Connection.php';
 require dirname(__FILE__) . '/common/utils/VersionUtils.php';
+// B7 — gRPC health check service (grpc.health.v1.Health)
+require dirname(__FILE__) . '/common/svc/Hello/HealthServiceImpl.php';
 
 // Set up global logger with improved formatting first
 $log = new Logger('HelloGrpc');
@@ -209,7 +211,25 @@ try {
     
     // Register service handler
     $server->handle($service);
-    
+
+    // B7 — gRPC Health Check (grpc.health.v1.Health)
+    // Registers the standard health-checking protocol so tools such as
+    // grpc_health_probe and grpcurl can query server health.
+    $server->handle(new \Grpc\Health\V1\HealthServiceImpl());
+
+    // C4 — gRPC Server Reflection
+    // The PHP grpc/grpc C-extension (RpcServer) does not implement the
+    // gRPC server reflection protocol (grpc.reflection.v1alpha.ServerReflection).
+    // No reflection package exists for PHP in the grpc/grpc ecosystem.
+    //
+    // Workaround: pass the .proto file directly to grpcurl:
+    //   grpcurl -plaintext -proto landing.proto \
+    //       -d '{"data":"0","meta":"PHP"}' \
+    //       localhost:9996 hello.LandingService/Talk
+    //
+    // Alternatively, use a reflection-capable proxy (e.g. Envoy) in front
+    // of this server if reflection support is required.
+
     // Log server startup information with actual security status
     $securityStatus = $actuallySecure ? "SECURE (TLS enabled)" : "INSECURE (no TLS)";
     $log->info(sprintf("========================================"));

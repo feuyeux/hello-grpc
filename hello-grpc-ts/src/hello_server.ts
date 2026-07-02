@@ -6,7 +6,12 @@ import { v4 as uuidv4 } from "uuid"
 import { ans, getVersion, hellos } from "./lib/utils"
 import { createClient, getServerPort, logger } from "./lib/conn"
 import { createServerCredentials, testTlsCertificates } from "./lib/tls"
-import { otelEnabled, initOtel } from "./lib/otel"
+import { otelEnabled, initOtel, getCounter } from "./lib/otel"
+import { withLogging } from "./lib/interceptor"
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const healthCheck = require('grpc-health-check')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const reflection = require('grpc-node-server-reflection')
 
 // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The instrumentation
 // patches @grpc/grpc-js's Server constructor globally, so initOtel
@@ -14,6 +19,19 @@ import { otelEnabled, initOtel } from "./lib/otel"
 // env var is unset.
 if (otelEnabled()) {
     initOtel("hello-grpc-ts-server")
+}
+const rpcCallsTotal = getCounter(
+    "rpc_calls_total",
+    "Total number of gRPC calls handled"
+)
+
+function recordRpcCall(methodName: string): void {
+    if (!rpcCallsTotal) return
+    rpcCallsTotal.add(1, {
+        "rpc.system": "grpc",
+        "rpc.service": "LandingService",
+        "rpc.method": methodName
+    })
 }
 
 import * as fs from 'fs'
@@ -208,6 +226,7 @@ class HelloServer implements ILandingServiceServer {
      * Implements the Talk unary RPC method
      */
     talk(call: grpc.ServerUnaryCall<TalkRequest, TalkResponse>, callback: sendUnaryData<TalkResponse>): void {
+        recordRpcCall("Talk")
         const request = call.request
         const data = request.getData()
         const meta = request.getMeta()
@@ -288,6 +307,7 @@ class HelloServer implements ILandingServiceServer {
      * Implements the TalkMoreAnswerOne client streaming RPC method
      */
     talkMoreAnswerOne(call: grpc.ServerReadableStream<TalkRequest, TalkResponse>, callback: sendUnaryData<TalkResponse>): void {
+        recordRpcCall("TalkMoreAnswerOne")
         logger.info("======== [Client Streaming RPC] ========")
         logger.info("TalkMoreAnswerOne STARTED at: %s", new Date().toISOString())
 
@@ -435,6 +455,7 @@ class HelloServer implements ILandingServiceServer {
      * Implements the TalkOneAnswerMore server streaming RPC method
      */
     talkOneAnswerMore(call: grpc.ServerWritableStream<TalkRequest, TalkResponse>): void {
+        recordRpcCall("TalkOneAnswerMore")
         const request = call.request
         const data = request.getData()
         const meta = request.getMeta()
@@ -535,6 +556,7 @@ class HelloServer implements ILandingServiceServer {
      * Implements the TalkBidirectional bidirectional streaming RPC method
      */
     talkBidirectional(call: grpc.ServerDuplexStream<TalkRequest, TalkResponse>): void {
+        recordRpcCall("TalkBidirectional")
         logger.info("======== [Bidirectional Streaming RPC] ========")
         logger.info("TalkBidirectional STARTED at: %s", new Date().toISOString())
 
@@ -668,7 +690,21 @@ class HelloServer implements ILandingServiceServer {
 function startServer(): void {
     try {
         const server = new grpc.Server()
-        server.addService(LandingServiceService, new HelloServer())
+
+        // C5 — Middleware/Interceptor: wrap service impl with logging middleware
+        server.addService(LandingServiceService, withLogging(new HelloServer()))
+
+        // B7 — Health Check
+        const statusMap = {
+            '': healthCheck.HealthCheckResponse.ServingStatus.SERVING
+        }
+        const healthImpl = new healthCheck.HealthImplementation(statusMap)
+        healthImpl.addToServer(server)
+
+        // C4 — Server Reflection: supply the .proto file path so grpc-node-server-reflection
+        // can serve proto descriptors to tools like grpcurl/grpcui.
+        const protoFilePath = require('path').join(__dirname, '..', '..', 'proto', 'landing.proto')
+        reflection.addReflection(server, [protoFilePath])
 
         // Get the port for the server
         const serverPort = getServerPort();

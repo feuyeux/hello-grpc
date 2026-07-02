@@ -1,16 +1,21 @@
 package org.feuyeux.grpc
 
+import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.metrics.LongCounter
 import kotlinx.coroutines.flow.*
 import org.apache.logging.log4j.kotlin.logger
 import org.feuyeux.grpc.proto.*
 import java.util.*
 
-class LandingService : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
+class LandingService(openTelemetry: OpenTelemetry = OpenTelemetry.noop()) :
+    LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
     private val log = logger()
+    private val rpcCallsCounter: LongCounter = Otel.rpcCallsCounter(openTelemetry)
 
     override suspend fun talk(request: TalkRequest): TalkResponse {
         log.info("TALK REQUEST: data=${request.data},meta=${request.meta}")
         log.info("Request fields - data: '${request.data}', meta: '${request.meta}'")
+        rpcCallsCounter.add(1)
         return try {
             val response = TalkResponse.newBuilder()
                 .setStatus(200)
@@ -27,6 +32,7 @@ class LandingService : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
 
     override fun talkOneAnswerMore(request: TalkRequest): Flow<TalkResponse> {
         log.info("TalkOneAnswerMore REQUEST: data=${request.data},meta=${request.meta}")
+        rpcCallsCounter.add(1)
         return flow {
             try {
                 val datas = request.data.split(",").toTypedArray()
@@ -46,6 +52,7 @@ class LandingService : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
     }
 
     override suspend fun talkMoreAnswerOne(requests: Flow<TalkRequest>): TalkResponse {
+        rpcCallsCounter.add(1)
         return try {
             val talkResults: MutableList<TalkResult> = mutableListOf()
             requests.collect { request ->
@@ -63,20 +70,23 @@ class LandingService : LandingServiceGrpcKt.LandingServiceCoroutineImplBase() {
         }
     }
 
-    override fun talkBidirectional(requests: Flow<TalkRequest>): Flow<TalkResponse> = flow {
-        try {
-            requests.collect { request ->
-                log.info("TalkBidirectional REQUEST: data=${request.data},meta=${request.meta}")
-                emit(
-                    TalkResponse.newBuilder()
-                        .setStatus(200)
-                        .addResults(buildResult(request.data))
-                        .build()
-                )
+    override fun talkBidirectional(requests: Flow<TalkRequest>): Flow<TalkResponse> {
+        rpcCallsCounter.add(1)
+        return flow {
+            try {
+                requests.collect { request ->
+                    log.info("TalkBidirectional REQUEST: data=${request.data},meta=${request.meta}")
+                    emit(
+                        TalkResponse.newBuilder()
+                            .setStatus(200)
+                            .addResults(buildResult(request.data))
+                            .build()
+                    )
+                }
+            } catch (e: Exception) {
+                log.error("Error in talkBidirectional method", e)
+                throw ErrorMapper.toStatusException(e, "")
             }
-        } catch (e: Exception) {
-            log.error("Error in talkBidirectional method", e)
-            throw ErrorMapper.toStatusException(e, "")
         }
     }
 

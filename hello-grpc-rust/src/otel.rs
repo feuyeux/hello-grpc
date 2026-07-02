@@ -10,7 +10,7 @@
 //! the call sites in server.rs / client.rs.
 
 use opentelemetry::trace::TracerProvider as _;
-use opentelemetry_sdk::trace::{SdkTracerProvider, Sampler};
+use opentelemetry_sdk::trace::{Sampler, TracerProvider};
 use opentelemetry_sdk::Resource;
 use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
 use tracing_subscriber::{prelude::*, EnvFilter};
@@ -18,6 +18,26 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 /// Returns true iff `GRPC_HELLO_OTEL=Y`.
 pub fn otel_enabled() -> bool {
     std::env::var("GRPC_HELLO_OTEL").map(|v| v == "Y").unwrap_or(false)
+}
+
+/// Creates a `tracing::Span` carrying the gRPC semantic-convention
+/// attributes (`rpc.system`, `rpc.method`, `rpc.service`).
+///
+/// The `tracing-opentelemetry` bridge will forward these fields as OTel
+/// span attributes when `GRPC_HELLO_OTEL=Y` is set.  When OTel is
+/// disabled the returned span is a no-op (entered but never exported).
+///
+/// # Example
+/// ```rust
+/// let _guard = hello_grpc_rust::otel::span_with_rpc_attrs("Talk", "LandingService").entered();
+/// ```
+pub fn span_with_rpc_attrs(method: &str, service: &str) -> tracing::Span {
+    tracing::info_span!(
+        "grpc_handler",
+        rpc.system = "grpc",
+        rpc.method = %method,
+        rpc.service = %service,
+    )
 }
 
 /// One-time OTel SDK + tracing-subscriber wiring. Idempotent: a second
@@ -30,10 +50,8 @@ pub fn init_otel(service_name: &'static str) {
     static INIT: std::sync::Once = std::sync::Once::new();
     INIT.call_once(|| {
         let exporter = opentelemetry_stdout::SpanExporter::default();
-        let provider = SdkTracerProvider::builder()
-            .with_resource(Resource::builder().with_attribute(
-                opentelemetry::KeyValue::new(SERVICE_NAME, service_name),
-            ).build())
+        let provider = TracerProvider::builder()
+            .with_resource(Resource::new([opentelemetry::KeyValue::new(SERVICE_NAME, service_name)]))
             .with_sampler(Sampler::AlwaysOn)
             .with_simple_exporter(exporter)
             .build();

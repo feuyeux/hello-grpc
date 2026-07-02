@@ -1,6 +1,3 @@
-rootProject.name = "hello-grpc-kotlin"
-include("protos", "stub", "client", "server")
-
 pluginManagement {
     repositories {
         maven {
@@ -12,3 +9,6 @@ pluginManagement {
         google()
     }
 }
+
+rootProject.name = "hello-grpc-kotlin"
+include("protos", "stub", "client", "server")

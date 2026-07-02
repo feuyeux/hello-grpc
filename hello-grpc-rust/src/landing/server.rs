@@ -14,6 +14,8 @@ use tonic::{
     metadata::{KeyAndValueRef, MetadataMap},
     transport::{Channel, Identity, Server, ServerTlsConfig},
 };
+use tonic_health::server::health_reporter;
+use tonic_reflection::server::Builder as ReflectionBuilder;
 use uuid::Uuid;
 
 use hello_grpc_rust::common::conn::{CONFIG_PATH, build_client, grpc_backend_host, has_backend};
@@ -24,6 +26,7 @@ use hello_grpc_rust::common::landing::landing_service_server::{
 use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
 use hello_grpc_rust::common::trans::{CERT_CHAIN, CERT_KEY, TRACING_KEYS};
 use hello_grpc_rust::common::utils::{HELLOS, get_version, thanks};
+use hello_grpc_rust::common::FILE_DESCRIPTOR_SET;
 
 // Add a lightweight metrics collector
 struct ServerMetrics {
@@ -78,6 +81,12 @@ impl ServerMetrics {
 const CONNECTION_POOL_SIZE: usize = 5;
 const REQUEST_TIMEOUT_MS: u64 = 5000;
 const GRACEFUL_SHUTDOWN_TIMEOUT_MS: u64 = 10000;
+
+/// C5 — Logging interceptor: logs each incoming gRPC request URI before forwarding.
+fn log_request(req: Request<()>) -> Result<Request<()>, Status> {
+    info!("gRPC request intercepted: {}", req.uri());
+    Ok(req)
+}
 
 /// Main entry point for the gRPC server.
 /// Configures and starts the server with appropriate TLS settings if enabled.
@@ -147,16 +156,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
         None
     };
 
-    // Create service implementation
-    let service = LandingServiceServer::new(ProtoServer {
-        backend: if has_backend() {
-            grpc_backend_host()
-        } else {
-            "".to_string()
+    // Create service implementation with C5 interceptor
+    let service = LandingServiceServer::with_interceptor(
+        ProtoServer {
+            backend: if has_backend() {
+                grpc_backend_host()
+            } else {
+                "".to_string()
+            },
+            client_pool,
+            metrics: metrics.clone(),
         },
-        client_pool,
-        metrics: metrics.clone(),
-    });
+        log_request,
+    );
+
+    // B7 — Health check service
+    let (mut health_reporter, health_service) = health_reporter();
+    health_reporter
+        .set_serving::<LandingServiceServer<ProtoServer>>()
+        .await;
+    info!("Health check service registered");
+
+    // C4 — Server reflection service
+    let reflection_service = ReflectionBuilder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .expect("Failed to build reflection service");
+    info!("Server reflection service registered");
 
     // Add metrics endpoint using hyper 1.x API
     let metrics_clone = metrics.clone();
@@ -210,8 +236,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    // Create the server future
-    let server_future = server.add_service(service).serve(address);
+    // Create the server future with all services on the same router
+    let server_future = server
+        .add_service(service)
+        .add_service(health_service)
+        .add_service(reflection_service)
+        .serve(address);
 
     // Use a separate future for shutdown signal
     let shutdown = shutdown_signal();

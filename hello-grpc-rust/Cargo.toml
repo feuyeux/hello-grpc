@@ -15,6 +15,10 @@ path = "src/landing/client.rs"
 [dependencies]
 # grpc https://lib.rs/crates/tonic
 tonic = { version = "0.14.2", features = ["transport", "tls-webpki-roots"] }
+# gRPC health check https://lib.rs/crates/tonic-health
+tonic-health = "0.14"
+# gRPC server reflection https://lib.rs/crates/tonic-reflection
+tonic-reflection = "0.14"
 # gRPC Codec https://lib.rs/crates/prost
 prost = "0.14.1"
 # tonic-prost codec
@@ -61,6 +65,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # OpenTelemetry SDK + stdout exporter. Pinned to the 0.27 line that
 # matches tracing-opentelemetry 0.28's documented compat matrix.
 opentelemetry = { version = "0.27", features = ["trace"] }
+opentelemetry_sdk = { version = "0.27", features = ["trace"] }
 opentelemetry-stdout = { version = "0.27", features = ["trace"] }
 opentelemetry-semantic-conventions = "0.27"
 tracing-opentelemetry = "0.28"

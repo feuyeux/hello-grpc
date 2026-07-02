@@ -10,6 +10,11 @@ client/protoClient.py stay byte-identical to before this commit.
 The exporter is stdout for the teaching/demo posture of hello-grpc;
 operators wanting an OTLP backend swap it for OTLPSpanExporter here
 without changing the call graph.
+
+B2 — Metrics: init_metrics() installs a MeterProvider with a
+ConsoleMetricExporter and returns a Meter. Call sites use the returned
+meter to create counters (e.g. rpc_calls_total). No-op when the env
+var is off or the SDK packages are absent.
 """
 
 import os
@@ -24,6 +29,17 @@ try:
     _HAS_OTEL = True
 except ImportError:
     _HAS_OTEL = False
+
+try:
+    from opentelemetry import metrics
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import (
+        ConsoleMetricExporter,
+        PeriodicExportingMetricReader,
+    )
+    _HAS_OTEL_METRICS = True
+except ImportError:
+    _HAS_OTEL_METRICS = False
 
 try:
     from opentelemetry.instrumentation.grpc import (
@@ -60,6 +76,30 @@ def init_otel(service_name):
     provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
     trace.set_tracer_provider(provider)
     return provider
+
+
+def init_metrics(service_name):
+    """Install a stdout-exporting MeterProvider as the global SDK (B2).
+
+    Returns a Meter bound to service_name, or None when GRPC_HELLO_OTEL
+    is not "Y" or the opentelemetry-sdk-metrics package is absent.
+    Caller creates counters from the returned Meter, e.g.:
+        meter = init_metrics("my-service")
+        if meter:
+            counter = meter.create_counter("rpc_calls_total")
+    """
+    if not otel_enabled():
+        return None
+    if not _HAS_OTEL_METRICS:
+        return None
+
+    reader = PeriodicExportingMetricReader(
+        ConsoleMetricExporter(),
+        export_interval_millis=30_000,
+    )
+    meter_provider = MeterProvider(metric_readers=[reader])
+    metrics.set_meter_provider(meter_provider)
+    return metrics.get_meter(service_name)
 
 
 def server_interceptor():

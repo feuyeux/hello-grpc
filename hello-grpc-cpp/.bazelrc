@@ -7,6 +7,10 @@ build --experimental_repository_downloader_retries=5
 # Use C++17 standard
 build --cxxopt="-std=c++17"
 build --host_cxxopt="-std=c++17"
+build --enable_platform_specific_config
+build:windows --cxxopt=/std:c++17
+build:windows --host_cxxopt=/std:c++17
+build:windows --define=grpc_no_xds=true
 
 # Disable strict layering check to work around module dependency issues
 build --features=-layering_check

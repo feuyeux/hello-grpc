@@ -12,7 +12,10 @@ module(
 bazel_dep(name = "rules_cc", version = "0.1.2", repo_name = "rules_cc")
 
 # https://registry.bazel.build/modules/rules_proto
-bazel_dep(name = "rules_proto", version = "7.1.0")
+# Pinned to 6.0.2 so the root protobuf version below controls the C++ runtime
+# graph. Newer rules_proto releases force protobuf versions whose self-built
+# host protoc is unreliable on Windows.
+bazel_dep(name = "rules_proto", version = "6.0.2")
 
 # https://registry.bazel.build/modules/apple_support
 bazel_dep(name = "apple_support", version = "1.23.1", repo_name = "build_bazel_apple_support")
@@ -24,13 +27,18 @@ bazel_dep(name = "rules_apple", version = "3.17.0", repo_name = "build_bazel_rul
 bazel_dep(name = "googleapis", version = "0.0.0-20240819-fe8ba054a", repo_name = "com_google_googleapis")
 
 # https://registry.bazel.build/modules/protobuf
-bazel_dep(name = "protobuf", version = "26.0.bcr.2", repo_name = "com_google_protobuf")
+# Matched to D:\zoo\bin\protoc27.2.exe in //protos:system_protoc.
+bazel_dep(name = "protobuf", version = "27.2", repo_name = "com_google_protobuf")
 
 # https://registry.bazel.build/modules/grpc
 bazel_dep(name = "grpc", version = "1.66.0", repo_name = "com_github_grpc_grpc")
 
 # https://registry.bazel.build/modules/opentelemetry-cpp
-bazel_dep(name = "opentelemetry-cpp", version = "1.16.1", repo_name = "io_opentelemetry_cpp")
+# Pinned to 1.14.2 because newer BCR releases conflict with this project's
+# grpc/protobuf graph on Windows (rules_python cycles or grpc@1.76 MODULE
+# errors). This version exposes the SDK and stdout exporters needed by
+# common/otel.cc.
+bazel_dep(name = "opentelemetry-cpp", version = "1.14.2", repo_name = "io_opentelemetry_cpp")
 
 ## 2 hello_utils dependencies
 

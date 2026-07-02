@@ -30,6 +30,7 @@ type ProtoServer struct {
 // Talk implements the unary RPC method.
 // Receives a single request and returns a single response.
 func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.TalkResponse, error) {
+	common.RecordRpcCall(ctx, "Talk")
 	requestID := common.ExtractRequestID(ctx)
 	log.Infof("TALK REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 	logHeaders(ctx)
@@ -56,6 +57,7 @@ func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.Ta
 // Receives a single request and sends multiple responses through the stream.
 func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.LandingService_TalkOneAnswerMoreServer) error {
 	ctx := stream.Context()
+	common.RecordRpcCall(ctx, "TalkOneAnswerMore")
 	requestID := common.ExtractRequestID(ctx)
 	log.Infof("TalkOneAnswerMore REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 	logHeaders(ctx)
@@ -105,6 +107,7 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 // Receives multiple requests from client and returns a single response.
 func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerOneServer) error {
 	ctx := stream.Context()
+	common.RecordRpcCall(ctx, "TalkMoreAnswerOne")
 	requestID := common.ExtractRequestID(ctx)
 
 	if s.BackendClient == nil {
@@ -166,6 +169,7 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 // Handles multiple requests and returns multiple responses in a stream.
 func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirectionalServer) error {
 	ctx := stream.Context()
+	common.RecordRpcCall(ctx, "TalkBidirectional")
 	requestID := common.ExtractRequestID(ctx)
 
 	if s.BackendClient == nil {

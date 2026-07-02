@@ -23,6 +23,10 @@
     <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
     <PackageReference Include="Grpc.Net.Common" Version="2.80.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
+    <!-- B7: gRPC health checks -->
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.80.0" />
+    <!-- C4: gRPC server reflection -->
+    <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.80.0" />
   </ItemGroup>
 
 </Project>

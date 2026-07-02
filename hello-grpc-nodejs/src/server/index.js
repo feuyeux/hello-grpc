@@ -16,14 +16,18 @@
  */
 
 const grpc = require("@grpc/grpc-js")
-const { otelEnabled, initOtel } = require("../common/otel")
+const { otelEnabled, initOtel, getCounter } = require("../common/otel")
 const uuid = require('uuid');
 const { TalkResult, TalkResponse, ResultType } = require('../proto/landing_pb');
 const services = require('../proto/landing_grpc_pb');
 const conn = require('../common/connection');
 const utils = require('../common/utils');
-// Server reflection can be enabled if needed
-// const reflection = require('grpc-node-server-reflection');
+// C4 — gRPC Server Reflection
+const reflection = require('grpc-node-server-reflection');
+// B7 — gRPC Health Check
+const { HealthCheckResponse, HealthImplementation } = require('grpc-health-check');
+// C5 — Logging middleware
+const { withLogging } = require('../common/interceptor');
 
 const fs = require('fs');
 const path = require('path');
@@ -50,6 +54,26 @@ const logger = conn.logger;
 if (otelEnabled()) {
     initOtel("hello-grpc-nodejs-server");
 }
+const rpcCallsTotal = getCounter(
+    "rpc_calls_total",
+    "Total number of gRPC calls handled"
+);
+
+function recordRpcCall(methodName) {
+    if (!rpcCallsTotal) return;
+    rpcCallsTotal.add(1, {
+        "rpc.system": "grpc",
+        "rpc.service": "LandingService",
+        "rpc.method": methodName
+    });
+}
+
+// B2 — Metrics: obtain the rpc_calls_total counter created inside
+// initOtel (returns null when otel is disabled or the SDK is absent).
+const rpcCallsCounter = getCounter(
+    "rpc_calls_total",
+    "Total number of inbound RPC calls handled by the server"
+);
 
 // Backend client instance
 let backendClient = null;
@@ -101,13 +125,21 @@ function main() {
     // Create new gRPC server
     const server = new grpc.Server();
 
-    // Add service implementation
-    server.addService(services.LandingServiceService, {
+    // C4 — wrap with reflection BEFORE addService so all services are tracked
+    const serverWithReflection = reflection(server);
+
+    // B7 — Health check
+    const statusMap = { '': HealthCheckResponse.ServingStatus.SERVING };
+    const healthImpl = new HealthImplementation(statusMap);
+    healthImpl.addToServer(serverWithReflection);
+
+    // Add service implementation (C5 — wrap with logging middleware)
+    serverWithReflection.addService(services.LandingServiceService, withLogging({
         talk: talk,
         talkOneAnswerMore: talkOneAnswerMore,
         talkMoreAnswerOne: talkMoreAnswerOne,
         talkBidirectional: talkBidirectional
-    });
+    }));
 
     // Set up signal handlers for graceful shutdown
     setupSignalHandlers(server);
@@ -244,7 +276,9 @@ function startInsecureServer(server, address) {
  * @param {Function} callback Callback to return the response
  */
 function talk(call, callback) {
+    recordRpcCall("Talk");
     const request = call.request;
+    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "Talk" });
     logger.info("======== [Unary RPC] ========");
     logger.info("Talk REQUEST: data=%s, meta=%s", request.getData(), request.getMeta());
     logger.info("Talk REQUEST TIME: %s", new Date().toISOString());
@@ -311,7 +345,9 @@ function handleLocalTalk(request, callback) {
  * @param {Object} call The gRPC call object
  */
 function talkOneAnswerMore(call) {
+    recordRpcCall("TalkOneAnswerMore");
     const request = call.request;
+    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "TalkOneAnswerMore" });
     logger.info("======== [Server Streaming RPC] ========");
     logger.info("TalkOneAnswerMore REQUEST: data=%s, meta=%s", request.getData(), request.getMeta());
     logger.info("TalkOneAnswerMore REQUEST TIME: %s", new Date().toISOString());
@@ -402,7 +438,9 @@ function handleLocalTalkOneAnswerMore(request, call) {
  * @param {Function} callback Callback to return the response
  */
 function talkMoreAnswerOne(call, callback) {
+    recordRpcCall("TalkMoreAnswerOne");
     logger.info("======== [Client Streaming RPC] ========");
+    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "TalkMoreAnswerOne" });
     logger.info("TalkMoreAnswerOne STARTED at: %s", new Date().toISOString());
 
     // Extract and log headers
@@ -539,7 +577,9 @@ function handleLocalTalkMoreAnswerOne(call, initialCount, callback) {
  * @param {Object} call The gRPC call object
  */
 function talkBidirectional(call) {
+    recordRpcCall("TalkBidirectional");
     logger.info("======== [Bidirectional Streaming RPC] ========");
+    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "TalkBidirectional" });
     logger.info("TalkBidirectional STARTED at: %s", new Date().toISOString());
 
     // Extract and log headers

@@ -123,6 +123,12 @@ class LandingService extends LandingServiceStub
      * @var array
      */
     private $metrics;
+
+    /**
+     * Service-level middleware chain.
+     * @var array<int, callable>
+     */
+    private array $middleware;
     
     /**
      * Constructor
@@ -151,6 +157,43 @@ class LandingService extends LandingServiceStub
             'proxy_error' => 0,
             'local_fallback' => 0,
         ];
+
+        $this->middleware = [
+            function (string $method, $context, callable $next) {
+                global $log;
+                $log->debug("[middleware] {$method} start");
+                try {
+                    return $next();
+                } finally {
+                    $log->debug("[middleware] {$method} end");
+                }
+            },
+            function (string $method, $context, callable $next) {
+                return Otel::wrapper($method, $next, [
+                    'rpc.method' => $method,
+                    'rpc.system' => 'grpc',
+                    'rpc.service' => 'LandingService',
+                ]);
+            },
+        ];
+    }
+
+    /**
+     * Run a service handler through the configured middleware chain.
+     */
+    private function runWithMiddleware(string $method, $context, callable $handler)
+    {
+        $runner = array_reduce(
+            array_reverse($this->middleware),
+            function (callable $next, callable $middleware) use ($method, $context): callable {
+                return function () use ($middleware, $method, $context, $next) {
+                    return $middleware($method, $context, $next);
+                };
+            },
+            $handler
+        );
+
+        return $runner();
     }
     
     /**
@@ -214,6 +257,23 @@ class LandingService extends LandingServiceStub
         $metadata['service'] = 'php-landing-service';
         
         return $metadata;
+    }
+
+    /**
+     * Convert extracted metadata to the flat string map expected by PHP gRPC clients.
+     */
+    private function toGrpcMetadata(array $metadata): array
+    {
+        $grpcMetadata = [];
+        foreach ($metadata as $key => $value) {
+            if (is_array($value)) {
+                $first = $value[0] ?? '';
+                $grpcMetadata[$key] = (string)$first;
+            } else {
+                $grpcMetadata[$key] = (string)$value;
+            }
+        }
+        return $grpcMetadata;
     }
     
     /**
@@ -384,7 +444,7 @@ class LandingService extends LandingServiceStub
      */
     public function Talk(TalkRequest $request, \Grpc\ServerContext $context): ?TalkResponse
     {
-        return Otel::wrapper('Talk', function () use ($request, $context) {
+        return $this->runWithMiddleware('Talk', $context, function () use ($request, $context) {
             $this->logRequest('Talk', $context, $request);
             $metadata = $this->extractMetadata($context);
 
@@ -392,12 +452,7 @@ class LandingService extends LandingServiceStub
             if ($this->isProxyMode) {
                 try {
                     // Convert our internal metadata format to gRPC format
-                    $md = [];
-                    foreach ($metadata as $key => $values) {
-                        foreach ($values as $value) {
-                            $md[$key] = $value;
-                        }
-                    }
+                    $md = $this->toGrpcMetadata($metadata);
 
                     // Set timeout
                     $options = ['timeout' => 5000000]; // 5 seconds (in microseconds)
@@ -430,7 +485,7 @@ class LandingService extends LandingServiceStub
                 $this->logError('Talk', $e->getMessage());
                 throw $e;
             }
-        }, ['rpc.method' => 'Talk', 'rpc.system' => 'grpc']);
+        });
     }
     
     /**
@@ -442,7 +497,7 @@ class LandingService extends LandingServiceStub
         \Grpc\ServerContext $context
     ): void
     {
-        Otel::wrapper('TalkOneAnswerMore', function () use ($request, $writer, $context) {
+        $this->runWithMiddleware('TalkOneAnswerMore', $context, function () use ($request, $writer, $context) {
             $this->logRequest('TalkOneAnswerMore', $context, $request);
             $metadata = $this->extractMetadata($context);
 
@@ -450,12 +505,7 @@ class LandingService extends LandingServiceStub
             if ($this->isProxyMode) {
                 try {
                     // Convert metadata to gRPC format
-                    $md = [];
-                    foreach ($metadata as $key => $values) {
-                        foreach ($values as $value) {
-                            $md[$key] = $value;
-                        }
-                    }
+                    $md = $this->toGrpcMetadata($metadata);
 
                     $options = ['timeout' => 15000000]; // 15 seconds
                     $call = $this->backendClient->TalkOneAnswerMore($request, $md, $options);
@@ -514,7 +564,7 @@ class LandingService extends LandingServiceStub
                 $this->logError('TalkOneAnswerMore', $e->getMessage());
                 throw $e;
             }
-        }, ['rpc.method' => 'TalkOneAnswerMore', 'rpc.system' => 'grpc']);
+        });
     }
     
     /**
@@ -529,7 +579,7 @@ class LandingService extends LandingServiceStub
         \Grpc\ServerContext $context
     ): ?TalkResponse
     {
-        return Otel::wrapper('TalkMoreAnswerOne', function () use ($reader, $context) {
+        return $this->runWithMiddleware('TalkMoreAnswerOne', $context, function () use ($reader, $context) {
             $this->logRequest('TalkMoreAnswerOne', $context);
             $metadata = $this->extractMetadata($context);
             $allResults = [];
@@ -540,12 +590,7 @@ class LandingService extends LandingServiceStub
             if ($this->isProxyMode) {
                 try {
                     // Convert metadata
-                    $md = [];
-                    foreach ($metadata as $key => $values) {
-                        foreach ($values as $value) {
-                            $md[$key] = $value;
-                        }
-                    }
+                    $md = $this->toGrpcMetadata($metadata);
 
                     $options = ['timeout' => 10000000]; // 10 seconds
                     $backendCall = $this->backendClient->TalkMoreAnswerOne($md, $options);
@@ -611,7 +656,7 @@ class LandingService extends LandingServiceStub
                 $this->logError('TalkMoreAnswerOne', $e->getMessage());
                 throw $e;
             }
-        }, ['rpc.method' => 'TalkMoreAnswerOne', 'rpc.system' => 'grpc']);
+        });
     }
     
     /**
@@ -623,7 +668,7 @@ class LandingService extends LandingServiceStub
         \Grpc\ServerContext $context
     ): void
     {
-        Otel::wrapper('TalkBidirectional', function () use ($reader, $writer, $context) {
+        $this->runWithMiddleware('TalkBidirectional', $context, function () use ($reader, $writer, $context) {
             $this->logRequest('TalkBidirectional', $context);
             $metadata = $this->extractMetadata($context);
             $requestCount = 0;
@@ -633,12 +678,7 @@ class LandingService extends LandingServiceStub
             if ($this->isProxyMode) {
                 try {
                     // Convert metadata
-                    $md = [];
-                    foreach ($metadata as $key => $values) {
-                        foreach ($values as $value) {
-                            $md[$key] = $value;
-                        }
-                    }
+                    $md = $this->toGrpcMetadata($metadata);
 
                     $options = ['timeout' => 20000000]; // 20 seconds
                     $backendCall = $this->backendClient->TalkBidirectional($md, $options);
@@ -732,6 +772,6 @@ class LandingService extends LandingServiceStub
                 $this->logError('TalkBidirectional', $e->getMessage());
                 throw $e;
             }
-        }, ['rpc.method' => 'TalkBidirectional', 'rpc.system' => 'grpc']);
+        });
     }
 }

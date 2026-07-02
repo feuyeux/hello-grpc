@@ -1,8 +1,11 @@
 package org.feuyeux.grpc
 
 import io.grpc.*
+import io.grpc.health.v1.HealthCheckResponse
 import io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.NettyServerBuilder
+import io.grpc.protobuf.services.ProtoReflectionService
+import io.grpc.services.HealthStatusManager
 import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContextBuilder
 import org.apache.logging.log4j.kotlin.logger
@@ -82,11 +85,11 @@ class ProtoServer {
      *
      * @return A string containing the gRPC version
      */
-    fun getVersion(): String = try {
-        val version = Package.getPackage("io.grpc")?.implementationVersion ?: "unknown"
-        "grpc.version=$version"
-    } catch (e: Exception) {
-        "grpc.version=unknown"
+    fun getVersion(): String {
+        val version = Server::class.java.`package`.implementationVersion
+            ?: ManagedChannel::class.java.`package`.implementationVersion
+            ?: "unknown"
+        return "grpc.version=$version"
     }
 
     /**
@@ -124,14 +127,15 @@ class ProtoServer {
      */
     @Throws(SSLException::class)
     private fun createServer(): Server? {
-        // Create service implementation
-        val landingService = LandingService()
-
         // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The init
         // hook returns OpenTelemetry.noop() when the env var is
         // unset, so the server interceptor factory below degrades to
         // a no-op chain in the default case.
         val otel = Otel.initOtel("hello-grpc-kotlin-server")
+
+        // Create service implementation with the same OTel instance so
+        // rpc_calls_total is exported by the configured MeterProvider.
+        val landingService = LandingService(otel)
 
         // Apply server interceptors: header propagation always;
         // OTel appended when enabled.
@@ -146,23 +150,31 @@ class ProtoServer {
             ServerInterceptors.intercept(landingService, HeaderServerInterceptor())
         }
         val interceptedService = serverChain
-        
+
+        // B7 — Health check service
+        val healthStatusManager = HealthStatusManager()
+        healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING)
+
         // Determine if secure mode is enabled
         val secureMode = System.getenv("GRPC_HELLO_SECURE")
         val serverPort = System.getenv("GRPC_SERVER_PORT")?.toIntOrNull() ?: Connection.port
-        
+
         return if (secureMode != "Y") {
             // Create insecure server
             logger.info("Starting insecure gRPC server on port $serverPort [${getVersion()}]")
-            
+
             ServerBuilder.forPort(serverPort)
                 .addService(interceptedService)
+                // B7 — gRPC Health Check
+                .addService(healthStatusManager.healthService)
+                // C4 — gRPC Server Reflection
+                .addService(ProtoReflectionService.newInstance())
                 .addTransportFilter(object : ServerTransportFilter() {
                     override fun transportReady(attributes: Attributes): Attributes {
                         logger.info("Connection established: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
                         return attributes
                     }
-                    
+
                     override fun transportTerminated(attributes: Attributes) {
                         logger.warn("Connection terminated: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
                     }
@@ -171,19 +183,23 @@ class ProtoServer {
         } else {
             // Create secure server with TLS
             logger.info("Starting secure gRPC server with TLS on port $serverPort [${getVersion()}]")
-            
+
             try {
                 // Check if certificate files exist
                 validateCertificateFiles()
-                
+
                 NettyServerBuilder.forPort(serverPort)
                     .addService(interceptedService)
+                    // B7 — gRPC Health Check
+                    .addService(healthStatusManager.healthService)
+                    // C4 — gRPC Server Reflection
+                    .addService(ProtoReflectionService.newInstance())
                     .addTransportFilter(object : ServerTransportFilter() {
                         override fun transportReady(attributes: Attributes): Attributes {
                             logger.info("Connection established: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
                             return attributes
                         }
-                        
+
                         override fun transportTerminated(attributes: Attributes) {
                             logger.warn("Connection terminated: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
                         }
@@ -192,7 +208,7 @@ class ProtoServer {
                     .build()
             } catch (e: Exception) {
                 logger.error("TLS configuration failed: ${e.message}. Falling back to insecure mode.")
-                
+
                 // Fall back to insecure server if TLS setup fails
                 ServerBuilder.forPort(serverPort)
                     .addService(interceptedService)

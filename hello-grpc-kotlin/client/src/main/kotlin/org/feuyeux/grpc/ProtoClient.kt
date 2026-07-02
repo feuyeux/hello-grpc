@@ -172,7 +172,8 @@ private fun buildLinkRequests(): List<TalkRequest> {
  * Get version information
  */
 private fun getVersion(): String {
-    return "grpc.version=1.0.0" // Placeholder
+    val version = ManagedChannel::class.java.`package`.implementationVersion ?: "unknown"
+    return "grpc.version=$version"
 }
 
 /**

@@ -15,9 +15,11 @@ using Hello;
 using log4net;
 using log4net.Config;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 
 [assembly: XmlConfigurator(Watch = true)]
@@ -83,7 +85,18 @@ namespace HelloServer
                 var builder = WebApplication.CreateBuilder();
 
                 // Add gRPC services
-                builder.Services.AddGrpc();
+                // C5 — register LoggingInterceptor for all gRPC services
+                builder.Services.AddGrpc(options =>
+                {
+                    options.Interceptors.Add<LoggingInterceptor>();
+                });
+
+                // B7 — gRPC Health Check
+                builder.Services.AddGrpcHealthChecks()
+                    .AddCheck("", () => HealthCheckResult.Healthy());
+
+                // C4 — gRPC Server Reflection
+                builder.Services.AddGrpcReflection();
 
                 // OpenTelemetry tracing. InitOtel returns null when
                 // GRPC_HELLO_OTEL is unset, so the AddOpenTelemetry()
@@ -92,14 +105,29 @@ namespace HelloServer
                 // against the DI container, where the OpenTelemetry
                 // SDK and its instrumentation are wired.
                 var otelProvider = Common.Otel.InitOtel("hello-grpc-csharp-server");
+                var metricProvider = Common.Otel.InitMetrics("hello-grpc-csharp-server");
                 if (otelProvider is not null)
                 {
                     builder.Services.AddSingleton(otelProvider);
                     builder.Services.AddOpenTelemetry()
                         .WithTracing(tracing => tracing
+                            .AddSource(Common.Otel.ActivitySourceName)
                             .AddSource("Microsoft.AspNetCore")
                             .AddSource("Grpc.Net.Client")
+                            .AddAspNetCoreInstrumentation()
                             .AddConsoleExporter());
+                }
+                if (metricProvider is not null)
+                {
+                    builder.Services.AddSingleton(metricProvider);
+                }
+
+                // OTel metrics — kept alive for the server lifetime so the
+                // rpc_calls_total counter is periodically exported to console.
+                var metricsProvider = Common.Otel.InitMetrics("hello-grpc-csharp-server");
+                if (metricsProvider is not null)
+                {
+                    builder.Services.AddSingleton(metricsProvider);
                 }
 
                 // Register service implementation as singleton
@@ -152,6 +180,10 @@ namespace HelloServer
 
                 // Map gRPC service
                 app.MapGrpcService<LandingServiceImpl>();
+                // B7 — gRPC Health Check endpoint
+                app.MapGrpcHealthChecksService();
+                // C4 — gRPC Server Reflection endpoint
+                app.MapGrpcReflectionService();
 
                 Logger.Info($"ASP.NET Core gRPC server listening on http{(useTls ? "s" : "")}://0.0.0.0:{port}");
 

@@ -372,7 +372,8 @@ struct HelloClient: AsyncParsableCommand {
     
     /// Log error with context
     private func logError(_ error: Error, requestId: String, method: String, logger: Logger) {
-        logger.error("Request failed - request_id: \(requestId), method: \(method), error: \(error)")
+        let mapped = ErrorMapper.mapGrpcError(error)
+        logger.error("Request failed - request_id: \(requestId), method: \(method), error: \(mapped)")
     }
     
     /// Get the certificate base path from environment or default location

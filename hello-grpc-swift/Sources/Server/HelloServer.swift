@@ -99,16 +99,22 @@ struct HelloServer: AsyncParsableCommand {
                 )
             }
 
+            let services: [any RegistrableRPCService] = [
+                service,
+                HealthService(),
+                ReflectionService(),
+            ]
+
             // Create and start the server with optional OTel interceptor.
             let server: GRPCServer<HTTP2ServerTransport.Posix>
             if Otel.enabled {
                 server = GRPCServer(
                     transport: transport,
-                    services: [service],
+                    services: services,
                     interceptors: [HelloServerInterceptor()]
                 )
             } else {
-                server = GRPCServer(transport: transport, services: [service])
+                server = GRPCServer(transport: transport, services: services)
             }
 
             // Handle signals for graceful shutdown

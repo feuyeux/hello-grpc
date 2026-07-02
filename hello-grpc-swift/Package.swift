@@ -9,6 +9,10 @@ let packageDependencies: [Package.Dependency] = [
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
     .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
     .package(url: "https://github.com/open-telemetry/opentelemetry-swift-core.git", from: "2.0.0"),
+    // Pinned to >= 2.37.1: that release adds _WINSOCKAPI_/NOMINMAX/NOCRYPT
+    // defines for CNIOBoringSSL on Windows, fixing winsock2.h/winsock.h
+    // redefinition errors that block `swift build` on Windows.
+    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.37.1"),
 ]
 
 extension Target {

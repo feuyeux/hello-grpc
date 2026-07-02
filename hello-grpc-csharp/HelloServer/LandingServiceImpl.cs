@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
 using Common;
 using Grpc.Core;
@@ -18,6 +19,7 @@ namespace HelloServer
     {
         private readonly ILog _log = LogManager.GetLogger(typeof(LandingServiceImpl));
         private LandingService.LandingServiceClient? _protoClient;
+        private readonly Counter<long> _rpcCallsCounter = Hello.Common.Otel.RpcCallsCounter();
 
         /// <summary>
         /// Sets the backend client for proxy mode operation.
@@ -37,6 +39,7 @@ namespace HelloServer
         public override Task<TalkResponse> Talk(TalkRequest request, ServerCallContext context)
         {
             _log.Info($"Talk REQUEST: data={request.Data}, meta={request.Meta}");
+            _rpcCallsCounter.Add(1);
             
             if (_protoClient == null)
             {
@@ -68,6 +71,7 @@ namespace HelloServer
             IServerStreamWriter<TalkResponse> responseStream, ServerCallContext context)
         {
             _log.Info($"TalkOneAnswerMore REQUEST: data={request.Data}, meta={request.Meta}");
+            _rpcCallsCounter.Add(1);
 
             var headers = LogHeaders(context);
 
@@ -108,6 +112,7 @@ namespace HelloServer
         public override async Task<TalkResponse> TalkMoreAnswerOne(IAsyncStreamReader<TalkRequest> requestStream,
             ServerCallContext context)
         {
+            _rpcCallsCounter.Add(1);
             if (_protoClient == null)
             {
                 // Direct mode: aggregate requests locally
@@ -162,6 +167,7 @@ namespace HelloServer
             IServerStreamWriter<TalkResponse> responseStream,
             ServerCallContext context)
         {
+            _rpcCallsCounter.Add(1);
             if (_protoClient == null)
             {
                 // Direct mode: process requests and send responses

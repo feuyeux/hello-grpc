@@ -4,12 +4,15 @@ import static org.feuyeux.grpc.common.HelloUtils.getAnswerMap;
 import static org.feuyeux.grpc.common.HelloUtils.getHelloList;
 
 import io.grpc.stub.StreamObserver;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.metrics.LongCounter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.feuyeux.grpc.common.OtelSupport;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.feuyeux.grpc.proto.ResultType;
 import org.feuyeux.grpc.proto.TalkRequest;
@@ -35,6 +38,15 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   private static final Logger logger = LoggerFactory.getLogger(LandingServiceImpl.class);
   private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
   private LandingServiceGrpc.LandingServiceStub asyncStub;
+  private final LongCounter rpcCallsCounter;
+
+  public LandingServiceImpl() {
+    this(OpenTelemetry.noop());
+  }
+
+  public LandingServiceImpl(OpenTelemetry openTelemetry) {
+    this.rpcCallsCounter = OtelSupport.rpcCallsCounter(openTelemetry);
+  }
 
   /**
    * Sets the blocking stub for connecting to a backend gRPC service. Used for proxying requests to
@@ -68,6 +80,7 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   @Override
   public void talk(TalkRequest request, StreamObserver<TalkResponse> responseObserver) {
     logger.info("Unary call - data: {}, meta: {}", request.getData(), request.getMeta());
+    rpcCallsCounter.add(1);
 
     TalkResponse response;
     if (blockingStub == null) {
@@ -99,6 +112,7 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   public void talkOneAnswerMore(
       TalkRequest request, StreamObserver<TalkResponse> responseObserver) {
     logger.info("Server streaming call - data: {}, meta: {}", request.getData(), request.getMeta());
+    rpcCallsCounter.add(1);
 
     if (blockingStub == null) {
       // Process request locally
@@ -129,6 +143,7 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   @Override
   public StreamObserver<TalkRequest> talkMoreAnswerOne(
       StreamObserver<TalkResponse> responseObserver) {
+    rpcCallsCounter.add(1);
     if (asyncStub == null) {
       // Process requests locally
       return new StreamObserver<>() {
@@ -229,6 +244,7 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
   @Override
   public StreamObserver<TalkRequest> talkBidirectional(
       StreamObserver<TalkResponse> responseObserver) {
+    rpcCallsCounter.add(1);
     if (asyncStub == null) {
       // Process requests locally
       return new StreamObserver<>() {

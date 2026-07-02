@@ -24,6 +24,7 @@
 
 #include "common/connection.h"
 #include "common/error_mapper.h"
+#include "common/otel.h"
 #include "common/utils.h"
 #include "protos/landing.grpc.pb.h"
 
@@ -313,12 +314,26 @@ public:
 
 private:
   /**
-   * @brief Adds standard metadata to the context
+   * @brief Adds standard metadata to the context.
+   *
+   * When GRPC_HELLO_OTEL=Y, injects B3 trace-id and span-id headers so the
+   * server-side propagateHeaders() can forward them to any backend and the
+   * chain stays visible in distributed tracing tools.
    * @param context The client context to add metadata to
    */
   static void add_metadata(ClientContext &context) {
     context.AddMetadata("k1", "v1");
     context.AddMetadata("k2", "v2");
+
+    // B3 span creation (B3): inject trace-id / span-id when OTel is enabled.
+    const char *otel_flag = std::getenv("GRPC_HELLO_OTEL");
+    if (otel_flag && std::string(otel_flag) == "Y") {
+      // Use Utils::uuid() for a random trace/span id (hex-formatted by uuid()).
+      context.AddMetadata("x-b3-traceid", Utils::uuid());
+      context.AddMetadata("x-b3-spanid", Utils::uuid());
+      context.AddMetadata("x-b3-sampled", "1");
+      LOG(INFO) << "[otel] injected B3 headers (x-b3-traceid, x-b3-spanid)";
+    }
   }
 
   /**

@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:opentelemetry/api.dart' as api;
 import 'package:opentelemetry/sdk.dart' as sdk;
+import 'package:opentelemetry/src/experimental_api.dart' as xapi;
+import 'package:opentelemetry/src/experimental_sdk.dart' as xsdk;
 
 /// hello-grpc-dart OpenTelemetry wiring.
 ///
@@ -13,6 +15,7 @@ import 'package:opentelemetry/sdk.dart' as sdk;
 
 bool _enabled = false;
 bool _initialized = false;
+bool _metricsInitialized = false;
 
 bool otelEnabled() {
   if (_enabled) return true;
@@ -40,6 +43,54 @@ Future<void> initOtel(String serviceName) async {
 
   // Print to stdout so the user can see wiring took effect.
   print('[otel] hello-grpc-dart tracing enabled for $serviceName');
+}
+
+// ---------------------------------------------------------------------------
+// Metrics (B2)
+// ---------------------------------------------------------------------------
+
+/// The global RPC calls counter. `null` when OTel is disabled or
+/// [initMetrics] has not yet been called.
+xapi.Counter<int>? rpcCallsTotal;
+
+/// One-time MeterProvider + counter setup. Idempotent. No-op when OTel is
+/// disabled.
+///
+/// Call after [initOtel] during server start-up. Once initialised,
+/// [rpcCallsTotal] is non-null and each handler can call
+/// `rpcCallsTotal?.add(1)` to increment it.
+void initMetrics(String serviceName) {
+  if (!otelEnabled() || _metricsInitialized) {
+    return;
+  }
+  _metricsInitialized = true;
+
+  final meterProvider = xsdk.MeterProvider(
+    resource: sdk.Resource([
+      api.Attribute.fromString('service.name', serviceName),
+    ]),
+  );
+
+  final meter = meterProvider.get('hello-grpc-dart');
+  rpcCallsTotal = meter.createCounter<int>(
+    'rpc_calls_total',
+    description: 'Total number of RPC calls received',
+    unit: '1',
+  );
+
+  print('[otel] hello-grpc-dart metrics enabled for $serviceName');
+}
+
+/// Increment the OTel-gated rpc_calls_total counter.
+void recordRpcCall(String methodName) {
+  rpcCallsTotal?.add(
+    1,
+    attributes: [
+      api.Attribute.fromString('rpc.system', 'grpc'),
+      api.Attribute.fromString('rpc.service', 'LandingService'),
+      api.Attribute.fromString('rpc.method', methodName),
+    ],
+  );
 }
 
 /// Returns the global [api.Tracer], or `null` if OTel is disabled.
@@ -85,13 +136,16 @@ class OtelClientInterceptor implements grpc.ClientInterceptor {
     if (span == null) return invoker(method, request, options);
 
     final response = invoker(method, request, options);
-    response.then((_) {
-      span.end();
-    }, onError: (Object error) {
-      span
-        ..setStatus(api.StatusCode.error, error.toString())
-        ..end();
-    });
+    response.then(
+      (_) {
+        span.end();
+      },
+      onError: (Object error) {
+        span
+          ..setStatus(api.StatusCode.error, error.toString())
+          ..end();
+      },
+    );
     return response;
   }
 
@@ -112,13 +166,16 @@ class OtelClientInterceptor implements grpc.ClientInterceptor {
     // when the single-response future resolves (which is derived from the same
     // underlying stream). For true full-stream tracing, the server side is the
     // more reliable span boundary because it can observe stream completion.
-    response.single.then((_) {
-      span.end();
-    }, onError: (Object error) {
-      span
-        ..setStatus(api.StatusCode.error, error.toString())
-        ..end();
-    });
+    response.single.then(
+      (_) {
+        span.end();
+      },
+      onError: (Object error) {
+        span
+          ..setStatus(api.StatusCode.error, error.toString())
+          ..end();
+      },
+    );
 
     return response;
   }
@@ -141,9 +198,9 @@ class OtelServerInterceptor implements grpc.ServerInterceptor {
     final span = _startSpan(method.name, api.SpanKind.server);
     if (span == null) return invoker(call, method, requests);
 
-    final response = api.contextWithSpan(api.Context.current, span).execute(
-      () => invoker(call, method, requests),
-    );
+    final response = api
+        .contextWithSpan(api.Context.current, span)
+        .execute(() => invoker(call, method, requests));
     return _SpanFinishingTransformer<R>(span).bind(response);
   }
 }

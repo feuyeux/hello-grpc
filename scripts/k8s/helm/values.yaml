@@ -1,0 +1,54 @@
+namespace: grpc-best
+port: 9996
+replicas: 1
+serviceAccountName: grpc-best-sa
+
+servers:
+  java:
+    enabled: true
+    image: feuyeux/grpc_server_java:1.0.0
+    version: v1
+  go:
+    enabled: true
+    image: feuyeux/grpc_server_go:1.0.0
+    version: v2
+  node:
+    enabled: true
+    image: feuyeux/grpc_server_node:1.0.0
+    version: v3
+  python:
+    enabled: true
+    image: feuyeux/grpc_server_python:1.0.0
+    version: v4
+  rust:
+    enabled: true
+    image: feuyeux/grpc_server_rust:1.0.0
+    version: v5
+  ts:
+    enabled: true
+    image: feuyeux/grpc_server_ts:1.0.0
+    version: v6
+  csharp:
+    enabled: true
+    image: feuyeux/grpc_server_csharp:1.0.0
+    version: v7
+  kotlin:
+    enabled: true
+    image: feuyeux/grpc_server_kotlin:1.0.0
+    version: v8
+  swift:
+    enabled: true
+    image: feuyeux/grpc_server_swift:1.0.0
+    version: v9
+  dart:
+    enabled: true
+    image: feuyeux/grpc_server_dart:1.0.0
+    version: v10
+  php:
+    enabled: true
+    image: feuyeux/grpc_server_php:1.0.0
+    version: v11
+  cpp:
+    enabled: true
+    image: feuyeux/grpc_server_cpp:1.0.0
+    version: v12

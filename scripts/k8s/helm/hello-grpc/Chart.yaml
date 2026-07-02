@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hello-grpc
+description: A Helm chart for the hello-grpc multi-language gRPC demo
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

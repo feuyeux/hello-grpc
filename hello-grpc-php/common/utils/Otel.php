@@ -40,9 +40,46 @@ final class Otel
     /** Cached tracer. */
     private static ?TracerInterface $tracer = null;
 
+    /** OTel-gated in-process RPC call counter. */
+    private static int $rpcCallsTotal = 0;
+
     public static function enabled(): bool
     {
         return getenv(self::ENV_ENABLED) === 'Y';
+    }
+
+    /**
+     * Initialize the PHP OpenTelemetry tracer provider.
+     *
+     * The PHP gRPC extension has no server interceptor hook, so handler
+     * methods create spans through wrapper(). This method exists so the
+     * server/client startup path can eagerly validate and cache the SDK.
+     */
+    public static function initOtel(string $serviceName): ?TracerProvider
+    {
+        if (!self::enabled()) {
+            return null;
+        }
+
+        self::tracer();
+        return self::$tracerProvider;
+    }
+
+    /**
+     * Increment the OTel-gated rpc_calls_total counter.
+     */
+    public static function recordRpcCall(string $method): void
+    {
+        if (!self::enabled()) {
+            return;
+        }
+
+        self::$rpcCallsTotal++;
+        error_log(sprintf(
+            '[otel-metric] rpc_calls_total=%d rpc.system=grpc rpc.service=LandingService rpc.method=%s',
+            self::$rpcCallsTotal,
+            $method
+        ));
     }
 
     /**
@@ -104,6 +141,7 @@ final class Otel
             return $callback();
         }
 
+        self::recordRpcCall($name);
         $tracer = self::tracer();
         $builder = $tracer->spanBuilder($name);
         foreach ($attrs as $key => $value) {

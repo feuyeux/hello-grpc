@@ -64,8 +64,61 @@ public enum Otel {
     }
 }
 
+// MARK: - Simple RPC metrics counters
+
+/// Thread-safe counters for basic RPC observability.
+///
+/// Mirrors the ServerMetrics struct in the Rust implementation:
+/// - `rpc_calls_total`  increments on every inbound RPC
+/// - `rpc_errors_total` increments whenever an RPC returns an error
+///
+/// Usage:
+/// ```swift
+/// OtelMetrics.shared.recordCall()
+/// OtelMetrics.shared.recordError()
+/// OtelMetrics.shared.printSummary()
+/// ```
+public final class OtelMetrics: @unchecked Sendable {
+    public static let shared = OtelMetrics()
+
+    private let lock = NSLock()
+    private var _calls: Int = 0
+    private var _errors: Int = 0
+
+    private init() {}
+
+    /// Increment the total RPC call counter.
+    public func recordCall() {
+        lock.lock()
+        defer { lock.unlock() }
+        _calls += 1
+    }
+
+    /// Increment the total RPC error counter.
+    public func recordError() {
+        lock.lock()
+        defer { lock.unlock() }
+        _errors += 1
+    }
+
+    /// Current snapshot of the counters.
+    public var snapshot: (calls: Int, errors: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        return (_calls, _errors)
+    }
+
+    /// Emit a one-line summary to standard output.
+    public func printSummary() {
+        let s = snapshot
+        print("[OtelMetrics] rpc_calls_total=\(s.calls) rpc_errors_total=\(s.errors)")
+    }
+}
+
+// MARK: - Server interceptor
+
 /// gRPC Swift 2.x server interceptor that emits an inbound [SpanKind.server] span
-/// around each RPC.
+/// around each RPC and records metrics.
 public struct HelloServerInterceptor: ServerInterceptor, Sendable {
     public init() {}
 
@@ -77,9 +130,16 @@ public struct HelloServerInterceptor: ServerInterceptor, Sendable {
             _ context: ServerContext
         ) async throws -> StreamingServerResponse<Output>
     ) async throws -> StreamingServerResponse<Output> {
+        OtelMetrics.shared.recordCall()
+
         guard let span = Otel.startSpan(context.descriptor.fullName, kind: .server)
         else {
-            return try await next(request, context)
+            do {
+                return try await next(request, context)
+            } catch {
+                OtelMetrics.shared.recordError()
+                throw error
+            }
         }
 
         defer { span.end() }
@@ -87,11 +147,14 @@ public struct HelloServerInterceptor: ServerInterceptor, Sendable {
         do {
             return try await next(request, context)
         } catch {
+            OtelMetrics.shared.recordError()
             span.setStatus(.error, description: String(describing: error))
             throw error
         }
     }
 }
+
+// MARK: - Client interceptor
 
 /// gRPC Swift 2.x client interceptor that emits an outbound [SpanKind.client] span
 /// around each RPC.

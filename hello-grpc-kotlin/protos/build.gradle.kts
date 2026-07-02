@@ -1,8 +1,10 @@
+import org.gradle.api.plugins.JavaPluginExtension
+
 plugins {
-    `java-library`
+    id("java-library")
 }
 
-java {
+extensions.configure<JavaPluginExtension>("java") {
     // Point to the central proto directory instead of local one
     sourceSets.getByName("main").resources.srcDir("../../proto")
 }

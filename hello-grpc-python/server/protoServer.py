@@ -29,6 +29,8 @@ import signal
 from concurrent import futures
 from pathlib import Path
 import grpc
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
+from grpc_reflection.v1alpha import reflection
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,6 +56,7 @@ logger.addHandler(console)
 
 # Global flag for graceful shutdown
 shutdown_requested = False
+rpc_calls_counter = None
 
 # Define tracing headers to propagate
 TRACING_HEADERS = [
@@ -176,6 +179,17 @@ def log_request_headers(method_name, context):
         logger.info("%s - Header: %s:%s", method_name, item.key, item.value)
 
 
+def record_rpc_call(method_name):
+    """Increment the OTel-gated rpc_calls_total counter when enabled."""
+    if rpc_calls_counter is None:
+        return
+    rpc_calls_counter.add(1, {
+        "rpc.system": "grpc",
+        "rpc.service": "LandingService",
+        "rpc.method": method_name,
+    })
+
+
 class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
     """
     Implementation of the LandingService gRPC service.
@@ -208,6 +222,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Returns:
             landing_pb2.TalkResponse: Response to send back to the client
         """
+        record_rpc_call("Talk")
         request_id = f"unary-{time.time_ns()}"
         logger.info("Unary call - data: %s, meta: %s", request.data, request.meta)
         
@@ -239,6 +254,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Yields:
             landing_pb2.TalkResponse: Multiple responses to send back to the client
         """
+        record_rpc_call("TalkOneAnswerMore")
         request_id = f"server-stream-{time.time_ns()}"
         logger.info("Server streaming call - data: %s, meta: %s", request.data, request.meta)
         
@@ -275,6 +291,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Returns:
             landing_pb2.TalkResponse: A single response for all requests
         """
+        record_rpc_call("TalkMoreAnswerOne")
         request_id = f"client-stream-{time.time_ns()}"
         
         if self.backend_service:
@@ -311,6 +328,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Yields:
             landing_pb2.TalkResponse: Multiple responses, one for each request
         """
+        record_rpc_call("TalkBidirectional")
         request_id = f"bidirectional-{time.time_ns()}"
         
         if self.backend_service:
@@ -354,7 +372,15 @@ def serve():
     # Initialize OpenTelemetry before constructing the server so
     # the server-side interceptor factory (below) sees a configured
     # global TracerProvider. No-op when the env var is off.
+    global rpc_calls_counter
     otel.init_otel("hello-grpc-python-server")
+    meter = otel.init_metrics("hello-grpc-python-server")
+    if meter is not None:
+        rpc_calls_counter = meter.create_counter(
+            "rpc_calls_total",
+            unit="{call}",
+            description="Total number of gRPC calls handled",
+        )
 
     # Setup signal handling for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
@@ -387,7 +413,19 @@ def serve():
         interceptors=tuple(chain),
     )
     landing_pb2_grpc.add_LandingServiceServicer_to_server(server_impl, server)
-    
+
+    # B7 — gRPC Health Check
+    health_servicer = health.HealthServicer()
+    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
+    health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
+
+    # C4 — gRPC Server Reflection
+    SERVICE_NAMES = (
+        landing_pb2.DESCRIPTOR.services_by_name['LandingService'].full_name,
+        reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
+
     # Configure server port and optional TLS
     port = os.getenv("GRPC_SERVER_PORT", DEFAULT_PORT)
     address = f"[::]:{port}"

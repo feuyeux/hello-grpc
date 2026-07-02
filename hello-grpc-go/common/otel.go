@@ -6,8 +6,12 @@ import (
 	"os"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
@@ -19,6 +23,8 @@ import (
 // envOtelEnabled is the env-var gate matching the existing repo
 // convention (GRPC_HELLO_SECURE, GRPC_HELLO_ETCD_ENDPOINTS, etc.).
 const envOtelEnabled = "GRPC_HELLO_OTEL"
+
+var rpcCallsTotal metric.Int64Counter
 
 // OtelEnabled reports whether GRPC_HELLO_OTEL is set to "Y". Used by
 // callers that want to initialize the global TracerProvider only when
@@ -46,6 +52,10 @@ func InitOtel(ctx context.Context, serviceName string) (shutdown func(context.Co
 	if err != nil {
 		return nil, fmt.Errorf("stdouttrace.New: %w", err)
 	}
+	metricExporter, err := stdoutmetric.New(stdoutmetric.WithPrettyPrint())
+	if err != nil {
+		return nil, fmt.Errorf("stdoutmetric.New: %w", err)
+	}
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
@@ -60,12 +70,44 @@ func InitOtel(ctx context.Context, serviceName string) (shutdown func(context.Co
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 	)
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
+		sdkmetric.WithResource(res),
+	)
 	otel.SetTracerProvider(tp)
+	otel.SetMeterProvider(mp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
-	return tp.Shutdown, nil
+	rpcCallsTotal, err = otel.Meter("hello-grpc-go").Int64Counter(
+		"rpc_calls_total",
+		metric.WithDescription("Total number of gRPC calls handled"),
+		metric.WithUnit("{call}"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Int64Counter rpc_calls_total: %w", err)
+	}
+	return func(ctx context.Context) error {
+		if err := mp.Shutdown(ctx); err != nil {
+			return err
+		}
+		return tp.Shutdown(ctx)
+	}, nil
+}
+
+// RecordRpcCall increments the OTel-gated rpc_calls_total counter.
+func RecordRpcCall(ctx context.Context, method string) {
+	if !OtelEnabled() || rpcCallsTotal == nil {
+		return
+	}
+	rpcCallsTotal.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("rpc.system", "grpc"),
+			attribute.String("rpc.service", "LandingService"),
+			attribute.String("rpc.method", method),
+		),
+	)
 }
 
 // OtelInterceptors returns the otelgrpc server- and client-side stats
