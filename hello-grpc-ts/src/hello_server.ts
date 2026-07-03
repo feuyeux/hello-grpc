@@ -187,6 +187,13 @@ class HelloServer implements ILandingServiceServer {
 
     private backendClient: any = null;
 
+    // grpc-js matches registered handlers by generated proto method names.
+    // Keep explicit PascalCase aliases so the service definition paths bind.
+    Talk = this.talk.bind(this)
+    TalkOneAnswerMore = this.talkOneAnswerMore.bind(this)
+    TalkMoreAnswerOne = this.talkMoreAnswerOne.bind(this)
+    TalkBidirectional = this.talkBidirectional.bind(this)
+
     constructor() {
         // Check if we should operate in proxy mode
         if (this.hasBackend()) {

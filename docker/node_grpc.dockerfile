@@ -6,7 +6,7 @@ RUN apk add --update \
   g++ \
   git \
   && rm -rf /var/cache/apk/*
-RUN npm config set registry https://registry.npmmirror.com && npm install -g node-pre-gyp grpc-tools --unsafe-perm
+RUN npm config set registry https://registry.npmmirror.com
 WORKDIR /app/hello-grpc
 COPY hello-grpc-nodejs /app/hello-grpc/hello-grpc-nodejs
 COPY proto /app/hello-grpc/proto

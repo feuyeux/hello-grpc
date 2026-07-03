@@ -55,7 +55,11 @@ for lang in "${LANGS[@]}"; do
   fi
 
   cli_exit=0
-  timeout 60 docker run --rm --name "$CLI_CTR" -e GRPC_SERVER=host.docker.internal "$CLIENT_IMG" > "$CLI_LOG" 2>&1 || cli_exit=$?
+  if [[ "$lang" == "swift" ]]; then
+    timeout 60 docker run --rm --name "$CLI_CTR" --network="host" -e GRPC_SERVER=127.0.0.1 "$CLIENT_IMG" > "$CLI_LOG" 2>&1 || cli_exit=$?
+  else
+    timeout 60 docker run --rm --name "$CLI_CTR" -e GRPC_SERVER=host.docker.internal "$CLIENT_IMG" > "$CLI_LOG" 2>&1 || cli_exit=$?
+  fi
 
   docker logs "$SVR_CTR" > "$SVR_LOG" 2>&1 || true
   docker rm -f "$SVR_CTR" 2>/dev/null || true
