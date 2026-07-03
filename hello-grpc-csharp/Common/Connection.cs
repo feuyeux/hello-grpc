@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Security;
@@ -126,95 +125,6 @@ namespace Common
         {
             var server = Environment.GetEnvironmentVariable("GRPC_SERVER_PORT");
             return server ?? "9996";
-        }
-
-        /// <summary>
-        /// Loads an X509Certificate2 with its private key from PEM-formatted bytes.
-        /// Handles platform-specific certificate loading requirements.
-        /// </summary>
-        /// <param name="certBytes">The certificate bytes</param>
-        /// <param name="privateKeyBytes">The private key bytes in PKCS8 format</param>
-        /// <returns>An X509Certificate2 with private key loaded</returns>
-        private static X509Certificate2 LoadCertificateWithPrivateKey(byte[] certBytes, byte[] privateKeyBytes)
-        {
-            try
-            {
-                // Parse PEM-encoded private key to get DER bytes
-                string pemKey = System.Text.Encoding.UTF8.GetString(privateKeyBytes);
-                byte[] keyDer = ParsePemPrivateKey(pemKey);
-                
-                // Use platform-specific approaches depending on the runtime
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    // Windows-specific certificate handling
-                    string tempCertPath = Path.GetTempFileName();
-                    try
-                    {
-                        File.WriteAllBytes(tempCertPath, certBytes);
-                        var cert = X509Certificate2.CreateFromPemFile(tempCertPath);
-                        var rsa = System.Security.Cryptography.RSA.Create();
-                        rsa.ImportPkcs8PrivateKey(keyDer, out _);
-                        return cert.CopyWithPrivateKey(rsa);
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempCertPath))
-                            File.Delete(tempCertPath);
-                    }
-                }
-                else
-                {
-                    // Linux/macOS certificate handling
-                    string tempCertPath = Path.GetTempFileName();
-                    try
-                    {
-                        File.WriteAllBytes(tempCertPath, certBytes);
-                        var cert = X509Certificate2.CreateFromPemFile(tempCertPath);
-                        
-                        // Import the private key
-                        var privateKey = System.Security.Cryptography.RSA.Create();
-                        privateKey.ImportPkcs8PrivateKey(keyDer, out _);
-                        
-                        // Create certificate with the private key
-                        var certWithKey = cert.CopyWithPrivateKey(privateKey);
-                        
-                        // Return the certificate with appropriate flags for Linux/macOS
-                        return new X509Certificate2(certWithKey.Export(X509ContentType.Pfx), 
-                            string.Empty, 
-                            X509KeyStorageFlags.Exportable);
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempCertPath))
-                            File.Delete(tempCertPath);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Error loading certificate with private key: {ex.Message}");
-                throw;
-            }
-        }
-        
-        /// <summary>
-        /// Parses a PEM-encoded private key and returns the DER bytes
-        /// </summary>
-        /// <param name="pemKey">PEM-encoded private key string</param>
-        /// <returns>DER-encoded private key bytes</returns>
-        private static byte[] ParsePemPrivateKey(string pemKey)
-        {
-            // Remove PEM headers and footers
-            string base64 = pemKey
-                .Replace("-----BEGIN PRIVATE KEY-----", "")
-                .Replace("-----END PRIVATE KEY-----", "")
-                .Replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                .Replace("-----END RSA PRIVATE KEY-----", "")
-                .Replace("\r", "")
-                .Replace("\n", "")
-                .Trim();
-            
-            return Convert.FromBase64String(base64);
         }
     }
 }

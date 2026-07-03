@@ -264,7 +264,7 @@ hello-grpc-php/
 │   ├── msg/                # Generated message classes from protobuf
 │   ├── svc/                # Generated service stubs from protobuf
 │   └── utils/              # Utility classes
-│       ├── StringUtils.php # String manipulation utilities
+│       ├── Otel.php        # OpenTelemetry helpers
 │       └── VersionUtils.php # gRPC version utilities
 ├── conn/                   # Connection configuration
 │   └── Connection.php      # Connection settings and management

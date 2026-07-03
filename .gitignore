@@ -1,6 +1,9 @@
 # System files
 .DS_Store
 
+# Local planning/scratch tooling
+.hermes/
+
 # IDE and editor files
 .idea
 .vscode

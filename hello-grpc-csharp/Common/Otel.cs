@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -71,21 +70,5 @@ public static class Otel
         activity?.SetTag("rpc.service", "LandingService");
         activity?.SetTag("rpc.method", methodName);
         return activity;
-    }
-
-    /// <summary>
-    /// Returns the gRPC client OTel instrumentation extension
-    /// method as a delegate-friendly Action. The hello-grpc client
-    /// call site is plain `GrpcChannel.ForAddress(...)` (not the
-    /// ASP.NET Core gRPC client factory), so instrumenting it would
-    /// require switching to `AddGrpcClient`; for now this PR hooks
-    /// the server side only, where the call site already uses
-    /// `AddGrpc` on the ASP.NET Core DI container.
-    /// </summary>
-    public static TracerProvider? AddToAspNetCore(this TracerProvider? provider, IServiceCollection services)
-    {
-        if (provider is null) return null;
-        services.AddSingleton(provider);
-        return provider;
     }
 }

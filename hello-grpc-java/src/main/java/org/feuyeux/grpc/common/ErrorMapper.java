@@ -2,55 +2,16 @@ package org.feuyeux.grpc.common;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Error mapper for translating gRPC status codes to human-readable messages and implementing retry
- * logic with exponential backoff.
+ * Error mapper for translating gRPC status codes to human-readable messages and determining whether
+ * an error is retryable.
  */
 @Slf4j
 public class ErrorMapper {
-
-  /** Configuration for retry logic */
-  public static class RetryConfig {
-    private final int maxRetries;
-    private final Duration initialDelay;
-    private final Duration maxDelay;
-    private final double multiplier;
-
-    public RetryConfig(
-        int maxRetries, Duration initialDelay, Duration maxDelay, double multiplier) {
-      this.maxRetries = maxRetries;
-      this.initialDelay = initialDelay;
-      this.maxDelay = maxDelay;
-      this.multiplier = multiplier;
-    }
-
-    public static RetryConfig defaultConfig() {
-      return new RetryConfig(3, Duration.ofSeconds(2), Duration.ofSeconds(30), 2.0);
-    }
-
-    public int getMaxRetries() {
-      return maxRetries;
-    }
-
-    public Duration getInitialDelay() {
-      return initialDelay;
-    }
-
-    public Duration getMaxDelay() {
-      return maxDelay;
-    }
-
-    public double getMultiplier() {
-      return multiplier;
-    }
-  }
 
   /**
    * Maps gRPC status codes to human-readable error messages
@@ -181,88 +142,5 @@ public class ErrorMapper {
     } else {
       log.error("Non-retryable error occurred: {}", logContext);
     }
-  }
-
-  /**
-   * Executes a function with exponential backoff retry logic
-   *
-   * @param operation The operation name for logging
-   * @param supplier The function to execute
-   * @param config The retry configuration
-   * @param <T> The return type
-   * @return The result of the function
-   * @throws Exception if all retries are exhausted
-   */
-  public static <T> T retryWithBackoff(String operation, Supplier<T> supplier, RetryConfig config)
-      throws Exception {
-    Exception lastException = null;
-    long delayMillis = config.getInitialDelay().toMillis();
-
-    for (int attempt = 0; attempt <= config.getMaxRetries(); attempt++) {
-      if (attempt > 0) {
-        log.info(
-            "Retry attempt {}/{} for {} after {}ms",
-            attempt,
-            config.getMaxRetries(),
-            operation,
-            delayMillis);
-
-        try {
-          TimeUnit.MILLISECONDS.sleep(delayMillis);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new Exception("Operation cancelled: " + e.getMessage(), e);
-        }
-      }
-
-      try {
-        T result = supplier.get();
-        if (attempt > 0) {
-          log.info("Operation {} succeeded after {} attempts", operation, attempt + 1);
-        }
-        return result;
-      } catch (Exception e) {
-        lastException = e;
-
-        if (!isRetryableError(e)) {
-          log.warn("Non-retryable error for {}: {}", operation, mapGrpcError(e));
-          throw e;
-        }
-
-        if (attempt < config.getMaxRetries()) {
-          // Calculate next delay with exponential backoff
-          delayMillis = (long) (delayMillis * config.getMultiplier());
-          if (delayMillis > config.getMaxDelay().toMillis()) {
-            delayMillis = config.getMaxDelay().toMillis();
-          }
-        }
-      }
-    }
-
-    log.error(
-        "Operation {} failed after {} attempts: {}",
-        operation,
-        config.getMaxRetries() + 1,
-        mapGrpcError(lastException));
-    throw new Exception("Max retries exceeded for " + operation, lastException);
-  }
-
-  /**
-   * Executes a runnable with exponential backoff retry logic
-   *
-   * @param operation The operation name for logging
-   * @param runnable The function to execute
-   * @param config The retry configuration
-   * @throws Exception if all retries are exhausted
-   */
-  public static void retryWithBackoff(String operation, Runnable runnable, RetryConfig config)
-      throws Exception {
-    retryWithBackoff(
-        operation,
-        () -> {
-          runnable.run();
-          return null;
-        },
-        config);
   }
 }

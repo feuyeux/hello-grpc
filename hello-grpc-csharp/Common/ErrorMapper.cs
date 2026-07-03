@@ -1,40 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Grpc.Core;
 using log4net;
 
 namespace Common
 {
     /// <summary>
-    /// Configuration for retry logic
-    /// </summary>
-    public class RetryConfig
-    {
-        public int MaxRetries { get; set; }
-        public TimeSpan InitialDelay { get; set; }
-        public TimeSpan MaxDelay { get; set; }
-        public double Multiplier { get; set; }
-
-        /// <summary>
-        /// Creates default retry configuration
-        /// </summary>
-        public static RetryConfig Default()
-        {
-            return new RetryConfig
-            {
-                MaxRetries = 3,
-                InitialDelay = TimeSpan.FromSeconds(2),
-                MaxDelay = TimeSpan.FromSeconds(30),
-                Multiplier = 2.0
-            };
-        }
-    }
-
-    /// <summary>
     /// Error mapper for translating gRPC status codes to human-readable messages
-    /// and implementing retry logic with exponential backoff.
+    /// and determining whether an error is retryable.
     /// </summary>
     public static class ErrorMapper
     {
@@ -171,153 +144,6 @@ namespace Common
             {
                 Log.Error($"Non-retryable error occurred: {contextStr}");
             }
-        }
-
-        /// <summary>
-        /// Executes a function with exponential backoff retry logic
-        /// </summary>
-        /// <typeparam name="T">The return type</typeparam>
-        /// <param name="operation">The operation name for logging</param>
-        /// <param name="func">The function to execute</param>
-        /// <param name="config">The retry configuration</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>The result of the function</returns>
-        public static async Task<T> RetryWithBackoffAsync<T>(
-            string operation, 
-            Func<Task<T>> func, 
-            RetryConfig config = null,
-            CancellationToken cancellationToken = default)
-        {
-            config ??= RetryConfig.Default();
-            Exception lastException = null;
-            TimeSpan delay = config.InitialDelay;
-
-            for (int attempt = 0; attempt <= config.MaxRetries; attempt++)
-            {
-                if (attempt > 0)
-                {
-                    Log.Info($"Retry attempt {attempt}/{config.MaxRetries} for {operation} after {delay.TotalMilliseconds}ms");
-                    
-                    try
-                    {
-                        await Task.Delay(delay, cancellationToken);
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        throw new OperationCanceledException("Operation cancelled");
-                    }
-                }
-
-                try
-                {
-                    T result = await func();
-                    if (attempt > 0)
-                    {
-                        Log.Info($"Operation {operation} succeeded after {attempt + 1} attempts");
-                    }
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-
-                    if (!IsRetryableError(ex))
-                    {
-                        Log.Warn($"Non-retryable error for {operation}: {MapGrpcError(ex)}");
-                        throw;
-                    }
-
-                    if (attempt < config.MaxRetries)
-                    {
-                        // Calculate next delay with exponential backoff
-                        delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * config.Multiplier);
-                        if (delay > config.MaxDelay)
-                        {
-                            delay = config.MaxDelay;
-                        }
-                    }
-                }
-            }
-
-            Log.Error($"Operation {operation} failed after {config.MaxRetries + 1} attempts: {MapGrpcError(lastException)}");
-            throw new Exception($"Max retries exceeded for {operation}", lastException);
-        }
-
-        /// <summary>
-        /// Executes an action with exponential backoff retry logic
-        /// </summary>
-        /// <param name="operation">The operation name for logging</param>
-        /// <param name="action">The action to execute</param>
-        /// <param name="config">The retry configuration</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        public static async Task RetryWithBackoffAsync(
-            string operation, 
-            Func<Task> action, 
-            RetryConfig config = null,
-            CancellationToken cancellationToken = default)
-        {
-            await RetryWithBackoffAsync<object>(operation, async () =>
-            {
-                await action();
-                return null;
-            }, config, cancellationToken);
-        }
-
-        /// <summary>
-        /// Executes a synchronous function with exponential backoff retry logic
-        /// </summary>
-        /// <typeparam name="T">The return type</typeparam>
-        /// <param name="operation">The operation name for logging</param>
-        /// <param name="func">The function to execute</param>
-        /// <param name="config">The retry configuration</param>
-        /// <returns>The result of the function</returns>
-        public static T RetryWithBackoff<T>(string operation, Func<T> func, RetryConfig config = null)
-        {
-            config ??= RetryConfig.Default();
-            Exception lastException = null;
-            TimeSpan delay = config.InitialDelay;
-
-            for (int attempt = 0; attempt <= config.MaxRetries; attempt++)
-            {
-                if (attempt > 0)
-                {
-                    Log.Info($"Retry attempt {attempt}/{config.MaxRetries} for {operation} after {delay.TotalMilliseconds}ms");
-                    Thread.Sleep(delay);
-                }
-
-                try
-                {
-                    T result = func();
-                    if (attempt > 0)
-                    {
-                        Log.Info($"Operation {operation} succeeded after {attempt + 1} attempts");
-                    }
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-
-                    if (!IsRetryableError(ex))
-                    {
-                        Log.Warn($"Non-retryable error for {operation}: {MapGrpcError(ex)}");
-                        throw;
-                    }
-
-                    if (attempt < config.MaxRetries)
-                    {
-                        // Calculate next delay with exponential backoff
-                        delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * config.Multiplier);
-                        if (delay > config.MaxDelay)
-                        {
-                            delay = config.MaxDelay;
-                        }
-                    }
-                }
-            }
-
-            Log.Error($"Operation {operation} failed after {config.MaxRetries + 1} attempts: {MapGrpcError(lastException)}");
-            throw new Exception($"Max retries exceeded for {operation}", lastException);
         }
     }
 }

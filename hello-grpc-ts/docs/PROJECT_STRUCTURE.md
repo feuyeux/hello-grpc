@@ -16,12 +16,11 @@ hello-grpc-ts/
 │   │   └── landing_pb.js
 │   ├── lib/                  # 通用库和工具
 │   │   ├── conn.ts           # gRPC 连接管理
+│   │   ├── error_mapper.ts   # gRPC 错误映射
+│   │   ├── interceptor.ts    # gRPC 拦截器
+│   │   ├── otel.ts           # OpenTelemetry 配置
 │   │   ├── tls.ts            # TLS/SSL 证书管理
-│   │   ├── utils.ts          # 工具函数
-│   │   ├── errorMapper.ts    # 错误映射
-│   │   ├── loggingConfig.ts  # 日志配置
-│   │   ├── retry_helper.ts   # 重试辅助
-│   │   └── shutdownHandler.ts # 优雅关闭处理
+│   │   └── utils.ts          # 工具函数
 │   ├── proto/                # Proto 定义文件（如果有）
 │   ├── hello_server.ts       # gRPC 服务器实现
 │   └── hello_client.ts       # gRPC 客户端实现
@@ -40,7 +39,8 @@ hello-grpc-ts/
 │   ├── PROJECT_STRUCTURE.md  # 本文件
 │   └── SCRIPTS_USAGE.md      # 脚本使用指南
 ├── test/                     # 测试目录
-│   └── utils.test.ts         # 工具函数测试
+│   ├── error_mapper.test.ts  # 错误映射测试
+│   └── version.test.ts       # 工具函数和版本测试
 ├── logs/                     # 日志目录
 │   └── .gitkeep
 ├── node_modules/             # Node.js 依赖
@@ -68,12 +68,11 @@ hello-grpc-ts/
 - **用途**: 可复用的库代码和工具函数
 - **主要文件**:
   - `conn.ts` - gRPC 连接管理，包括客户端创建和服务器配置
+  - `error_mapper.ts` - gRPC 错误码映射
+  - `interceptor.ts` - gRPC 拦截器
+  - `otel.ts` - OpenTelemetry 初始化和拦截器
   - `tls.ts` - TLS/SSL 证书加载和凭证创建
   - `utils.ts` - 通用工具函数
-  - `errorMapper.ts` - gRPC 错误码映射
-  - `loggingConfig.ts` - Winston 日志配置
-  - `retry_helper.ts` - 请求重试逻辑
-  - `shutdownHandler.ts` - 优雅关闭处理
 
 #### src/hello_server.ts
 - **用途**: gRPC 服务器主程序
