@@ -88,6 +88,24 @@ public class Connection {
   public static final String LB_ROUND_ROBIN = "round_robin";
   public static final String LB_PICK_FIRST = "pick_first";
 
+  /**
+   * Retry service config for hello.LandingService following gRPC A6 client retries
+   * (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+   */
+  private static java.util.Map<String, ?> retryServiceConfig() {
+    java.util.Map<String, Object> retryPolicy = new java.util.HashMap<>();
+    retryPolicy.put("maxAttempts", 4D);
+    retryPolicy.put("initialBackoff", "0.1s");
+    retryPolicy.put("maxBackoff", "1s");
+    retryPolicy.put("backoffMultiplier", 2D);
+    retryPolicy.put("retryableStatusCodes", List.of("UNAVAILABLE"));
+    java.util.Map<String, Object> methodConfig = new java.util.HashMap<>();
+    methodConfig.put("name", List.of(java.util.Map.of("service", HELLO_LANDING_SERVICE)));
+    methodConfig.put("waitForReady", true);
+    methodConfig.put("retryPolicy", retryPolicy);
+    return java.util.Map.of("methodConfig", List.of(methodConfig));
+  }
+
   private static String getGrcServerHost() {
     if (server == null) {
       return "localhost";
@@ -149,6 +167,14 @@ public class Connection {
     } else {
       builder = NettyChannelBuilder.forAddress(connectTo, port);
     }
+    // Client resilience: HTTP/2 keepalive pings plus transparent retries,
+    // mirroring the Go client settings.
+    builder
+        .keepAliveTime(10, java.util.concurrent.TimeUnit.SECONDS)
+        .keepAliveTimeout(1, java.util.concurrent.TimeUnit.SECONDS)
+        .keepAliveWithoutCalls(true)
+        .defaultServiceConfig(retryServiceConfig())
+        .enableRetry();
     if (secure == null || !secure.equals("Y")) {
       if (isDiscovery()) {
         log.info("Connect with InSecure({}) [{}]", target, getVersion());

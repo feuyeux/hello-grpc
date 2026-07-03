@@ -31,6 +31,31 @@ var (
 	serverName = "hello.grpc.io"
 )
 
+// defaultRetryServiceConfig enables transparent client retries for
+// hello.LandingService following gRPC A6 client retries:
+// https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+// See https://github.com/grpc/grpc/blob/master/doc/service_config.md for the format.
+const defaultRetryServiceConfig = `{
+	"methodConfig": [{
+	  "name": [{"service": "hello.LandingService"}],
+	  "waitForReady": true,
+	  "retryPolicy": {
+		  "MaxAttempts": 4,
+		  "InitialBackoff": ".1s",
+		  "MaxBackoff": "1s",
+		  "BackoffMultiplier": 2.0,
+		  "RetryableStatusCodes": [ "UNAVAILABLE" ]
+	  }
+	}]}`
+
+// defaultKeepaliveParams keeps idle HTTP/2 connections alive on every
+// client transport (secure and insecure).
+var defaultKeepaliveParams = keepalive.ClientParameters{
+	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+	PermitWithoutStream: true,             // send pings even without active streams
+}
+
 func init() {
 	// CERT_BASE_PATH points at the directory that contains the client
 	// certificates. It takes precedence over the platform defaults.
@@ -223,21 +248,7 @@ func buildConnWithContext(ctx context.Context, address string) (*grpc.ClientConn
 }
 
 func transportInsecure(address string) (*grpc.ClientConn, error) {
-	// see https://github.com/grpc/grpc/blob/master/doc/service_config.md to know more about service config
-	retryPolicy := `{
-		"methodConfig": [{
-		  "name": [{"service": "GRPC_SERVER"}],
-		  "waitForReady": true,
-		  "retryPolicy": {
-			  "MaxAttempts": 200,
-			  "InitialBackoff": ".1s",
-			  "MaxBackoff": ".05s",
-			  "BackoffMultiplier": 1.2,
-			  "RetryableStatusCodes": [ "UNAVAILABLE" ]
-		  }
-		}]}`
-	// retry https://github.com/grpc/proposal/blob/master/A6-client-retries.md
-	retryConfig := grpc.WithDefaultServiceConfig(retryPolicy)
+	retryConfig := grpc.WithDefaultServiceConfig(defaultRetryServiceConfig)
 	// rate limiting (+ OpenTelemetry unary client interceptor when
 	// GRPC_HELLO_OTEL=Y). grpc.WithUnaryInterceptor only accepts a
 	// single interceptor, so the chain helper composes rate-limit and
@@ -245,12 +256,7 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 	// nil when both halves are nil so the option is omitted).
 	count := 10
 	rateLimitConfig := grpc.WithChainUnaryInterceptor(clientInterceptorChain(count)...)
-	// keepalive
-	keepaliveConfig := grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
-		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
-		PermitWithoutStream: true,             // send pings even without active streams
-	})
+	keepaliveConfig := grpc.WithKeepaliveParams(defaultKeepaliveParams)
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		keepaliveConfig,
@@ -267,31 +273,12 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 }
 
 func transportInsecureWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
-	// see https://github.com/grpc/grpc/blob/master/doc/service_config.md to know more about service config
-	retryPolicy := `{
-		"methodConfig": [{
-		  "name": [{"service": "GRPC_SERVER"}],
-		  "waitForReady": true,
-		  "retryPolicy": {
-			"MaxAttempts": 200,
-			"InitialBackoff": ".1s",
-			"MaxBackoff": ".05s",
-			"BackoffMultiplier": 1.2,
-			"RetryableStatusCodes": [ "UNAVAILABLE" ]
-		  }
-		}]}`
-	// retry https://github.com/grpc/proposal/blob/master/A6-client-retries.md
-	retryConfig := grpc.WithDefaultServiceConfig(retryPolicy)
+	retryConfig := grpc.WithDefaultServiceConfig(defaultRetryServiceConfig)
 	// rate limiting (+ OpenTelemetry unary client interceptor when
 	// GRPC_HELLO_OTEL=Y, threaded through clientInterceptorChain).
 	count := 10
 	rateLimitConfig := grpc.WithChainUnaryInterceptor(clientInterceptorChain(count)...)
-	// keepalive
-	keepaliveConfig := grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
-		Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
-		PermitWithoutStream: true,             // send pings even without active streams
-	})
+	keepaliveConfig := grpc.WithKeepaliveParams(defaultKeepaliveParams)
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		keepaliveConfig,
@@ -328,11 +315,14 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load root cert: %w", err)
 	}
-	return grpc.NewClient(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-		ServerName:   serverName,
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      pool,
-	})))
+	return grpc.NewClient(address,
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+			ServerName:   serverName,
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      pool,
+		})),
+		grpc.WithKeepaliveParams(defaultKeepaliveParams),
+		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig))
 }
 
 func transportCredentialsWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
@@ -344,11 +334,14 @@ func transportCredentialsWithContext(ctx context.Context, address string) (*grpc
 	if err != nil {
 		return nil, fmt.Errorf("failed to load root cert: %w", err)
 	}
-	return grpc.DialContext(ctx, address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-		ServerName:   serverName,
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      pool,
-	})))
+	return grpc.DialContext(ctx, address,
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+			ServerName:   serverName,
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      pool,
+		})),
+		grpc.WithKeepaliveParams(defaultKeepaliveParams),
+		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig))
 }
 
 func GetCertPool(rootCert string) (*x509.CertPool, error) {

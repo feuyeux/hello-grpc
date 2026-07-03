@@ -238,6 +238,11 @@ public class ProtoServer {
             .addService(interceptedService)
             .addService(ProtoReflectionService.newInstance())
             .addService(healthStatusManager.getHealthService())
+            // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+            .keepAliveTime(30, java.util.concurrent.TimeUnit.SECONDS)
+            .keepAliveTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .permitKeepAliveTime(5, java.util.concurrent.TimeUnit.SECONDS)
+            .permitKeepAliveWithoutCalls(true)
             .addTransportFilter(
                 new ServerTransportFilter() {
                   @Override

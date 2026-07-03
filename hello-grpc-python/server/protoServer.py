@@ -414,6 +414,13 @@ def serve():
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=MAX_WORKERS),
         interceptors=tuple(chain),
+        options=(
+            # Server-side HTTP/2 keepalive, mirroring the Go server settings.
+            ('grpc.keepalive_time_ms', 30000),
+            ('grpc.keepalive_timeout_ms', 5000),
+            ('grpc.http2.min_recv_ping_interval_without_data_ms', 5000),
+            ('grpc.keepalive_permit_without_calls', 1),
+        ),
     )
     landing_pb2_grpc.add_LandingServiceServicer_to_server(server_impl, server)
 

@@ -11,6 +11,7 @@ import io.netty.handler.ssl.SslContextBuilder
 import org.apache.logging.log4j.kotlin.logger
 import java.nio.file.Paths
 import java.io.File
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 
 object Connection {
@@ -58,6 +59,26 @@ object Connection {
         return builder.build()
     }
 
+    /**
+     * Retry service config for hello.LandingService following gRPC A6 client retries
+     * (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+     */
+    private fun retryServiceConfig(): Map<String, Any> = mapOf(
+        "methodConfig" to listOf(
+            mapOf(
+                "name" to listOf(mapOf("service" to "hello.LandingService")),
+                "waitForReady" to true,
+                "retryPolicy" to mapOf(
+                    "maxAttempts" to 4.0,
+                    "initialBackoff" to "0.1s",
+                    "maxBackoff" to "1s",
+                    "backoffMultiplier" to 2.0,
+                    "retryableStatusCodes" to listOf("UNAVAILABLE")
+                )
+            )
+        )
+    )
+
     fun getChannel(vararg clientInterceptors: ClientInterceptor): ManagedChannel {
         val backend = System.getenv("GRPC_HELLO_BACKEND")
         val grcServer = System.getenv("GRPC_SERVER") ?: "localhost"
@@ -68,6 +89,12 @@ object Connection {
             log.info("Connect With InSecure(:$serverPort)")
             ManagedChannelBuilder.forAddress(host, serverPort)
                 .usePlaintext()
+                // Client resilience: HTTP/2 keepalive pings plus transparent retries.
+                .keepAliveTime(10, TimeUnit.SECONDS)
+                .keepAliveTimeout(1, TimeUnit.SECONDS)
+                .keepAliveWithoutCalls(true)
+                .defaultServiceConfig(retryServiceConfig())
+                .enableRetry()
                 .intercept(clientInterceptors.toList())
                 .build()
         } else {
@@ -76,6 +103,12 @@ object Connection {
                 .overrideAuthority(serverName) /* Only for using provided test certs. */
                 .sslContext(buildSslContext())
                 .negotiationType(NegotiationType.TLS)
+                // Client resilience: HTTP/2 keepalive pings plus transparent retries.
+                .keepAliveTime(10, TimeUnit.SECONDS)
+                .keepAliveTimeout(1, TimeUnit.SECONDS)
+                .keepAliveWithoutCalls(true)
+                .defaultServiceConfig(retryServiceConfig())
+                .enableRetry()
                 .intercept(clientInterceptors.toList())
                 .build()
         }

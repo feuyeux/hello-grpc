@@ -163,12 +163,17 @@ class ProtoServer {
             // Create insecure server
             logger.info("Starting insecure gRPC server on port $serverPort [${getVersion()}]")
 
-            ServerBuilder.forPort(serverPort)
+            NettyServerBuilder.forPort(serverPort)
                 .addService(interceptedService)
                 // B7 — gRPC Health Check
                 .addService(healthStatusManager.healthService)
                 // C4 — gRPC Server Reflection
                 .addService(ProtoReflectionService.newInstance())
+                // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+                .keepAliveTime(30, java.util.concurrent.TimeUnit.SECONDS)
+                .keepAliveTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                .permitKeepAliveTime(5, java.util.concurrent.TimeUnit.SECONDS)
+                .permitKeepAliveWithoutCalls(true)
                 .addTransportFilter(object : ServerTransportFilter() {
                     override fun transportReady(attributes: Attributes): Attributes {
                         logger.info("Connection established: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
@@ -194,6 +199,11 @@ class ProtoServer {
                     .addService(healthStatusManager.healthService)
                     // C4 — gRPC Server Reflection
                     .addService(ProtoReflectionService.newInstance())
+                    // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+                    .keepAliveTime(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .keepAliveTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .permitKeepAliveTime(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .permitKeepAliveWithoutCalls(true)
                     .addTransportFilter(object : ServerTransportFilter() {
                         override fun transportReady(attributes: Attributes): Attributes {
                             logger.info("Connection established: ${attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)}")
@@ -207,12 +217,16 @@ class ProtoServer {
                     .sslContext(buildSslContext()?.build())
                     .build()
             } catch (e: Exception) {
-                logger.error("TLS configuration failed: ${e.message}. Falling back to insecure mode.")
-
-                // Fall back to insecure server if TLS setup fails
-                ServerBuilder.forPort(serverPort)
-                    .addService(interceptedService)
-                    .build()
+                if (System.getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y") {
+                    logger.error("TLS configuration failed: ${e.message}. GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure mode.")
+                    // Explicitly sanctioned fallback to an insecure server
+                    ServerBuilder.forPort(serverPort)
+                        .addService(interceptedService)
+                        .build()
+                } else {
+                    logger.error("TLS configuration failed: ${e.message}. Set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure server.")
+                    throw e
+                }
             }
         }
     }

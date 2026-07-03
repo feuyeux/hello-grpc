@@ -51,6 +51,26 @@ root_cert = os.path.join(cert_base_path, "myssl_root.cer")
 
 server_name = "hello.grpc.io"
 
+# Client resilience defaults shared by secure and insecure channels:
+# HTTP/2 keepalive pings plus transparent retries per gRPC A6
+# (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+CHANNEL_RESILIENCE_OPTIONS = (
+    ('grpc.keepalive_time_ms', 10000),
+    ('grpc.keepalive_timeout_ms', 1000),
+    ('grpc.keepalive_permit_without_calls', 1),
+    ('grpc.enable_retries', 1),
+    ('grpc.service_config',
+     '{"methodConfig": [{'
+     '"name": [{"service": "hello.LandingService"}],'
+     '"waitForReady": true,'
+     '"retryPolicy": {'
+     '"maxAttempts": 4,'
+     '"initialBackoff": "0.1s",'
+     '"maxBackoff": "1s",'
+     '"backoffMultiplier": 2.0,'
+     '"retryableStatusCodes": ["UNAVAILABLE"]}}]}'),
+)
+
 # Ensure log directory exists
 os.makedirs("log", exist_ok=True)
 
@@ -163,7 +183,7 @@ def build_channel():
             options = (
                 ('grpc.ssl_target_name_override', server_name),
                 ('grpc.default_authority', server_name)
-            )
+            ) + CHANNEL_RESILIENCE_OPTIONS
 
             logger.info(
                 "TLS connection configured with server name: %s", server_name)
@@ -176,7 +196,7 @@ def build_channel():
             if os.getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y":
                 logger.warning(
                     "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection")
-                return grpc.insecure_channel(address)
+                return grpc.insecure_channel(address, options=CHANNEL_RESILIENCE_OPTIONS)
             raise RuntimeError(
                 "GRPC_HELLO_SECURE=Y but TLS certificates could not be loaded: "
                 f"{e}. Set CERT_BASE_PATH to the certificate directory, or set "
@@ -186,4 +206,4 @@ def build_channel():
         # Build insecure channel
         logger.info("Connect with insecure (:%s) (Python %s.%s.%s)",
                     port, python_version[0], python_version[1], python_version[2])
-        return grpc.insecure_channel(address)
+        return grpc.insecure_channel(address, options=CHANNEL_RESILIENCE_OPTIONS)
