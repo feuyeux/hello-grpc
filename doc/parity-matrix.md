@@ -143,7 +143,7 @@ This document reflects a source audit of the current workspace. It counts checke
 
 ## C3 Helm Chart
 
-Helm chart at `scripts/k8s/helm/hello-grpc/` enables/disables each language server through `values.yaml`. A duplicate chart also exists at `scripts/k8s/helm/`.
+Helm chart at `scripts/k8s/helm/` enables/disables each language server through `values.yaml`.
 
 ---
 
