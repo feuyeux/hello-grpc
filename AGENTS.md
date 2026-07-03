@@ -4,7 +4,7 @@
 
 This repository contains matching gRPC examples across multiple languages. Shared protobuf definitions live in `proto/`.
 
-`proto_bk/landing2.proto` is a separate gateway-oriented contract variant with `google.api` HTTP annotations for gRPC-JSON gateway experiments only. It is not a backup of `proto/landing.proto` and must not be used by the language implementations.
+`proto-gateway/landing2.proto` is a separate gateway-oriented contract variant with `google.api` HTTP annotations for gRPC-JSON gateway experiments only. It is not a variant of `proto/landing.proto` for the language implementations and must not be used by them.
 
 Each implementation is isolated in a `hello-grpc-*` directory:
 
