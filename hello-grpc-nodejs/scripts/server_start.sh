@@ -1,8 +1,7 @@
 #!/bin/bash
-cd "$(
-    cd "$(dirname "$0")" >/dev/null 2>&1
-    pwd -P
-)/" || exit
+# Change to the project root directory (parent of scripts/)
+SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd -P)"
+cd "${SCRIPT_DIR}/.." || exit
 
 # Preparation steps
 echo "Checking and installing dependencies if needed..."
@@ -57,7 +56,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Prepare environment and command
-CMD="node proto_server.js"
+CMD="node src/server/index.js"
 
 # Add TLS flag if enabled
 if [ "$USE_TLS" = true ]; then

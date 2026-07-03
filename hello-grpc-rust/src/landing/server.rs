@@ -18,15 +18,15 @@ use tonic_health::server::health_reporter;
 use tonic_reflection::server::Builder as ReflectionBuilder;
 use uuid::Uuid;
 
+use hello_grpc_rust::common::FILE_DESCRIPTOR_SET;
 use hello_grpc_rust::common::conn::{CONFIG_PATH, build_client, grpc_backend_host, has_backend};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::landing_service_server::{
     LandingService, LandingServiceServer,
 };
 use hello_grpc_rust::common::landing::{ResultType, TalkRequest, TalkResponse, TalkResult};
-use hello_grpc_rust::common::trans::{CERT_CHAIN, CERT_KEY, TRACING_KEYS};
+use hello_grpc_rust::common::trans::{TRACING_KEYS, server_cert_chain, server_cert_key};
 use hello_grpc_rust::common::utils::{HELLOS, get_version, thanks};
-use hello_grpc_rust::common::FILE_DESCRIPTOR_SET;
 
 // Add a lightweight metrics collector
 struct ServerMetrics {
@@ -82,9 +82,9 @@ const CONNECTION_POOL_SIZE: usize = 5;
 const REQUEST_TIMEOUT_MS: u64 = 5000;
 const GRACEFUL_SHUTDOWN_TIMEOUT_MS: u64 = 10000;
 
-/// C5 — Logging interceptor: logs each incoming gRPC request URI before forwarding.
+/// C5 — Logging interceptor: logs each incoming gRPC request before forwarding.
 fn log_request(req: Request<()>) -> Result<Request<()>, Status> {
-    info!("gRPC request intercepted: {}", req.uri());
+    info!("gRPC request intercepted: {:?}", req.metadata());
     Ok(req)
 }
 
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. No-op when the
     // env var is unset so the existing log4rs + tonic/tracing pipeline
     // is preserved by default.
-    crate::otel::init_otel("hello-grpc-rust-server");
+    hello_grpc_rust::otel::init_otel("hello-grpc-rust-server");
 
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
@@ -108,8 +108,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Configure server with or without TLS
     let mut server = if is_tls == "Y" {
-        let cert = tokio::fs::read(CERT_CHAIN).await?;
-        let key = tokio::fs::read(CERT_KEY).await?;
+        let cert = tokio::fs::read(server_cert_chain()).await?;
+        let key = tokio::fs::read(server_cert_key()).await?;
         let identity = Identity::from_pem(cert, key);
 
         info!(
@@ -171,7 +171,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     // B7 — Health check service
-    let (mut health_reporter, health_service) = health_reporter();
+    let (health_reporter, health_service) = health_reporter();
     health_reporter
         .set_serving::<LandingServiceServer<ProtoServer>>()
         .await;

@@ -14,7 +14,7 @@
     "fast-linked-list": "^3.2.3",
     "google-protobuf": "^3.21.4",
     "grpc-health-check": "^2.0.1",
-    "grpc-node-server-reflection": "^1.0.5",
+    "grpc-node-server-reflection": "^1.0.2",
     "uuid": "^11.0.2",
     "winston": "^3.10.0"
   },

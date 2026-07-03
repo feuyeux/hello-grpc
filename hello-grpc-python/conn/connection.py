@@ -20,10 +20,10 @@ import grpc
 def get_cert_base_path():
     """
     Get the base path for client certificates.
-    
+
     Uses environment variable CERT_BASE_PATH if set, otherwise
     determines appropriate path based on operating system.
-    
+
     Returns:
         str: Path to certificate directory
     """
@@ -88,7 +88,7 @@ logger.info(
 def get_grpc_server():
     """
     Get the gRPC server hostname from environment or use default.
-    
+
     Returns:
         str: Server hostname
     """
@@ -102,13 +102,13 @@ def get_grpc_server():
 def build_channel():
     """
     Build a gRPC channel (secure or insecure based on configuration).
-    
+
     The channel configuration is determined by environment variables:
     - GRPC_HELLO_BACKEND: Backend server hostname
     - GRPC_HELLO_BACKEND_PORT: Backend server port
     - GRPC_SERVER_PORT: Server port (default: 9996)
     - GRPC_HELLO_SECURE: Use TLS if set to 'Y'
-    
+
     Returns:
         grpc.Channel: Configured gRPC channel
     """
@@ -118,7 +118,7 @@ def build_channel():
         connect_to = backend
     else:
         connect_to = get_grpc_server()
-    
+
     # Determine port
     back_port = os.getenv("GRPC_HELLO_BACKEND_PORT")
     if back_port:
@@ -129,55 +129,61 @@ def build_channel():
             port = server_port
         else:
             port = "9996"
-    
+
     address = f"{connect_to}:{port}"
-    
+
     # Check if TLS is enabled
     secure = os.getenv("GRPC_HELLO_SECURE")
     python_version = sys.version_info
-    
+
     if secure == "Y":
         # Build secure channel with TLS
         try:
             # Read root certificate for server verification
             with open(root_cert, 'rb') as f:
                 root_certificates = f.read()
-            
+
             # Read client certificate and private key for mutual TLS
             with open(cert, 'rb') as f:
                 certificate_chain = f.read()
-            
+
             with open(cert_key, 'rb') as f:
                 private_key = f.read()
-            
+
             logger.info("Loaded root certificate from: %s", root_cert)
             logger.info("Using mutual TLS (client certificate required)")
-            
+
             # Create TLS credentials with client certificates (mutual TLS)
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=root_certificates,
                 private_key=private_key,
                 certificate_chain=certificate_chain
             )
-            
+
             options = (
                 ('grpc.ssl_target_name_override', server_name),
                 ('grpc.default_authority', server_name)
             )
-            
-            logger.info("TLS connection configured with server name: %s", server_name)
-            logger.info("Connect with TLS to %s (Python %s.%s.%s)", 
-                       address, python_version[0], python_version[1], python_version[2])
+
+            logger.info(
+                "TLS connection configured with server name: %s", server_name)
+            logger.info("Connect with TLS to %s (Python %s.%s.%s)",
+                        address, python_version[0], python_version[1], python_version[2])
             return grpc.secure_channel(address, credentials, options)
-            
+
         except (FileNotFoundError, PermissionError) as e:
             logger.error("TLS certificate error: %s", e)
-            logger.warning("Falling back to insecure connection")
-            logger.info("Connect with insecure to %s (Python %s.%s.%s)", 
-                       address, python_version[0], python_version[1], python_version[2])
-            return grpc.insecure_channel(address)
+            if os.getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y":
+                logger.warning(
+                    "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection")
+                return grpc.insecure_channel(address)
+            raise RuntimeError(
+                "GRPC_HELLO_SECURE=Y but TLS certificates could not be loaded: "
+                f"{e}. Set CERT_BASE_PATH to the certificate directory, or set "
+                "GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure "
+                "connection.") from e
     else:
         # Build insecure channel
-        logger.info("Connect with insecure (:%s) (Python %s.%s.%s)", 
-                   port, python_version[0], python_version[1], python_version[2])
+        logger.info("Connect with insecure (:%s) (Python %s.%s.%s)",
+                    port, python_version[0], python_version[1], python_version[2])
         return grpc.insecure_channel(address)

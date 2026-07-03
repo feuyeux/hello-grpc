@@ -9,9 +9,10 @@ import { createServerCredentials, testTlsCertificates } from "./lib/tls"
 import { otelEnabled, initOtel, getCounter } from "./lib/otel"
 import { withLogging } from "./lib/interceptor"
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const healthCheck = require('grpc-health-check')
+const { HealthImplementation } = require('grpc-health-check')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const reflection = require('grpc-node-server-reflection')
+const reflection = require('grpc-node-server-reflection').default
+const HEALTH_STATUS_SERVING = 1
 
 // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The instrumentation
 // patches @grpc/grpc-js's Server constructor globally, so initOtel
@@ -690,21 +691,20 @@ class HelloServer implements ILandingServiceServer {
 function startServer(): void {
     try {
         const server = new grpc.Server()
+        const serverWithReflection = reflection(server)
 
         // C5 — Middleware/Interceptor: wrap service impl with logging middleware
-        server.addService(LandingServiceService, withLogging(new HelloServer()))
+        serverWithReflection.addService(
+            LandingServiceService as unknown as grpc.ServiceDefinition<grpc.UntypedServiceImplementation>,
+            withLogging(new HelloServer())
+        )
 
         // B7 — Health Check
         const statusMap = {
-            '': healthCheck.HealthCheckResponse.ServingStatus.SERVING
+            '': HEALTH_STATUS_SERVING
         }
-        const healthImpl = new healthCheck.HealthImplementation(statusMap)
-        healthImpl.addToServer(server)
-
-        // C4 — Server Reflection: supply the .proto file path so grpc-node-server-reflection
-        // can serve proto descriptors to tools like grpcurl/grpcui.
-        const protoFilePath = require('path').join(__dirname, '..', '..', 'proto', 'landing.proto')
-        reflection.addReflection(server, [protoFilePath])
+        const healthImpl = new HealthImplementation(statusMap)
+        healthImpl.addToServer(serverWithReflection)
 
         // Get the port for the server
         const serverPort = getServerPort();

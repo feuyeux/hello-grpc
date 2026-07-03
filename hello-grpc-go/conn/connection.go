@@ -9,6 +9,7 @@ import (
 	"hello-grpc/common/pb"
 	"hello-grpc/etcd/discover"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -31,6 +32,14 @@ var (
 )
 
 func init() {
+	// CERT_BASE_PATH points at the directory that contains the client
+	// certificates. It takes precedence over the platform defaults.
+	if base := os.Getenv("CERT_BASE_PATH"); base != "" {
+		certKey = filepath.Join(base, "private.key")
+		certChain = filepath.Join(base, "full_chain.pem")
+		rootCert = filepath.Join(base, "myssl_root.cer")
+		return
+	}
 	switch runtime.GOOS {
 	case "windows":
 		certKey = "d:\\garden\\var\\hello_grpc\\client_certs\\private.key"
@@ -120,19 +129,23 @@ func buildConnByDisc() *grpc.ClientConn {
 		log.Infof("Connect With TLS through discovery")
 		cert, err := tls.LoadX509KeyPair(certChain, certKey)
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to load client key pair (%s, %s): %v", certChain, certKey, err)
+		}
+		pool, err := GetCertPool(rootCert)
+		if err != nil {
+			log.Fatalf("failed to load root cert %s: %v", rootCert, err)
 		}
 		c := &tls.Config{
 			ServerName:   serverName,
 			Certificates: []tls.Certificate{cert},
-			RootCAs:      GetCertPool(rootCert),
+			RootCAs:      pool,
 		}
 		conn, err := grpc.NewClient("etcd:///",
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(credentials.NewTLS(c)),
 			grpc.WithDefaultServiceConfig(grpcServiceConfig))
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to create gRPC client: %v", err)
 		}
 		return conn
 	} else {
@@ -142,7 +155,7 @@ func buildConnByDisc() *grpc.ClientConn {
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithDefaultServiceConfig(grpcServiceConfig))
 		if err != nil {
-			panic(err)
+			log.Fatalf("failed to create gRPC client: %v", err)
 		}
 		return conn
 	}
@@ -159,10 +172,14 @@ func buildConnByDiscWithContext(ctx context.Context) (*grpc.ClientConn, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to load key pair: %w", err)
 		}
+		pool, err := GetCertPool(rootCert)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load root cert: %w", err)
+		}
 		c := &tls.Config{
 			ServerName:   serverName,
 			Certificates: []tls.Certificate{cert},
-			RootCAs:      GetCertPool(rootCert),
+			RootCAs:      pool,
 		}
 		return grpc.DialContext(ctx, "etcd:///",
 			grpc.WithStatsHandler(&StatsHandler{}),
@@ -179,13 +196,17 @@ func buildConnByDiscWithContext(ctx context.Context) (*grpc.ClientConn, error) {
 
 func buildConn(address string) *grpc.ClientConn {
 	var conn *grpc.ClientConn
+	var err error
 	secure := os.Getenv("GRPC_HELLO_SECURE")
 	if secure == "Y" {
 		log.Infof("Connect With TLS(%s)", address)
-		conn, _ = transportCredentials(address)
+		conn, err = transportCredentials(address)
 	} else {
 		log.Infof("Connect With InSecure(%s)", address)
-		conn, _ = transportInsecure(address)
+		conn, err = transportInsecure(address)
+	}
+	if err != nil {
+		log.Fatalf("failed to build connection to %s: %v", address, err)
 	}
 	return conn
 }
@@ -301,12 +322,16 @@ func clientInterceptorChain(rateBudget int) []grpc.UnaryClientInterceptor {
 func transportCredentials(address string) (*grpc.ClientConn, error) {
 	cert, err := tls.LoadX509KeyPair(certChain, certKey)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to load key pair: %w", err)
+	}
+	pool, err := GetCertPool(rootCert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load root cert: %w", err)
 	}
 	return grpc.NewClient(address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
-		RootCAs:      GetCertPool(rootCert),
+		RootCAs:      pool,
 	})))
 }
 
@@ -315,23 +340,27 @@ func transportCredentialsWithContext(ctx context.Context, address string) (*grpc
 	if err != nil {
 		return nil, fmt.Errorf("failed to load key pair: %w", err)
 	}
+	pool, err := GetCertPool(rootCert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load root cert: %w", err)
+	}
 	return grpc.DialContext(ctx, address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 		ServerName:   serverName,
 		Certificates: []tls.Certificate{cert},
-		RootCAs:      GetCertPool(rootCert),
+		RootCAs:      pool,
 	})))
 }
 
-func GetCertPool(rootCert string) *x509.CertPool {
+func GetCertPool(rootCert string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 	bs, err := os.ReadFile(rootCert)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to read root cert %s: %w", rootCert, err)
 	}
 	if !certPool.AppendCertsFromPEM(bs) {
-		panic("fail to append root cert")
+		return nil, fmt.Errorf("failed to append root cert %s", rootCert)
 	}
-	return certPool
+	return certPool, nil
 }
 
 func HasBackend() bool {

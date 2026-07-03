@@ -114,11 +114,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Close the connection when we're done
-		defer closeFunc()
-
-		// Run all the gRPC patterns
+		// Run all the gRPC patterns, then close this attempt's connection
+		// before deciding whether to retry (avoids leaking connections
+		// from failed attempts until process exit).
 		err = runGrpcCalls(ctx, client, requestDelay, iterationCount)
+		closeFunc()
 		if err == nil || ctx.Err() != nil {
 			break // Success or deliberate cancellation, no retry needed
 		}

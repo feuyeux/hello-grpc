@@ -19,7 +19,7 @@ namespace HelloServer
     {
         private readonly ILog _log = LogManager.GetLogger(typeof(LandingServiceImpl));
         private LandingService.LandingServiceClient? _protoClient;
-        private readonly Counter<long> _rpcCallsCounter = Hello.Common.Otel.RpcCallsCounter();
+        private readonly Counter<long> _rpcCallsCounter = Common.Otel.RpcCallsCounter();
 
         /// <summary>
         /// Sets the backend client for proxy mode operation.

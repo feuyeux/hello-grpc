@@ -12,13 +12,11 @@ ARG PROJECT_ROOT=.
 WORKDIR /app/hello-grpc
 COPY hello-grpc-swift /app/hello-grpc/hello-grpc-swift
 COPY proto /app/hello-grpc/proto
-COPY proto2x.sh /app/hello-grpc/
+COPY scripts/proto2x.sh /app/hello-grpc/
 
 # Build Swift server and client
 WORKDIR /app/hello-grpc/hello-grpc-swift
 
-# Make sure the build script is executable
-RUN chmod +x build.sh
 RUN ../proto2x.sh swift
 RUN swift build -c release -Xswiftc -cross-module-optimization
 

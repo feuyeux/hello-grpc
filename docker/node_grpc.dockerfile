@@ -1,4 +1,4 @@
-FROM node:23-alpine AS build-base
+FROM node:24-alpine AS build-base
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update \
   python3 \
@@ -15,27 +15,23 @@ WORKDIR /app/hello-grpc/hello-grpc-nodejs
 RUN npm install --unsafe-perm
 # No build script in package.json, removed: RUN npm run build
 
-FROM node:23-alpine AS server
+FROM node:24-alpine AS server
 WORKDIR /app
 COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/package*.json /app/
-COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/proto_server.js /app/
 COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/node_modules /app/node_modules
-COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/common /app/common
+COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/src /app/src
 # Create certificate directories
 RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
 COPY docker/tls/server_certs/ /var/hello_grpc/server_certs/
 COPY docker/tls/client_certs/ /var/hello_grpc/client_certs/
-ENTRYPOINT ["node", "proto_server.js"]
+ENTRYPOINT ["node", "src/server/index.js"]
 
-FROM node:23-alpine AS client
+FROM node:24-alpine AS client
 WORKDIR /app
 COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/package*.json /app/
-COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/proto_client.js /app/
 COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/node_modules /app/node_modules
-COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/common /app/common
+COPY --from=build-base /app/hello-grpc/hello-grpc-nodejs/src /app/src
 # Create certificate directory
 RUN mkdir -p /var/hello_grpc/client_certs
 COPY docker/tls/client_certs/ /var/hello_grpc/client_certs/
-# Create symbolic link from client.js to proto_client.js
-RUN ln -s /app/proto_client.js /app/client.js
-ENTRYPOINT ["node", "proto_client.js"]
+ENTRYPOINT ["node", "src/client/index.js"]

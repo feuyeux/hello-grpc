@@ -12,6 +12,7 @@ This document reflects a source audit of the current workspace. It counts checke
 
 ## Audit Rules
 
+- Build verification blockers (for example the C++ Windows protoc crash and missing upstream grpc-swift Windows support, both tracked in AGENTS.md "Windows Local Toolchain") do not downgrade feature cells. A ✅ means the source implementation is present and wired, not that the language builds and passes CI on every platform.
 - Generated protobuf bindings, `vendor/`, `node_modules/`, virtualenvs, and build outputs are not counted as feature implementations.
 - A helper alone is not counted. The feature must be wired into the server/client path used by the language implementation.
 - Metrics are counted for B2 only when an `rpc_calls_total`-style RPC counter is created and incremented from the running RPC path behind the `GRPC_HELLO_OTEL=Y` gate.
@@ -21,6 +22,7 @@ This document reflects a source audit of the current workspace. It counts checke
 ## Column Legend
 
 ### Group A - Core gRPC Features
+
 | ID | Feature |
 |----|---------|
 | A1 | Unary RPC |
@@ -32,6 +34,7 @@ This document reflects a source audit of the current workspace. It counts checke
 | A7 | Error status mapping |
 
 ### Group B - Observability
+
 | ID | Feature |
 |----|---------|
 | B1 | Structured logging |
@@ -43,6 +46,7 @@ This document reflects a source audit of the current workspace. It counts checke
 | B7 | Health-check endpoint |
 
 ### Group C - Deployment & Operations
+
 | ID | Feature |
 |----|---------|
 | C1 | Docker image / Dockerfile |

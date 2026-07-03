@@ -1,6 +1,7 @@
 <?php
 
 use Grpc\ChannelCredentials;
+use Common\Utils\Otel;
 use Hello\LandingServiceClient;
 use Hello\TalkRequest;
 use Hello\TalkResponse;
@@ -99,8 +100,13 @@ if ($conn->isSecure) {
     $log->info("Using TLS connection");
     // Check if certificate files exist
     if (!file_exists($conn->rootCertPath) || !file_exists($conn->certPath) || !file_exists($conn->keyPath)) {
-        $log->warning("TLS certificate files not found, falling back to insecure connection");
-        $credentials = ChannelCredentials::createInsecure();
+        if (getenv('GRPC_HELLO_INSECURE_FALLBACK') === 'Y') {
+            $log->warning("TLS certificate files not found, GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection");
+            $credentials = ChannelCredentials::createInsecure();
+        } else {
+            $log->error("GRPC_HELLO_SECURE=Y but TLS certificate files not found. Set CERT_BASE_PATH to the certificate directory, or set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure connection.");
+            exit(1);
+        }
     } else {
         try {
             // Configure TLS credentials
@@ -116,8 +122,13 @@ if ($conn->isSecure) {
             $log->info("TLS credentials created successfully");
         } catch (Exception $e) {
             $log->error("Error setting up TLS: " . $e->getMessage());
-            $log->info("Falling back to insecure connection");
-            $credentials = ChannelCredentials::createInsecure();
+            if (getenv('GRPC_HELLO_INSECURE_FALLBACK') === 'Y') {
+                $log->warning("GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection");
+                $credentials = ChannelCredentials::createInsecure();
+            } else {
+                $log->error("GRPC_HELLO_SECURE=Y but TLS setup failed. Set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure connection.");
+                exit(1);
+            }
         }
     }
 } else {

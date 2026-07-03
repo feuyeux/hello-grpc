@@ -43,8 +43,9 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 # Clean if requested
 if ($Clean) {
     Write-Build "Cleaning previous build artifacts..."
-    Remove-Item -Path "landing_pb2.py" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "landing_pb2_grpc.py" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "conn\landing_pb2.py" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "conn\landing_pb2.pyi" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "conn\landing_pb2_grpc.py" -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "__pycache__" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
@@ -68,10 +69,10 @@ if (Test-Path "requirements.txt") {
     }
 }
 
-# Generate Python code from proto files
+# Generate Python code from proto files (into the conn package, which the code imports from)
 $protoPath = "..\proto\landing.proto"
-$pbFile = "landing_pb2.py"
-$grpcFile = "landing_pb2_grpc.py"
+$pbFile = "conn\landing_pb2.py"
+$grpcFile = "conn\landing_pb2_grpc.py"
 
 $needsProtoGen = $false
 if ($Clean -or -not (Test-Path $pbFile) -or -not (Test-Path $grpcFile)) {
@@ -84,9 +85,12 @@ if ($needsProtoGen) {
     Write-Build "Generating protobuf code..."
     python -m grpc_tools.protoc `
         -I..\proto `
-        --python_out=. `
-        --grpc_python_out=. `
+        --python_out=conn `
+        --pyi_out=conn `
+        --grpc_python_out=conn `
         ..\proto\landing.proto
+    # Rewrite the generated absolute import to the conn package
+    (Get-Content $grpcFile) -replace '^import landing_pb2 as landing__pb2$', 'import conn.landing_pb2 as landing__pb2' | Set-Content $grpcFile
 } else {
     Write-DebugMsg "Protobuf files are up to date, skipping generation"
 }

@@ -132,10 +132,10 @@ build_php_base() {
     check_docker
 
     # Build the PHP base image
-    docker build -f php_grpc_base.dockerfile -t feuyeux/grpc_php_base:1.0.0 .
+    docker build -f php_grpc_base.dockerfile -t feuyeux/grpc_php_base:latest .
 
     # Verify the image was built correctly
-    docker run -it --rm feuyeux/grpc_php_base:1.0.0 composer --version
+    docker run -it --rm feuyeux/grpc_php_base:latest composer --version
 
     echo "PHP base image build completed successfully"
 }

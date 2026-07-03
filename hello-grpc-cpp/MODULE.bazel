@@ -33,12 +33,13 @@ bazel_dep(name = "protobuf", version = "27.2", repo_name = "com_google_protobuf"
 # https://registry.bazel.build/modules/grpc
 bazel_dep(name = "grpc", version = "1.66.0", repo_name = "com_github_grpc_grpc")
 
-# https://registry.bazel.build/modules/opentelemetry-cpp
-# Pinned to 1.14.2 because newer BCR releases conflict with this project's
-# grpc/protobuf graph on Windows (rules_python cycles or grpc@1.76 MODULE
-# errors). This version exposes the SDK and stdout exporters needed by
-# common/otel.cc.
-bazel_dep(name = "opentelemetry-cpp", version = "1.14.2", repo_name = "io_opentelemetry_cpp")
+# opentelemetry-cpp is intentionally NOT a bazel_dep here. Every BCR
+# release compatible with this project's pinned grpc/protobuf graph ships
+# a `sdk/src/resource`/`sdk/src/metrics` BUILD file whose glob() matches
+# nothing, which fails analysis for any target depending on it (see
+# common/otel.cc for the full explanation). common/otel.cc is an
+# env-gated no-op stub instead, so //common:otel has no OpenTelemetry
+# C++ SDK dependency.
 
 ## 2 hello_utils dependencies
 

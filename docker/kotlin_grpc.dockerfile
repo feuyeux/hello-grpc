@@ -1,4 +1,8 @@
 FROM gradle:8.13-jdk21 AS build-base
+# Gradle 8.13 only supports running on JDK <=24; Bumping to jdk25 requires
+# Gradle 9.1+, which in turn bumps the embedded Kotlin from 1.9.x to 2.2.x
+# and breaks this project's Kotlin DSL sources (compileKotlin targets JVM
+# target 21 with Kotlin 1.9.24 plugin). Tracked as a separate upgrade PR.
 
 # Copy the entire project for building
 ARG PROJECT_ROOT=.
@@ -10,7 +14,7 @@ COPY proto /app/hello-grpc/proto
 WORKDIR /app/hello-grpc/hello-grpc-kotlin
 RUN gradle clean distTar
 
-FROM eclipse-temurin:24-jre-alpine AS server
+FROM eclipse-temurin:25-jre-alpine AS server
 WORKDIR /app
 COPY --from=build-base /app/hello-grpc/hello-grpc-kotlin/server/build/distributions/server.tar /app/
 RUN tar -xf server.tar
@@ -21,7 +25,7 @@ COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
 COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
 ENTRYPOINT ["/app/server/bin/server"]
 
-FROM eclipse-temurin:24-jre-alpine AS client
+FROM eclipse-temurin:25-jre-alpine AS client
 WORKDIR /app
 COPY --from=build-base /app/hello-grpc/hello-grpc-kotlin/client/build/distributions/client.tar /app/
 RUN tar -xf client.tar

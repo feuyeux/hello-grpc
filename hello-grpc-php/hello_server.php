@@ -22,6 +22,7 @@ require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/LandingService.php';
 require dirname(__FILE__) . '/conn/Connection.php';
 require dirname(__FILE__) . '/common/utils/VersionUtils.php';
+require_once dirname(__FILE__) . '/common/utils/Otel.php';
 // B7 — gRPC health check service (grpc.health.v1.Health)
 require dirname(__FILE__) . '/common/svc/Hello/HealthServiceImpl.php';
 
@@ -128,8 +129,13 @@ try {
         
         // Validate certificates
         if (!$conn->validateCertificates()) {
-            $log->warning("Invalid certificate configuration, falling back to insecure server");
-            $server->addHttp2Port($port);
+            if (getenv('GRPC_HELLO_INSECURE_FALLBACK') === 'Y') {
+                $log->warning("Invalid certificate configuration, GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure server");
+                $server->addHttp2Port($port);
+            } else {
+                $log->error("GRPC_HELLO_SECURE=Y but certificate configuration is invalid. Set CERT_BASE_PATH to the certificate directory, or set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure server.");
+                exit(1);
+            }
         } else {
             try {
                 // Read certificate files  
@@ -157,8 +163,13 @@ try {
                 $log->info("TLS configuration successful - server is SECURE");
             } catch (Exception $e) {
                 $log->error("Error setting up TLS: " . $e->getMessage(), ['exception' => $e]);
-                $log->warning("Falling back to INSECURE server");
-                $server->addHttp2Port($port);
+                if (getenv('GRPC_HELLO_INSECURE_FALLBACK') === 'Y') {
+                    $log->warning("GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to INSECURE server");
+                    $server->addHttp2Port($port);
+                } else {
+                    $log->error("GRPC_HELLO_SECURE=Y but TLS setup failed. Set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure server.");
+                    exit(1);
+                }
             }
         }
     } else {

@@ -94,7 +94,13 @@ Linux)
     fi
     ;;
 MSYS_NT* | MINGW64_NT*)
-    if [ -d "D:/zoo/jdk-24.0.1" ]; then
+    if [ -d "D:/zoo/jdk-25.0.2" ]; then
+        export JAVA_HOME="D:/zoo/jdk-25.0.2"
+    elif [ -d "D:/zoo/jdk-25" ]; then
+        export JAVA_HOME="D:/zoo/jdk-25"
+    elif [ -d "C:/Program Files/Eclipse Adoptium/jdk-25.0.3.9-hotspot" ]; then
+        export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-25.0.3.9-hotspot"
+    elif [ -d "D:/zoo/jdk-24.0.1" ]; then
         export JAVA_HOME="D:/zoo/jdk-24.0.1"
     else
         echo "JAVA_HOME not found. Please install Java or set JAVA_HOME manually."

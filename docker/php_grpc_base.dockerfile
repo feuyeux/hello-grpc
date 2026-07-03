@@ -10,7 +10,12 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
     apk add --no-cache --upgrade linux-headers gcc g++ protobuf protobuf-dev curl unzip cmake git autoconf
 
 # 安装 protoc (使用预编译的二进制文件)
-# 使用与composer.json中google/protobuf匹配的版本 (30.2)
+# Latest stable protoc (30.x) matched to the google/protobuf v4.x line
+# consumed by hello-grpc-php (composer.json: "google/protobuf": "^v4.30").
+# protoc 30.x works through google/protobuf v4.x at the wire format level;
+# the generated PHP message classes still bind against google/protobuf v4
+# at runtime (compatibility floor is set by the runtime, not the protoc
+# binary version).
 RUN PROTOC_VERSION=30.2 && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then ARCH="x86_64"; else ARCH="aarch_64"; fi && \
@@ -19,8 +24,13 @@ RUN PROTOC_VERSION=30.2 && \
     chmod 755 /usr/local/bin/protoc && \
     rm protoc-${PROTOC_VERSION}-linux-${ARCH}.zip
 
-# 安装 grpc_php_plugin (最小编译方式并优化构建过程)
-RUN GRPC_VERSION=1.70.2 && \
+# 安装 grpc_php_plugin
+# grpc/grpc ^1.74.0 in hello-grpc-php/composer.json drives the runtime
+# grpc PHP extension installed below (pecl install grpc pulls the latest
+# 1.81.x line on Alpine glibc). Building grpc_php_plugin from grpc v1.81.1
+# sources keeps the generated wire descriptors aligned with the runtime
+# grpc extension loaded into PHP and the google/protobuf v4.x messages.
+RUN GRPC_VERSION=1.81.1 && \
     cd /tmp && \
     git clone -b v${GRPC_VERSION} --depth 1 --single-branch --shallow-submodules https://github.com/grpc/grpc.git && \
     cd grpc && \

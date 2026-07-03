@@ -1,31 +1,22 @@
-FROM python:3.12-slim AS build-base
+FROM python:3.13-slim AS build-base
 ARG PROJECT_ROOT=.
+ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 WORKDIR /app/hello-grpc
 COPY hello-grpc-python /app/hello-grpc/hello-grpc-python
 COPY proto /app/hello-grpc/proto
-COPY proto2x.sh /app/hello-grpc/
+COPY scripts/proto2x.sh /app/hello-grpc/
 WORKDIR /app/hello-grpc/hello-grpc-python
 RUN pip install -r requirements.txt
 RUN /app/hello-grpc/proto2x.sh py
 
-FROM python:3.12-slim AS server
-RUN if [ -f "/etc/apt/sources.list.d/debian.sources" ]; then \
-    cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak && \
-    sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
-    fi && \
-    # For backwards compatibility, also check for traditional sources.list
-    if [ -f "/etc/apt/sources.list" ]; then \
-    cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
-    fi
-RUN apt-get update && apt-get install -y \
-    protobuf-compiler \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.13-slim AS server
+ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 WORKDIR /app
-# Copy the entire directory structure to maintain Python package hierarchy
+# Python builds use grpcio-tools' bundled protoc (1.81.1 ships its own
+# protoc >=25.x, compatible with protobuf 6.x runtime); the legacy
+# apt-installed protobuf-compiler was dropped because it was unused and
+# its version (3.21.x on bookworm-slim) diverged from the
+# google.protobuf==6.33.5 / grpcio==1.81.1 declared in requirements.txt.
 COPY --from=build-base /app/hello-grpc/hello-grpc-python /app
 COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
 COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
@@ -34,24 +25,10 @@ RUN pip install -r requirements.txt
 ENV PYTHONPATH=/app
 ENTRYPOINT ["python", "/app/server/protoServer.py"]
 
-FROM python:3.12-slim AS client
-RUN if [ -f "/etc/apt/sources.list.d/debian.sources" ]; then \
-    cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak && \
-    sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
-    fi && \
-    # For backwards compatibility, also check for traditional sources.list
-    if [ -f "/etc/apt/sources.list" ]; then \
-    cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
-    fi
-RUN apt-get update && apt-get install -y \
-    protobuf-compiler \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.13-slim AS client
+ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 WORKDIR /app
-# Copy the entire directory structure to maintain Python package hierarchy
+# See server stage comment re: dropped protobuf-compiler apt step.
 COPY --from=build-base /app/hello-grpc/hello-grpc-python /app
 COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
 RUN pip install -r requirements.txt

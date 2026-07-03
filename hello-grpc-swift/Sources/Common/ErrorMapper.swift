@@ -29,7 +29,6 @@ public enum ErrorMapper {
 
     private static func statusDescription(for code: RPCError.Code) -> String {
         switch code {
-        case .ok:                  return "Success"
         case .cancelled:           return "Operation cancelled"
         case .unknown:             return "Unknown error"
         case .invalidArgument:     return "Invalid request parameters"

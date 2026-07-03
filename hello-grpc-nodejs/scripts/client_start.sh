@@ -71,7 +71,7 @@ done
 log_info "Starting Node.js gRPC client..."
 
 # Prepare environment and command
-CMD="node proto_client.js"
+CMD="node src/client/index.js"
 
 # Add TLS flag if enabled
 if [ "$USE_TLS" = true ]; then

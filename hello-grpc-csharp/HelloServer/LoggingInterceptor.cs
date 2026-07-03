@@ -19,7 +19,7 @@ namespace HelloServer
             UnaryServerMethod<TRequest, TResponse> continuation)
         {
             Logger.Info($"gRPC call: {context.Method}");
-            using var activity = Hello.Common.Otel.StartRpcSpan(context.Method);
+            using var activity = Common.Otel.StartRpcSpan(context.Method);
             try
             {
                 return await continuation(request, context);
@@ -38,7 +38,7 @@ namespace HelloServer
             ServerStreamingServerMethod<TRequest, TResponse> continuation)
         {
             Logger.Info($"gRPC call: {context.Method}");
-            using var activity = Hello.Common.Otel.StartRpcSpan(context.Method);
+            using var activity = Common.Otel.StartRpcSpan(context.Method);
             try
             {
                 await continuation(request, responseStream, context);
@@ -56,7 +56,7 @@ namespace HelloServer
             ClientStreamingServerMethod<TRequest, TResponse> continuation)
         {
             Logger.Info($"gRPC call: {context.Method}");
-            using var activity = Hello.Common.Otel.StartRpcSpan(context.Method);
+            using var activity = Common.Otel.StartRpcSpan(context.Method);
             try
             {
                 return await continuation(requestStream, context);
@@ -75,7 +75,7 @@ namespace HelloServer
             DuplexStreamingServerMethod<TRequest, TResponse> continuation)
         {
             Logger.Info($"gRPC call: {context.Method}");
-            using var activity = Hello.Common.Otel.StartRpcSpan(context.Method);
+            using var activity = Common.Otel.StartRpcSpan(context.Method);
             try
             {
                 await continuation(requestStream, responseStream, context);

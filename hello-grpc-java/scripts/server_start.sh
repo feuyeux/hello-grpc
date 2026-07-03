@@ -214,6 +214,9 @@ detect_java_home() {
         "windows")
             # Windows 检测顺序
             local windows_paths=(
+                "D:/zoo/jdk-25.0.2"
+                "D:/zoo/jdk-25"
+                "C:/Program Files/Eclipse Adoptium/jdk-25.0.3.9-hotspot"
                 "D:/zoo/jdk-24.0.1"
                 "C:/Program Files/Java/jdk-21"
                 "C:/Program Files/Java/jdk-17"

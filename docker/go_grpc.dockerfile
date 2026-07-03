@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS build-base
+FROM golang:1.25-alpine AS build-base
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update git bash protobuf protobuf-dev make && rm -rf /var/cache/apk/*
 
@@ -10,10 +10,10 @@ RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 COPY hello-grpc-go /app/hello-grpc/hello-grpc-go
 COPY proto /app/hello-grpc/proto
-COPY proto2x.sh /app/hello-grpc
+COPY scripts/proto2x.sh /app/hello-grpc
 
 WORKDIR /app/hello-grpc/hello-grpc-go
-RUN bash init.sh
+RUN bash scripts/init.sh
 WORKDIR /app/hello-grpc
 # Generate protobuf code
 RUN bash proto2x.sh go

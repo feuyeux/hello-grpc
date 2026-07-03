@@ -1,14 +1,27 @@
 import 'package:hello_grpc_dart/common/utils.dart';
-import 'package:logging/logging.dart';
+import 'package:test/test.dart';
 
-void main() async {
-  final logger = Logger('VersionTest');
+void main() {
+  test('getVersion returns a grpc version string', () async {
+    final asyncVersion = await Utils.getVersion();
+    expect(asyncVersion, startsWith('grpc.version='));
+    expect(asyncVersion.split('=')[1], isNotEmpty);
+  });
 
-  // Test async version
-  final asyncVersion = await Utils.getVersion();
-  logger.info('Async version: $asyncVersion');
+  test('getVersionSync matches async version', () async {
+    final asyncVersion = await Utils.getVersion();
+    final syncVersion = Utils.getVersionSync();
+    expect(syncVersion, equals(asyncVersion));
+  });
 
-  // Test sync version
-  final syncVersion = Utils.getVersionSync();
-  logger.info('Sync version: $syncVersion');
+  test('randomId returns numeric id within range', () {
+    for (var i = 0; i < 100; i++) {
+      final id = int.parse(Utils.randomId(5));
+      expect(id, inInclusiveRange(0, 4));
+    }
+  });
+
+  test('getUuid returns unique values', () {
+    expect(Utils.getUuid(), isNot(equals(Utils.getUuid())));
+  });
 }

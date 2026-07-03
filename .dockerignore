@@ -1,0 +1,83 @@
+# Version control
+.git
+.gitattributes
+
+# IDE and editor files
+.idea
+.vscode
+.kiro
+.claude
+
+# CI/CD and automation (not needed in builds)
+.github
+.hermes
+
+# Documentation
+doc
+AGENTS.md
+README.md
+
+# Verification tooling
+docker-parity-verification
+
+# Scripts directory - exclude subdirs not needed for Docker builds
+scripts/k8s
+scripts/proxy
+scripts/tls
+
+# Node.js dependencies (each Dockerfile installs its own)
+**/node_modules
+
+# Go
+**/vendor
+
+# Java/Kotlin build outputs
+**/target
+**/.gradle
+**/gradle
+**/build
+
+# Rust build outputs
+**/target
+
+# C++ build outputs
+**/bazel-*
+**/cmake-build-*
+
+# C++ Windows-local Bazel override (hardcoded D:\zoo\bin\protoc27.2.exe path;
+# only valid on the Windows host toolchain, breaks the Linux Docker build)
+hello-grpc-cpp/.bazelrc.user
+
+# C# / .NET
+**/bin
+**/obj
+
+# Python
+**/__pycache__
+**/.venv
+**/*.pyc
+
+# Dart
+**/.dart_tool
+**/.packages
+
+# Swift
+**/.build
+**/.swiftpm
+
+# PHP
+**/vendor
+
+# Log files
+**/*.log
+
+# Executables
+**/*.exe
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Docker build logs (created by build_image.sh)
+docker/build_logs
+docker/smoke_logs

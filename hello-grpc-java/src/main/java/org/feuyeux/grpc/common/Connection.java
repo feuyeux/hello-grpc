@@ -52,6 +52,12 @@ public class Connection {
   private static final String rootCert = getCertPath("myssl_root.cer");
 
   private static String getCertPath(String fileName) {
+    // CERT_BASE_PATH points at the directory that contains the client
+    // certificates. It takes precedence over the platform defaults.
+    String basePath = System.getenv("CERT_BASE_PATH");
+    if (basePath != null && !basePath.isEmpty()) {
+      return new File(basePath, fileName).getPath();
+    }
     String os = System.getProperty("os.name").toLowerCase();
     if (os.contains("win")) {
       return "d:\\garden\\var\\hello_grpc\\client_certs\\" + fileName;

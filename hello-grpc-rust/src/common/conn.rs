@@ -2,11 +2,13 @@
 #![allow(unused_variables)]
 
 use std::env;
+use std::fs;
 
 use log::{error, info};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity};
 
 use crate::common::landing::landing_service_client::LandingServiceClient;
+use crate::common::trans;
 
 const DOMAIN_NAME: &str = "hello.grpc.io";
 pub const CONFIG_PATH: &str = "config/log4rs.yml";
@@ -17,31 +19,34 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
     if is_tls {
         let address = format!("https://{}:{}", grpc_backend_host(), grpc_backend_port());
 
-        // Load certificates based on platform using optimized pattern matching
-        #[cfg(target_os = "windows")]
-        let (cert, key, ca) = (
-            include_str!("d:\\garden\\var\\hello_grpc\\client_certs\\full_chain.pem"),
-            include_str!("d:\\garden\\var\\hello_grpc\\client_certs\\private.key"),
-            include_str!("d:\\garden\\var\\hello_grpc\\client_certs\\myssl_root.cer"),
-        );
-
-        #[cfg(target_os = "linux")]
-        let (cert, key, ca) = (
-            include_str!("/var/hello_grpc/client_certs/full_chain.pem"),
-            include_str!("/var/hello_grpc/client_certs/private.key"),
-            include_str!("/var/hello_grpc/client_certs/myssl_root.cer"),
-        );
-
-        #[cfg(target_os = "macos")]
-        let (cert, key, ca) = (
-            include_str!("/var/hello_grpc/client_certs/full_chain.pem"),
-            include_str!("/var/hello_grpc/client_certs/private.key"),
-            include_str!("/var/hello_grpc/client_certs/myssl_root.cer"),
-        );
+        // Load certificates at runtime. Resolution order: CERT_BASE_PATH env
+        // var, then the platform default. Fail fast when TLS is requested but
+        // the certificates cannot be read.
+        let cert = fs::read(trans::client_cert_chain()).unwrap_or_else(|e| {
+            panic!(
+                "GRPC_HELLO_SECURE=Y but failed to read client cert chain {:?}: {}",
+                trans::client_cert_chain(),
+                e
+            )
+        });
+        let key = fs::read(trans::client_cert_key()).unwrap_or_else(|e| {
+            panic!(
+                "GRPC_HELLO_SECURE=Y but failed to read client key {:?}: {}",
+                trans::client_cert_key(),
+                e
+            )
+        });
+        let ca = fs::read(trans::client_root_cert()).unwrap_or_else(|e| {
+            panic!(
+                "GRPC_HELLO_SECURE=Y but failed to read root cert {:?}: {}",
+                trans::client_root_cert(),
+                e
+            )
+        });
 
         // creating identity from key and certificate
-        let identity_cert = Identity::from_pem(cert.as_bytes(), key.as_bytes());
-        let ca = Certificate::from_pem(ca.as_bytes());
+        let identity_cert = Identity::from_pem(cert, key);
+        let ca = Certificate::from_pem(ca);
 
         // telling the client what is the identity of our server
         let tls = ClientTlsConfig::new()
@@ -70,7 +75,7 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
     info!("Connect with insecure address: {}", address);
     LandingServiceClient::connect(address)
         .await
-        .unwrap_or_else(|error| panic!("Problem opening the file: {:?}", error))
+        .unwrap_or_else(|error| panic!("Failed to connect to gRPC server: {:?}", error))
 }
 
 fn grpc_server() -> String {

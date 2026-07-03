@@ -17,7 +17,7 @@ public enum Otel {
     }
 
     private static let lock = NSLock()
-    private static var _initialized = false
+    nonisolated(unsafe) private static var _initialized = false
 
     /// One-time SDK setup. No-op when the env var is unset.
     public static func initOtel(_ serviceName: String) {
@@ -29,9 +29,9 @@ public enum Otel {
 
         let exporter = StdoutExporter()
         let processor = SimpleSpanProcessor(spanExporter: exporter)
-        let resource = DefaultResources.get().merging(
-            with: Resource(attributes: [
-                "service.name": AttributeValue(serviceName),
+        let resource = Resource().merging(
+            other: Resource(attributes: [
+                "service.name": AttributeValue.string(serviceName),
             ])
         )
 
@@ -57,7 +57,7 @@ public enum Otel {
     ) -> Span? {
         guard enabled else { return nil }
         return tracer.spanBuilder(spanName: name)
-            .setSpanKind(kind)
+            .setSpanKind(spanKind: kind)
             .setAttribute(key: "rpc.system", value: "grpc")
             .setAttribute(key: "rpc.method", value: name)
             .startSpan()
@@ -132,7 +132,7 @@ public struct HelloServerInterceptor: ServerInterceptor, Sendable {
     ) async throws -> StreamingServerResponse<Output> {
         OtelMetrics.shared.recordCall()
 
-        guard let span = Otel.startSpan(context.descriptor.fullName, kind: .server)
+        guard let span = Otel.startSpan(context.descriptor.fullyQualifiedMethod, kind: .server)
         else {
             do {
                 return try await next(request, context)
@@ -148,7 +148,7 @@ public struct HelloServerInterceptor: ServerInterceptor, Sendable {
             return try await next(request, context)
         } catch {
             OtelMetrics.shared.recordError()
-            span.setStatus(.error, description: String(describing: error))
+            span.status = .error(description: String(describing: error))
             throw error
         }
     }
@@ -164,12 +164,12 @@ public struct HelloClientInterceptor: ClientInterceptor, Sendable {
     public func intercept<Input: Sendable, Output: Sendable>(
         request: StreamingClientRequest<Input>,
         context: ClientContext,
-        next: @Sendable (
+        next: (
             _ request: StreamingClientRequest<Input>,
             _ context: ClientContext
         ) async throws -> StreamingClientResponse<Output>
     ) async throws -> StreamingClientResponse<Output> {
-        guard let span = Otel.startSpan(context.descriptor.fullName, kind: .client)
+        guard let span = Otel.startSpan(context.descriptor.fullyQualifiedMethod, kind: .client)
         else {
             return try await next(request, context)
         }
@@ -179,7 +179,7 @@ public struct HelloClientInterceptor: ClientInterceptor, Sendable {
         do {
             return try await next(request, context)
         } catch {
-            span.setStatus(.error, description: String(describing: error))
+            span.status = .error(description: String(describing: error))
             throw error
         }
     }

@@ -13,14 +13,11 @@ cc_library(
     name = "otel",
     srcs = ["otel.cc"],
     hdrs = ["otel.h"],
-    deps = [
-        "@io_opentelemetry_cpp//api",
-        "@io_opentelemetry_cpp//exporters/ostream:ostream_metric_exporter",
-        "@io_opentelemetry_cpp//exporters/ostream:ostream_span_exporter",
-        "@io_opentelemetry_cpp//sdk/src/metrics:metrics",
-        "@io_opentelemetry_cpp//sdk/src/resource:resource",
-        "@io_opentelemetry_cpp//sdk/src/trace:trace",
-    ],
+    # Native opentelemetry-cpp is intentionally NOT a dependency here.
+    # Every BCR release compatible with this project's pinned grpc/protobuf
+    # graph ships a `sdk/src/resource`/`sdk/src/metrics` BUILD file with an
+    # empty glob() that fails analysis (see otel.cc for details). otel.cc is
+    # an env-gated no-op stub so this library has no OpenTelemetry deps.
 )
 
 cc_library(

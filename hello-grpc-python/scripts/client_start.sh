@@ -20,19 +20,48 @@ elif [ -d "../venv" ]; then
   source ../venv/bin/activate
 fi
 
-# Preparation steps
+# Find a Python interpreter that actually has grpc importable.
+# On some setups `python3`/`python` on PATH resolve to a different install
+# than the one `pip3` installs into (e.g. a Windows Store stub vs. an
+# Anaconda install), so also check the interpreter next to pip3.
+find_python_with_grpc() {
+  local candidates=(python3 python)
+  local pip3_path
+  pip3_path="$(command -v pip3 2>/dev/null || true)"
+  if [ -n "$pip3_path" ]; then
+    local pip3_dir
+    pip3_dir="$(dirname "$pip3_path")"
+    candidates+=("$pip3_dir/python" "$pip3_dir/python3" "$pip3_dir/../python" "$pip3_dir/../python3")
+  fi
+
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c "import grpc, google.protobuf" &>/dev/null; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
 log_info "Checking Python gRPC dependencies..."
-# Check if grpcio and protobuf are installed
-if ! python3 -c "import grpc, google.protobuf" &>/dev/null; then
+PYTHON_BIN="$(find_python_with_grpc || true)"
+
+if [ -z "$PYTHON_BIN" ]; then
   log_info "Installing required Python gRPC dependencies..."
   pip3 install grpcio grpcio-tools protobuf --upgrade
-else
-  log_info "Python gRPC dependencies already installed"
+  PYTHON_BIN="$(find_python_with_grpc || true)"
 fi
+
+if [ -z "$PYTHON_BIN" ]; then
+  log_error "Could not find a Python interpreter with grpc installed"
+  exit 1
+fi
+
+log_info "Python gRPC dependencies already installed (using: $PYTHON_BIN)"
 
 export PYTHONPATH=$(pwd)
 export PYTHONPATH=$PYTHONPATH:$(pwd)/landing_pb2
-alias python=python3
 
 # Default configuration
 USE_TLS=false
@@ -81,7 +110,7 @@ done
 log_info "Starting Python gRPC client..."
 
 # Build the command
-CMD="python client/protoClient.py"
+CMD="$PYTHON_BIN client/protoClient.py"
 
 # Add TLS flag if enabled
 if [ "$USE_TLS" = true ]; then

@@ -257,14 +257,28 @@ func createSecureServer() *grpc.Server {
 	if err != nil {
 		log.Errorf("Failed to load TLS certificates: %v", err)
 		log.Errorf("Certificate paths: key=%s, chain=%s", certKeyPath, certChainPath)
-		log.Warn("Falling back to insecure server")
-		return createInsecureServer()
+		if os.Getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y" {
+			log.Warn("GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure server")
+			return createInsecureServer()
+		}
+		log.Fatal("TLS was requested but certificates could not be loaded. " +
+			"Set CERT_BASE_PATH to the certificate directory, or set " +
+			"GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure server")
+	}
+
+	pool, err := conn.GetCertPool(rootCertPath)
+	if err != nil {
+		if os.Getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y" {
+			log.Warnf("Failed to load root cert (%v), GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure server", err)
+			return createInsecureServer()
+		}
+		log.Fatalf("TLS was requested but root cert could not be loaded: %v", err)
 	}
 
 	tlsConfig := &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		Certificates: []tls.Certificate{cert},
-		ClientCAs:    conn.GetCertPool(rootCertPath),
+		ClientCAs:    pool,
 		MinVersion:   tls.VersionTLS12, // Enforce minimum TLS 1.2 for security
 	}
 

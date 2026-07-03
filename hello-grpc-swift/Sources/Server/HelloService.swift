@@ -7,7 +7,7 @@ import Logging
 import NIOCore
 import NIOPosix
 
-final class HelloService: Hello_LandingService.SimpleServiceProtocol {
+final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Sendable {
     let logger = Logger(label: "HelloService")
     let backendConfig: (host: String, port: Int, useTLS: Bool)?
     let certBasePath: String
@@ -68,72 +68,78 @@ final class HelloService: Hello_LandingService.SimpleServiceProtocol {
 
     // Unary RPC implementation
     func talk(
-        request: Hello_TalkRequest,
+        request: GRPCCore.ServerRequest<Hello_TalkRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> Hello_TalkResponse {
-        logger.info("[\(request.data)] talk request: data=\(request.data), meta=\(request.meta)")
+    ) async throws -> GRPCCore.ServerResponse<Hello_TalkResponse> {
+        let message = request.message
+        logger.info("[\(message.data)] talk request: data=\(message.data), meta=\(message.meta)")
 
         if let backendClient = try getBackendClient() {
             // Forward request to backend service
             let startTime = Date()
-            logger.info("[\(request.data)] 开始调用后端服务: \(startTime)")
-            let response = try await backendClient.talk(request, metadata: context.metadata)
+            logger.info("[\(message.data)] 开始调用后端服务: \(startTime)")
+            let response = try await backendClient.talk(message, metadata: request.metadata)
             let endTime = Date()
             let elapsedTime = endTime.timeIntervalSince(startTime)
-            logger.info("[\(request.data)] 后端服务调用完成: \(endTime), 耗时: \(elapsedTime)秒")
-            return response
+            logger.info("[\(message.data)] 后端服务调用完成: \(endTime), 耗时: \(elapsedTime)秒")
+            return GRPCCore.ServerResponse(message: response, metadata: [:])
         }
 
-        return .with {
+        let reply: Hello_TalkResponse = .with {
             $0.status = 200
-            $0.results = [buildResult(rid: request.data)]
+            $0.results = [buildResult(rid: message.data)]
         }
+        return GRPCCore.ServerResponse(message: reply, metadata: [:])
     }
 
     // Server Streaming RPC implementation
     func talkOneAnswerMore(
-        request: Hello_TalkRequest,
-        response: GRPCCore.RPCWriter<Hello_TalkResponse>,
+        request: GRPCCore.ServerRequest<Hello_TalkRequest>,
         context: GRPCCore.ServerContext
-    ) async throws {
+    ) async throws -> GRPCCore.StreamingServerResponse<Hello_TalkResponse> {
+        let message = request.message
         let requestId = UUID().uuidString
-        logger.info("[\(requestId)] talkOneAnswerMore request: data=\(request.data), meta=\(request.meta)")
+        logger.info("[\(requestId)] talkOneAnswerMore request: data=\(message.data), meta=\(message.meta)")
 
         if let backendClient = try getBackendClient() {
-            // Forward request to backend service
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkOneAnswerMore: \(startTime)")
-            let _ = try await backendClient.talkOneAnswerMore(request, metadata: context.metadata) { [self] streamResponse in
-                self.logger.info("[\(requestId)] 开始处理 talkOneAnswerMore 流响应")
-                for try await responseMessage in streamResponse.messages {
-                    try await response.write(responseMessage)
-                    self.logger.info("[\(requestId)] 已写入一条 talkOneAnswerMore 响应")
+            return GRPCCore.StreamingServerResponse<Hello_TalkResponse>(metadata: [:]) { [self] writer in
+                let _ = try await backendClient.talkOneAnswerMore(message, metadata: request.metadata) { streamResponse in
+                    self.logger.info("[\(requestId)] 开始处理 talkOneAnswerMore 流响应")
+                    for try await responseMessage in streamResponse.messages {
+                        try await writer.write(responseMessage)
+                        self.logger.info("[\(requestId)] 已写入一条 talkOneAnswerMore 响应")
+                    }
+                    let endTime = Date()
+                    let elapsedTime = endTime.timeIntervalSince(startTime)
+                    self.logger.info("[\(requestId)] talkOneAnswerMore 流处理完成: 耗时: \(elapsedTime)秒")
                 }
-                let endTime = Date()
-                let elapsedTime = endTime.timeIntervalSince(startTime)
-                self.logger.info("[\(requestId)] talkOneAnswerMore 流处理完成: 耗时: \(elapsedTime)秒")
+                self.logger.info("[\(requestId)] talkOneAnswerMore 请求已发送至后端")
+                return [:]
             }
-            logger.info("[\(requestId)] talkOneAnswerMore 请求已发送至后端")
-            return
         }
 
-        let datas: [String] = request.data.components(separatedBy: ",")
-        for d in datas {
-            try await response.write(
-                .with {
-                    $0.status = 200
-                    $0.results = [buildResult(rid: d)]
-                }
-            )
-            logger.info("[\(requestId)] talkOneAnswerMore sent response for data=\(d)")
+        return GRPCCore.StreamingServerResponse<Hello_TalkResponse>(metadata: [:]) { [self] writer in
+            let datas: [String] = message.data.components(separatedBy: ",")
+            for d in datas {
+                try await writer.write(
+                    .with {
+                        $0.status = 200
+                        $0.results = [self.buildResult(rid: d)]
+                    }
+                )
+                self.logger.info("[\(requestId)] talkOneAnswerMore sent response for data=\(d)")
+            }
+            return [:]
         }
     }
 
     // Client Streaming RPC implementation
     func talkMoreAnswerOne(
-        request: GRPCCore.RPCAsyncSequence<Hello_TalkRequest, any Swift.Error>,
+        request: GRPCCore.StreamingServerRequest<Hello_TalkRequest>,
         context: GRPCCore.ServerContext
-    ) async throws -> Hello_TalkResponse {
+    ) async throws -> GRPCCore.ServerResponse<Hello_TalkResponse> {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] 开始处理 talkMoreAnswerOne 请求")
 
@@ -141,82 +147,85 @@ final class HelloService: Hello_LandingService.SimpleServiceProtocol {
             // Forward request to backend service
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkMoreAnswerOne: \(startTime)")
-            let response = try await backendClient.talkMoreAnswerOne(metadata: context.metadata) { [self] writer in
-                for try await req in request {
-                    self.logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
-                    try await writer.write(req)
+            let response = try await backendClient.talkMoreAnswerOne(
+                metadata: request.metadata,
+                requestProducer: { [self] writer in
+                    for try await req in request.messages {
+                        self.logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
+                        try await writer.write(req)
+                    }
+                    self.logger.info("[\(requestId)] 所有客户端请求已转发至后端")
                 }
-                self.logger.info("[\(requestId)] 所有客户端请求已转发至后端")
-            }
+            )
             let endTime = Date()
             let elapsedTime = endTime.timeIntervalSince(startTime)
             logger.info("[\(requestId)] talkMoreAnswerOne 请求完成: 耗时: \(elapsedTime)秒")
-            return response
+            return GRPCCore.ServerResponse(message: response, metadata: [:])
         }
 
         var results: [Hello_TalkResult] = []
-        for try await req in request {
+        for try await req in request.messages {
             logger.info("[\(requestId)] talkMoreAnswerOne received request: data=\(req.data), meta=\(req.meta)")
             results.append(buildResult(rid: req.data))
         }
 
         logger.info("[\(requestId)] talkMoreAnswerOne 处理完成, 返回结果")
-        return .with {
+        let reply: Hello_TalkResponse = .with {
             $0.status = 200
             $0.results = results
         }
+        return GRPCCore.ServerResponse(message: reply, metadata: [:])
     }
 
     // Bidirectional Streaming RPC implementation
     func talkBidirectional(
-        request: GRPCCore.RPCAsyncSequence<Hello_TalkRequest, any Swift.Error>,
-        response: GRPCCore.RPCWriter<Hello_TalkResponse>,
+        request: GRPCCore.StreamingServerRequest<Hello_TalkRequest>,
         context: GRPCCore.ServerContext
-    ) async throws {
+    ) async throws -> GRPCCore.StreamingServerResponse<Hello_TalkResponse> {
         let requestId = UUID().uuidString
         logger.info("[\(requestId)] 开始处理 talkBidirectional 请求")
 
         if let backendClient = try getBackendClient() {
-            // Forward request to backend service
             let startTime = Date()
             logger.info("[\(requestId)] 开始调用后端服务 talkBidirectional: \(startTime)")
-            try await backendClient.talkBidirectional(metadata: context.metadata) { writer in
-                Task { [self] in
+            return GRPCCore.StreamingServerResponse<Hello_TalkResponse>(metadata: [:]) { [self] writer in
+                try await backendClient.talkBidirectional(metadata: request.metadata) { backendWriter in
                     self.logger.info("[\(requestId)] 开始转发请求到后端服务")
-                    for try await req in request {
+                    for try await req in request.messages {
                         self.logger.info("[\(requestId)] 转发请求到后端: \(req.data)")
-                        try await writer.write(req)
+                        try await backendWriter.write(req)
                     }
                     self.logger.info("[\(requestId)] 完成所有客户端请求转发")
-                }
-            } onResponse: { streamResponse in
-                Task { [self] in
+                } onResponse: { streamResponse in
                     self.logger.info("[\(requestId)] 开始处理后端服务响应")
                     for try await responseMessage in streamResponse.messages {
                         self.logger.info("[\(requestId)] 接收到后端响应")
-                        try await response.write(responseMessage)
+                        try await writer.write(responseMessage)
                         self.logger.info("[\(requestId)] 已将响应写回客户端")
                     }
                     let endTime = Date()
                     let elapsedTime = endTime.timeIntervalSince(startTime)
                     self.logger.info("[\(requestId)] talkBidirectional 请求完成: 耗时: \(elapsedTime)秒")
+                    return ()
                 }
-                return ()
+                self.logger.info("[\(requestId)] 已发送 talkBidirectional 请求到后端")
+                return [:]
             }
-            logger.info("[\(requestId)] 已发送 talkBidirectional 请求到后端")
-            return
         }
 
-        for try await req in request {
-            logger.info("[\(requestId)] talkBidirectional received: data=\(req.data), meta=\(req.meta)")
-            let result = buildResult(rid: req.data)
-            try await response.write(
-                .with {
-                    $0.status = 200
-                    $0.results = [result]
-                }
-            )
-            logger.info("[\(requestId)] talkBidirectional sent response for data=\(req.data)")
+        return GRPCCore.StreamingServerResponse<Hello_TalkResponse>(metadata: [:]) { [self] writer in
+            for try await req in request.messages {
+                self.logger.info("[\(requestId)] talkBidirectional received: data=\(req.data), meta=\(req.meta)")
+                let result = self.buildResult(rid: req.data)
+                try await writer.write(
+                    .with {
+                        $0.status = 200
+                        $0.results = [result]
+                    }
+                )
+                self.logger.info("[\(requestId)] talkBidirectional sent response for data=\(req.data)")
+            }
+            return [:]
         }
     }
 

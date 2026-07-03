@@ -40,6 +40,9 @@ bazel-*/
 *.log
 *.gz
 log/
+logs/*
+!logs/.gitkeep
+docker/smoke_logs/
 
 # Dependency files
 package-lock.json
@@ -61,11 +64,16 @@ Package.resolved
 *.pb.h
 pb/
 envoy/*.pb
+hello-grpc-python/conn/landing_pb2*.py*
+hello-grpc-ts/src/proto/
+hello-grpc-nodejs/src/proto/
 
 ## Python
 __pycache__/
 *.pyc
 venv/
+.venv/
+installed_packages.txt
 
 ## Swift
 .swiftpm/

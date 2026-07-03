@@ -145,7 +145,17 @@ class Client {
         ..info('Using secure connection (TLS)')
         ..info('Root cert path: ${Conn.rootCertPath}');
 
-      final rootCert = await File(Conn.rootCertPath).readAsBytes();
+      final List<int> rootCert;
+      try {
+        rootCert = await File(Conn.rootCertPath).readAsBytes();
+      } on IOException catch (e) {
+        _logger.severe(
+          'GRPC_HELLO_SECURE=Y but failed to read root certificate at '
+          '${Conn.rootCertPath}: $e. Set CERT_BASE_PATH to the certificate '
+          'directory.',
+        );
+        rethrow;
+      }
 
       credentials = ChannelCredentials.secure(
         certificates: rootCert,

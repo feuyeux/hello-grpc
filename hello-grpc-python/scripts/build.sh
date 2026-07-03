@@ -33,7 +33,7 @@ if ! check_dependencies "python3:3.8+:brew install python@3" "pip3::python3 -m e
 fi
 
 # Clean if requested
-standard_clean "landing_pb2.py" "landing_pb2_grpc.py" "__pycache__"
+standard_clean "conn/landing_pb2.py" "conn/landing_pb2.pyi" "conn/landing_pb2_grpc.py" "__pycache__"
 
 # Check for virtual environment
 if [ ! -d "venv" ]; then
@@ -57,19 +57,22 @@ else
     log_warning "requirements.txt not found. Skipping dependency installation."
 fi
 
-# Generate Python code from proto files
+# Generate Python code from proto files (into the conn package, which the code imports from)
 PROTO_PATH="../proto/landing.proto"
-PB_FILE="landing_pb2.py"
-GRPC_FILE="landing_pb2_grpc.py"
+PB_FILE="conn/landing_pb2.py"
+GRPC_FILE="conn/landing_pb2_grpc.py"
 
 # Check if proto files need to be regenerated
 if proto_needs_regen "$PROTO_PATH" "$PB_FILE" || [ ! -f "$GRPC_FILE" ]; then
     log_build "Generating protobuf code..."
     python3 -m grpc_tools.protoc \
       -I../proto \
-      --python_out=. \
-      --grpc_python_out=. \
+      --python_out=conn \
+      --pyi_out=conn \
+      --grpc_python_out=conn \
       ../proto/landing.proto
+    # Rewrite the generated absolute import to the conn package
+    sed -i.bak 's/^import landing_pb2 as landing__pb2$/import conn.landing_pb2 as landing__pb2/' "$GRPC_FILE" && rm -f "$GRPC_FILE.bak"
 else
     log_debug "Protobuf files are up to date, skipping generation"
 fi

@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use std::env;
+use std::path::PathBuf;
+
 pub static TRACING_KEYS: &[&str] = &[
     "x-request-id",
     "x-b3-traceid",
@@ -11,29 +14,51 @@ pub static TRACING_KEYS: &[&str] = &[
     "x-ot-span-context",
 ];
 
-#[cfg(target_os = "linux")]
-pub const CERT: &str = "/var/hello_grpc/server_certs/cert.pem";
-#[cfg(target_os = "linux")]
-pub const CERT_KEY: &str = "/var/hello_grpc/server_certs/private.key";
-#[cfg(target_os = "linux")]
-pub const CERT_CHAIN: &str = "/var/hello_grpc/server_certs/full_chain.pem";
-#[cfg(target_os = "linux")]
-pub const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";
+/// Base directory that contains the `server_certs`/`client_certs` folders.
+/// Resolution order: `CERT_BASE_PATH` env var, then the platform default.
+fn cert_base_path() -> PathBuf {
+    if let Ok(base) = env::var("CERT_BASE_PATH") {
+        return PathBuf::from(base);
+    }
+    if cfg!(target_os = "windows") {
+        PathBuf::from("d:\\garden\\var\\hello_grpc")
+    } else {
+        PathBuf::from("/var/hello_grpc")
+    }
+}
 
-#[cfg(target_os = "windows")]
-pub const CERT: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\cert.pem";
-#[cfg(target_os = "windows")]
-pub const CERT_KEY: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\private.key";
-#[cfg(target_os = "windows")]
-pub const CERT_CHAIN: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\full_chain.pem";
-#[cfg(target_os = "windows")]
-pub const ROOT_CERT: &str = "d:\\garden\\var\\hello_grpc\\server_certs\\myssl_root.cer";
+fn server_cert_dir() -> PathBuf {
+    cert_base_path().join("server_certs")
+}
 
-#[cfg(target_os = "macos")]
-pub const CERT: &str = "/var/hello_grpc/server_certs/cert.pem";
-#[cfg(target_os = "macos")]
-pub const CERT_KEY: &str = "/var/hello_grpc/server_certs/private.key";
-#[cfg(target_os = "macos")]
-pub const CERT_CHAIN: &str = "/var/hello_grpc/server_certs/full_chain.pem";
-#[cfg(target_os = "macos")]
-pub const ROOT_CERT: &str = "/var/hello_grpc/server_certs/myssl_root.cer";
+fn client_cert_dir() -> PathBuf {
+    cert_base_path().join("client_certs")
+}
+
+pub fn server_cert() -> PathBuf {
+    server_cert_dir().join("cert.pem")
+}
+
+pub fn server_cert_key() -> PathBuf {
+    server_cert_dir().join("private.key")
+}
+
+pub fn server_cert_chain() -> PathBuf {
+    server_cert_dir().join("full_chain.pem")
+}
+
+pub fn server_root_cert() -> PathBuf {
+    server_cert_dir().join("myssl_root.cer")
+}
+
+pub fn client_cert_chain() -> PathBuf {
+    client_cert_dir().join("full_chain.pem")
+}
+
+pub fn client_cert_key() -> PathBuf {
+    client_cert_dir().join("private.key")
+}
+
+pub fn client_root_cert() -> PathBuf {
+    client_cert_dir().join("myssl_root.cer")
+}

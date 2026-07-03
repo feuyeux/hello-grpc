@@ -23,7 +23,7 @@ const services = require('../proto/landing_grpc_pb');
 const conn = require('../common/connection');
 const utils = require('../common/utils');
 // C4 — gRPC Server Reflection
-const reflection = require('grpc-node-server-reflection');
+const reflection = require('grpc-node-server-reflection').default;
 // B7 — gRPC Health Check
 const { HealthCheckResponse, HealthImplementation } = require('grpc-health-check');
 // C5 — Logging middleware

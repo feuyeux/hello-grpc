@@ -8,7 +8,7 @@ plugins {
 
 //https://github.com/grpc/grpc/releases
 //https://mvnrepository.com/artifact/io.grpc/grpc-netty
-extra["grpcVersion"] = "1.68.0"
+extra["grpcVersion"] = "1.82.1"
 //https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
 extra["kotlinxVersion"] = "1.9.0"
 //https://github.com/grpc/grpc-kotlin
