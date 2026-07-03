@@ -4,7 +4,9 @@ using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using Grpc.Core;
 using Grpc.Net.Client;
+using Grpc.Net.Client.Configuration;
 using log4net;
 
 namespace Common
@@ -52,6 +54,43 @@ namespace Common
         }
 
         /// <summary>
+        /// Retry service config for hello.LandingService following gRPC A6 client retries
+        /// (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+        /// </summary>
+        private static ServiceConfig BuildRetryServiceConfig()
+        {
+            return new ServiceConfig
+            {
+                MethodConfigs =
+                {
+                    new MethodConfig
+                    {
+                        Names = { new MethodName { Service = "hello.LandingService" } },
+                        RetryPolicy = new RetryPolicy
+                        {
+                            MaxAttempts = 4,
+                            InitialBackoff = TimeSpan.FromMilliseconds(100),
+                            MaxBackoff = TimeSpan.FromSeconds(1),
+                            BackoffMultiplier = 2,
+                            RetryableStatusCodes = { StatusCode.Unavailable }
+                        }
+                    }
+                }
+            };
+        }
+
+        /// <summary>
+        /// Applies HTTP/2 keepalive ping settings shared by secure and insecure channels.
+        /// </summary>
+        private static void ConfigureKeepalive(SocketsHttpHandler handler)
+        {
+            handler.KeepAlivePingDelay = TimeSpan.FromSeconds(10);
+            handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1);
+            handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+            handler.EnableMultipleHttp2Connections = true;
+        }
+
+        /// <summary>
         /// Creates and returns a gRPC channel configured based on environment variables.
         /// Supports both secure (TLS) and insecure connections.
         /// </summary>
@@ -77,6 +116,7 @@ namespace Common
                         RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true,
                     }
                 };
+                ConfigureKeepalive(handler);
                 
                 // Add client certificate if available
                 if (File.Exists(CertPath) && File.Exists(CertKeyPath))
@@ -97,14 +137,21 @@ namespace Common
                 
                 var channelOptions = new GrpcChannelOptions
                 {
-                    HttpHandler = handler
+                    HttpHandler = handler,
+                    ServiceConfig = BuildRetryServiceConfig()
                 };
                 
                 return GrpcChannel.ForAddress($"https://{endpoint}", channelOptions);
             }
             
             Log.Info($"Connect with InSecure(:{port})");
-            return GrpcChannel.ForAddress($"http://{endpoint}");
+            var insecureHandler = new SocketsHttpHandler();
+            ConfigureKeepalive(insecureHandler);
+            return GrpcChannel.ForAddress($"http://{endpoint}", new GrpcChannelOptions
+            {
+                HttpHandler = insecureHandler,
+                ServiceConfig = BuildRetryServiceConfig()
+            });
         }
 
         /// <summary>

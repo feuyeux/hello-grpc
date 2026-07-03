@@ -43,6 +43,33 @@ const certChain = path.join(certBasePath, "full_chain.pem")
 const rootCert = path.join(certBasePath, "myssl_root.cer")
 const serverName = "hello.grpc.io"
 
+/**
+ * Client resilience defaults shared by secure and insecure channels:
+ * HTTP/2 keepalive pings plus transparent retries per gRPC A6
+ * (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+ */
+export const RESILIENCE_OPTIONS: Record<string, string | number> = {
+  "grpc.keepalive_time_ms": 120000,
+  "grpc.keepalive_timeout_ms": 20000,
+  "grpc.keepalive_permit_without_calls": 1,
+  "grpc.http2.min_time_between_pings_ms": 120000,
+  "grpc.http2.max_pings_without_data": 0,
+  "grpc.enable_retries": 1,
+  "grpc.service_config": JSON.stringify({
+    methodConfig: [{
+      name: [{ service: "hello.LandingService" }],
+      waitForReady: true,
+      retryPolicy: {
+        maxAttempts: 4,
+        initialBackoff: "0.1s",
+        maxBackoff: "1s",
+        backoffMultiplier: 2,
+        retryableStatusCodes: ["UNAVAILABLE"]
+      }
+    }]
+  })
+};
+
 // 确保日志目录存在
 try {
   fs.mkdirSync('log', { recursive: true });
@@ -184,25 +211,25 @@ export function createClient(): LandingServiceClient {
       const options = {
         "grpc.ssl_target_name_override": serverName,
         "grpc.default_authority": serverName,
-        "grpc.keepalive_time_ms": 120000,
-        "grpc.keepalive_timeout_ms": 20000,
-        "grpc.keepalive_permit_without_calls": 1,
-        "grpc.http2.min_time_between_pings_ms": 120000,
-        "grpc.http2.max_pings_without_data": 0,
         // Add option to skip certificate validation for testing
-        "grpc.ssl_verification_mode": process.env.NO_SSL_VERIFY === "Y" ? 0 : 1
+        "grpc.ssl_verification_mode": process.env.NO_SSL_VERIFY === "Y" ? 0 : 1,
+        ...RESILIENCE_OPTIONS
       };
       
       logger.info("TLS credentials created successfully");
       return new LandingServiceClient(address, credentials, options);
     } catch (error: unknown) {
-      logger.error("TLS connection failed: %s. Falling back to insecure.", 
+      if (process.env.GRPC_HELLO_INSECURE_FALLBACK === "Y") {
+        logger.error("TLS connection failed: %s. GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure.",
+                   error instanceof Error ? error.message : String(error));
+        return new LandingServiceClient(address, grpc.credentials.createInsecure(), RESILIENCE_OPTIONS);
+      }
+      logger.error("TLS connection failed: %s. Set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure connection.",
                  error instanceof Error ? error.message : String(error));
-      logger.info("Connect With InSecure fallback to %s", address);
-      return new LandingServiceClient(address, grpc.credentials.createInsecure());
+      throw error;
     }
   } else {
     logger.info("Connect With InSecure to %s", address);
-    return new LandingServiceClient(address, grpc.credentials.createInsecure());
+    return new LandingServiceClient(address, grpc.credentials.createInsecure(), RESILIENCE_OPTIONS);
   }
 }

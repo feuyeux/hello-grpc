@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as grpc from '@grpc/grpc-js';
-import { logger } from './conn';
+import { logger, RESILIENCE_OPTIONS } from './conn';
 
 /**
  * Gets the certificate base path for server or client certificates
@@ -187,12 +187,8 @@ export function createClientCredentials(serverName: string = "hello.grpc.io"): {
     const options = {
         "grpc.ssl_target_name_override": serverName,
         "grpc.default_authority": serverName,
-        "grpc.keepalive_time_ms": 120000,
-        "grpc.keepalive_timeout_ms": 20000,
-        "grpc.keepalive_permit_without_calls": 1,
-        "grpc.http2.min_time_between_pings_ms": 120000,
-        "grpc.http2.max_pings_without_data": 0,
-        "grpc.ssl_verification_mode": process.env.NO_SSL_VERIFY === "Y" ? 0 : 1
+        "grpc.ssl_verification_mode": process.env.NO_SSL_VERIFY === "Y" ? 0 : 1,
+        ...RESILIENCE_OPTIONS
     };
     
     return { credentials, options };

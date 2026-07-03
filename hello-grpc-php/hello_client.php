@@ -145,6 +145,22 @@ $client = new LandingServiceClient($hostWithPort, [
     'grpc.http2.min_time_between_pings_ms' => 25000,// Minimum time between pings
     'grpc.max_receive_message_length' => 8 * 1024 * 1024, // 8MB max message size
     'grpc.primary_user_agent' => 'hello-grpc-php-client/1.0.0',
+    // Transparent retries per gRPC A6
+    // (https://github.com/grpc/proposal/blob/master/A6-client-retries.md)
+    'grpc.enable_retries' => 1,
+    'grpc.service_config' => json_encode([
+        'methodConfig' => [[
+            'name' => [['service' => 'hello.LandingService']],
+            'waitForReady' => true,
+            'retryPolicy' => [
+                'maxAttempts' => 4,
+                'initialBackoff' => '0.1s',
+                'maxBackoff' => '1s',
+                'backoffMultiplier' => 2.0,
+                'retryableStatusCodes' => ['UNAVAILABLE'],
+            ],
+        ]],
+    ]),
 ]);
 
 // Create a request ID for distributed tracing

@@ -13,7 +13,7 @@
 
 import * as grpc from '@grpc/grpc-js';
 import { TalkRequest, TalkResponse } from './proto/landing_pb';
-import { logger } from './lib/conn';
+import { logger, RESILIENCE_OPTIONS } from './lib/conn';
 import { buildLinkRequests, getVersion, randomId } from './lib/utils';
 import { LandingServiceClient } from './proto/landing_grpc_pb';
 import { createClientCredentials } from './lib/tls';
@@ -412,13 +412,18 @@ async function createGrpcClient(): Promise<LandingServiceClient> {
             logger.info('Created TLS credentials successfully');
             return new LandingServiceClient(address, credentials, options);
         } catch (error) {
-            logger.error('Failed to create secure client: %s, falling back to insecure',
+            if (process.env.GRPC_HELLO_INSECURE_FALLBACK === 'Y') {
+                logger.error('Failed to create secure client: %s. GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure',
+                    error instanceof Error ? error.message : String(error));
+                return new LandingServiceClient(address, grpc.credentials.createInsecure(), RESILIENCE_OPTIONS);
+            }
+            logger.error('Failed to create secure client: %s. Set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure connection',
                 error instanceof Error ? error.message : String(error));
-            return new LandingServiceClient(address, grpc.credentials.createInsecure());
+            throw error;
         }
     } else {
         logger.info('Using insecure connection');
-        return new LandingServiceClient(address, grpc.credentials.createInsecure());
+        return new LandingServiceClient(address, grpc.credentials.createInsecure(), RESILIENCE_OPTIONS);
     }
 }
 

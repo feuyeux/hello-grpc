@@ -137,6 +137,9 @@ namespace HelloServer
                 // Configure Kestrel server
                 builder.WebHost.ConfigureKestrel(options =>
                 {
+                    // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+                    options.Limits.Http2.KeepAlivePingDelay = TimeSpan.FromSeconds(30);
+                    options.Limits.Http2.KeepAlivePingTimeout = TimeSpan.FromSeconds(5);
                     options.ListenAnyIP(port, listenOptions =>
                     {
                         listenOptions.Protocols = HttpProtocols.Http2;
