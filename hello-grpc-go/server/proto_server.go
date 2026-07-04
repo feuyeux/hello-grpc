@@ -300,6 +300,19 @@ func createInsecureServer() *grpc.Server {
 	return server
 }
 
+// authUnaryInterceptor returns a gRPC interceptor that validates the
+// "authorization: Bearer <token>" header against the expected token.
+// Rejected calls return codes.Unauthenticated before the handler runs.
+func authUnaryInterceptor(expectedToken string) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if err := common.ValidateAuthToken(ctx, expectedToken); err != nil {
+			log.Warnf("Auth failed for %s: %v", info.FullMethod, err)
+			return nil, err
+		}
+		return handler(ctx, req)
+	}
+}
+
 // getCommonServerOptions returns common gRPC server options used by both secure and insecure servers
 func getCommonServerOptions() []grpc.ServerOption {
 	var opts []grpc.ServerOption
@@ -333,6 +346,14 @@ func getCommonServerOptions() []grpc.ServerOption {
 	// interceptor chain avoids a double-publish of every span and lets
 	// grpc-ecosystem-style chain semantics stay clean.
 	chained := []grpc.UnaryServerInterceptor{loggingInterceptor, rateInterceptor}
+
+	// Prepend auth interceptor when GRPC_HELLO_AUTH_TOKEN is set, so
+	// unauthenticated requests are rejected before logging or rate
+	// limiting. When the env var is unset, behavior is unchanged.
+	if token := os.Getenv(common.AuthTokenEnvVar); token != "" {
+		log.Info("Per-call bearer token auth enabled (GRPC_HELLO_AUTH_TOKEN)")
+		chained = append([]grpc.UnaryServerInterceptor{authUnaryInterceptor(token)}, chained...)
+	}
 	opts = append(opts, grpc.UnaryInterceptor(common.ChainUnaryInterceptors(chained...)))
 
 	// OpenTelemetry stats handler: traces both unary and stream RPCs in

@@ -28,7 +28,7 @@ fn get_endpoint() -> String {
     }
 }
 
-async fn post(path: &str, payload: serde_json::Value) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+async fn post(path: &str, payload: serde_json::Value) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}{}", get_endpoint(), path);
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(5))
@@ -58,7 +58,7 @@ pub fn is_etcd_discovery() -> bool {
     env::var("GRPC_HELLO_DISCOVERY").as_deref() == Ok("etcd")
 }
 
-pub async fn resolve_from_etcd() -> Result<String, Box<dyn std::error::Error>> {
+pub async fn resolve_from_etcd() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let resp = post("/v3/kv/range", json!({ "key": b64(ETCD_KEY) })).await?;
     if let Some(kvs) = resp["kvs"].as_array() {
         if !kvs.is_empty() {
@@ -70,7 +70,7 @@ pub async fn resolve_from_etcd() -> Result<String, Box<dyn std::error::Error>> {
     Err("no service instance found in etcd".into())
 }
 
-pub async fn register_to_etcd(host: &str, port: u16) -> Result<oneshot::Sender<()>, Box<dyn std::error::Error>> {
+pub async fn register_to_etcd(host: &str, port: u16) -> Result<oneshot::Sender<()>, Box<dyn std::error::Error + Send + Sync>> {
     let address = format!("{}:{}", host, port);
     // Grant lease
     let lease_resp = post("/v3/lease/grant", json!({ "TTL": DEFAULT_TTL })).await?;

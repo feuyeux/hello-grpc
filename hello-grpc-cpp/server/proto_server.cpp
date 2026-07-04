@@ -487,10 +487,19 @@ void RunServer()
     }
     catch (const std::exception &e)
     {
-      LOG(ERROR) << "Failed to configure TLS: " << e.what()
-                 << ". Falling back to insecure mode.";
-      builder.AddListeningPort(server_address,
-                               grpc::InsecureServerCredentials());
+      LOG(ERROR) << "Failed to configure TLS: " << e.what();
+      const char *fallback = std::getenv("GRPC_HELLO_INSECURE_FALLBACK");
+      if (fallback != nullptr && std::string(fallback) == "Y")
+      {
+        LOG(WARNING) << "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure server";
+        builder.AddListeningPort(server_address,
+                                 grpc::InsecureServerCredentials());
+      }
+      else
+      {
+        LOG(FATAL) << "TLS was requested but could not be configured. "
+                   << "Set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure server.";
+      }
     }
   }
   else

@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -28,7 +29,7 @@ const authScheme = "Bearer "
 // tokenCredentials implements credentials.PerRPCCredentials, attaching a
 // static bearer token to every outgoing RPC.
 type tokenCredentials struct {
-	token          string
+	token      string
 	requireTLS bool
 }
 
@@ -38,7 +39,7 @@ type tokenCredentials struct {
 // sent in the clear, so callers should only pass requireTLS=false for
 // local/demo insecure channels, matching this repo's GRPC_HELLO_SECURE
 // convention.
-func NewTokenCredentials(token string, requireTLS bool) credentialsPerRPC {
+func NewTokenCredentials(token string, requireTLS bool) credentials.PerRPCCredentials {
 	return tokenCredentials{token: token, requireTLS: requireTLS}
 }
 
@@ -50,15 +51,6 @@ func (t tokenCredentials) GetRequestMetadata(ctx context.Context, uri ...string)
 // RequireTransportSecurity implements credentials.PerRPCCredentials.
 func (t tokenCredentials) RequireTransportSecurity() bool {
 	return t.requireTLS
-}
-
-// credentialsPerRPC is a local alias so this file does not have to import
-// google.golang.org/grpc/credentials just for the interface type; callers
-// pass the returned value straight into grpc.WithPerRPCCredentials, which
-// accepts anything satisfying credentials.PerRPCCredentials structurally.
-type credentialsPerRPC interface {
-	GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error)
-	RequireTransportSecurity() bool
 }
 
 // ValidateAuthToken checks the incoming context's "authorization" metadata

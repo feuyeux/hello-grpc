@@ -62,6 +62,19 @@ var defaultKeepaliveParams = keepalive.ClientParameters{
 // attached to.
 var defaultCompressionCallOption = grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name))
 
+// authDialOption returns a grpc.WithPerRPCCredentials dial option when
+// GRPC_HELLO_AUTH_TOKEN is set, or nil when the env var is unset so the
+// caller can skip the option entirely.
+func authDialOption() grpc.DialOption {
+	token := os.Getenv(common.AuthTokenEnvVar)
+	if token == "" {
+		return nil
+	}
+	requireTLS := os.Getenv("GRPC_HELLO_SECURE") == "Y"
+	log.Infof("Per-call bearer token auth enabled (GRPC_HELLO_AUTH_TOKEN)")
+	return grpc.WithPerRPCCredentials(common.NewTokenCredentials(token, requireTLS))
+}
+
 func init() {
 	// CERT_BASE_PATH points at the directory that contains the client
 	// certificates. It takes precedence over the platform defaults.
@@ -171,20 +184,30 @@ func buildConnByDisc() *grpc.ClientConn {
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      pool,
 		}
-		conn, err := grpc.NewClient("etcd:///",
+		tlsOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(credentials.NewTLS(c)),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		if opt := authDialOption(); opt != nil {
+			tlsOpts = append(tlsOpts, opt)
+		}
+		conn, err := grpc.NewClient("etcd:///", tlsOpts...)
 		if err != nil {
 			log.Fatalf("failed to create gRPC client: %v", err)
 		}
 		return conn
 	} else {
 		log.Infof("Connect With InSecure through discovery")
-		conn, err := grpc.NewClient("etcd:///",
+		insecOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		if opt := authDialOption(); opt != nil {
+			insecOpts = append(insecOpts, opt)
+		}
+		conn, err := grpc.NewClient("etcd:///", insecOpts...)
 		if err != nil {
 			log.Fatalf("failed to create gRPC client: %v", err)
 		}
@@ -212,16 +235,26 @@ func buildConnByDiscWithContext(ctx context.Context) (*grpc.ClientConn, error) {
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      pool,
 		}
-		return grpc.DialContext(ctx, "etcd:///",
+		tlsOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(credentials.NewTLS(c)),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		if opt := authDialOption(); opt != nil {
+			tlsOpts = append(tlsOpts, opt)
+		}
+		return grpc.DialContext(ctx, "etcd:///", tlsOpts...)
 	} else {
 		log.Infof("Connect With InSecure through discovery")
-		return grpc.DialContext(ctx, "etcd:///",
+		insecOpts := []grpc.DialOption{
 			grpc.WithStatsHandler(&StatsHandler{}),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig))
+			grpc.WithDefaultServiceConfig(grpcServiceConfig),
+		}
+		if opt := authDialOption(); opt != nil {
+			insecOpts = append(insecOpts, opt)
+		}
+		return grpc.DialContext(ctx, "etcd:///", insecOpts...)
 	}
 }
 
@@ -276,6 +309,9 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
 		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
 	}
+	if opt := authDialOption(); opt != nil {
+		dialOpts = append(dialOpts, opt)
+	}
 	return grpc.NewClient(address, dialOpts...)
 }
 
@@ -298,6 +334,9 @@ func transportInsecureWithContext(ctx context.Context, address string) (*grpc.Cl
 	// is not "Y".
 	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
 		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
+	}
+	if opt := authDialOption(); opt != nil {
+		dialOpts = append(dialOpts, opt)
 	}
 	return grpc.DialContext(ctx, address, dialOpts...)
 }
@@ -323,7 +362,7 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load root cert: %w", err)
 	}
-	return grpc.NewClient(address,
+	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 			ServerName:   serverName,
 			Certificates: []tls.Certificate{cert},
@@ -331,7 +370,12 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 		})),
 		grpc.WithKeepaliveParams(defaultKeepaliveParams),
 		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig),
-		defaultCompressionCallOption)
+		defaultCompressionCallOption,
+	}
+	if opt := authDialOption(); opt != nil {
+		dialOpts = append(dialOpts, opt)
+	}
+	return grpc.NewClient(address, dialOpts...)
 }
 
 func transportCredentialsWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
@@ -343,7 +387,7 @@ func transportCredentialsWithContext(ctx context.Context, address string) (*grpc
 	if err != nil {
 		return nil, fmt.Errorf("failed to load root cert: %w", err)
 	}
-	return grpc.DialContext(ctx, address,
+	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 			ServerName:   serverName,
 			Certificates: []tls.Certificate{cert},
@@ -351,7 +395,12 @@ func transportCredentialsWithContext(ctx context.Context, address string) (*grpc
 		})),
 		grpc.WithKeepaliveParams(defaultKeepaliveParams),
 		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig),
-		defaultCompressionCallOption)
+		defaultCompressionCallOption,
+	}
+	if opt := authDialOption(); opt != nil {
+		dialOpts = append(dialOpts, opt)
+	}
+	return grpc.DialContext(ctx, address, dialOpts...)
 }
 
 func GetCertPool(rootCert string) (*x509.CertPool, error) {

@@ -14,15 +14,15 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROTO_FILE="$REPO_ROOT/proto/landing.proto"
 
 # TLS certificate paths (matching server-side defaults)
-CERT_DIR="${CERT_BASE_PATH:-/var/hello_grpc/client_certs}"
+CERT_DIR="${CERT_BASE_PATH:-$REPO_ROOT/docker/tls/client_certs}"
 
-# Servers to test: name|host|port|use_tls
+# TLS-enabled services run on ports 9901-9905 (see docker-compose.yml)
 SERVERS=(
-  "go|localhost|9991|false"
-  "java|localhost|9992|false"
-  "python|localhost|9993|false"
-  "node|localhost|9994|false"
-  "rust|localhost|9995|false"
+  "go|localhost|9901|true"
+  "java|localhost|9902|true"
+  "python|localhost|9903|true"
+  "node|localhost|9904|true"
+  "rust|localhost|9905|true"
 )
 
 PASS=0

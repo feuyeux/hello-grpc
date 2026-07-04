@@ -75,6 +75,11 @@ jobs:
           docker-compose logs python-server > logs/python-server.log || true
           docker-compose logs node-server > logs/node-server.log || true
           docker-compose logs rust-server > logs/rust-server.log || true
+          docker-compose logs go-server-tls > logs/go-server-tls.log || true
+          docker-compose logs java-server-tls > logs/java-server-tls.log || true
+          docker-compose logs python-server-tls > logs/python-server-tls.log || true
+          docker-compose logs node-server-tls > logs/node-server-tls.log || true
+          docker-compose logs rust-server-tls > logs/rust-server-tls.log || true
 
       - name: Upload integration test logs
         if: always()
@@ -112,7 +117,7 @@ jobs:
         working-directory: integration-tests
         run: |
           chmod +x test-interop.sh
-          ./test-interop.sh -s go,java,python -c go,java,python -o interop-results.json || true
+          ./test-interop.sh -s go,java,python,node,rust -c go,java,python,node,rust -o interop-results.json || true
 
       - name: Display interop results
         if: always()

@@ -40,7 +40,7 @@ Treat this table as the project version baseline. When changing a protobuf or gR
 | Node.js | `hello-grpc-nodejs/` | `google-protobuf ^3.21.2`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; health `grpc-health-check ^2.0.1`; reflection `grpc-node-server-reflection ^1.0.2` | `package.json`; no project lockfile |
 | PHP | `hello-grpc-php/` | `google/protobuf ^v4.30` | `grpc/grpc ^1.74.0` | Composer package is the project baseline; native PHP `grpc` extension may be absent locally | `composer.json`; no project lockfile |
 | Python | `hello-grpc-python/` | `protobuf 6.33.5` | gRPC Python packages pinned to `1.81.1` | `grpcio-tools 1.81.1`; `grpcio-health-checking 1.81.1`; `grpcio-reflection 1.81.1` | `requirements.txt` |
-| Rust | `hello-grpc-rust/` | Declared `prost 0.14.1`; resolved `prost 0.14.3` | `tonic 0.14.2` | `tonic-health` and `tonic-reflection` declared `0.14`, resolved `0.14.5`; `tonic-prost-build 0.14.2` | `Cargo.toml`, `Cargo.lock` |
+| Rust | `hello-grpc-rust/` | Declared `prost 0.14.1`; resolved `prost 0.14.3` | `tonic 0.14.2` | `tonic-health` and `tonic-reflection` declared `0.14`, resolved `0.14.5`; `tonic-prost-build 0.14.2`; `tonic` `gzip` feature enabled | `Cargo.toml`, `Cargo.lock` |
 | Swift | `hello-grpc-swift/` | `swift-protobuf 1.33.3` | `grpc-swift 2.2.3` | `grpc-swift-protobuf 1.3.1`; `grpc-swift-nio-transport 1.2.3` | `Package.swift`, `Package.resolved` |
 | TypeScript | `hello-grpc-ts/` | `google-protobuf ^3.21.4`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; `grpc_tools_node_protoc_ts ^5.3.3`; health/reflection same as Node.js | `package.json`; no project lockfile |
 

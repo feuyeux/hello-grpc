@@ -24,9 +24,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT_FILE="$SCRIPT_DIR/interop-results.json"
 
-# Default: test 3 server langs x 3 client langs = 9 pairs
-SERVER_LANGS="go,java,python"
-CLIENT_LANGS="go,java,python"
+# Default: test 5 server langs x 5 client langs = 25 pairs
+SERVER_LANGS="go,java,python,node,rust"
+CLIENT_LANGS="go,java,python,node,rust"
 KEEP=false
 
 while getopts "s:c:o:k" opt; do
