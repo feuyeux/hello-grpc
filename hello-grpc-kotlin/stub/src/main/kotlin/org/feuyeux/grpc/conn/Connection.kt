@@ -80,11 +80,35 @@ object Connection {
     )
 
     fun getChannel(vararg clientInterceptors: ClientInterceptor): ManagedChannel {
+        // Check etcd service discovery first
+        if (EtcdDiscovery.isEtcdDiscovery()) {
+            val resolved = EtcdDiscovery.resolveFromEtcd()
+            if (resolved != null) {
+                log.info("Resolved service via etcd: $resolved")
+                val parts = resolved.split(":")
+                val host = parts[0]
+                val serverPort = parts.getOrNull(1)?.toIntOrNull() ?: getServerPort()
+                val secure = System.getenv("GRPC_HELLO_SECURE")
+                return buildChannel(host, serverPort, secure, clientInterceptors.toList())
+            } else {
+                throw RuntimeException("GRPC_HELLO_DISCOVERY=etcd but no service instance found in etcd")
+            }
+        }
+
         val backend = System.getenv("GRPC_HELLO_BACKEND")
         val grcServer = System.getenv("GRPC_SERVER") ?: "localhost"
         val host = backend ?: grcServer
         val secure = System.getenv("GRPC_HELLO_SECURE")
         val serverPort = getServerPort()
+        return buildChannel(host, serverPort, secure, clientInterceptors.toList())
+    }
+
+    private fun buildChannel(
+        host: String,
+        serverPort: Int,
+        secure: String?,
+        interceptors: List<ClientInterceptor>
+    ): ManagedChannel {
         return if (secure == null || secure != "Y") {
             log.info("Connect With InSecure(:$serverPort)")
             ManagedChannelBuilder.forAddress(host, serverPort)
@@ -95,7 +119,7 @@ object Connection {
                 .keepAliveWithoutCalls(true)
                 .defaultServiceConfig(retryServiceConfig())
                 .enableRetry()
-                .intercept(clientInterceptors.toList())
+                .intercept(interceptors)
                 .build()
         } else {
             log.info("Connect With TLS(:$serverPort)")
@@ -109,7 +133,7 @@ object Connection {
                 .keepAliveWithoutCalls(true)
                 .defaultServiceConfig(retryServiceConfig())
                 .enableRetry()
-                .intercept(clientInterceptors.toList())
+                .intercept(interceptors)
                 .build()
         }
     }

@@ -5,6 +5,7 @@ import { ResultType, TalkRequest, TalkResponse, TalkResult } from "./proto/landi
 import { v4 as uuidv4 } from "uuid"
 import { ans, getVersion, hellos } from "./lib/utils"
 import { createClient, getServerPort, logger } from "./lib/conn"
+import { isEtcdDiscovery, registerToEtcd } from "./lib/etcd_discovery"
 import { createServerCredentials, testTlsCertificates } from "./lib/tls"
 import { otelEnabled, initOtel, getCounter } from "./lib/otel"
 import { withLogging } from "./lib/interceptor"
@@ -198,14 +199,16 @@ class HelloServer implements ILandingServiceServer {
         // Check if we should operate in proxy mode
         if (this.hasBackend()) {
             logger.info("Starting server in proxy mode")
-            try {
-                this.backendClient = createClient()
-                logger.info("Created backend client for proxying requests")
-            } catch (error) {
-                logger.error("Failed to create backend client: %s",
-                    error instanceof Error ? error.message : String(error))
-                logger.info("Server will operate in non-proxy mode despite backend configuration")
-            }
+            createClient()
+                .then(client => {
+                    this.backendClient = client
+                    logger.info("Created backend client for proxying requests")
+                })
+                .catch(error => {
+                    logger.error("Failed to create backend client: %s",
+                        error instanceof Error ? error.message : String(error))
+                    logger.info("Server will operate in non-proxy mode despite backend configuration")
+                })
         } else {
             logger.info("Starting server in standalone mode")
         }
@@ -695,8 +698,17 @@ class HelloServer implements ILandingServiceServer {
  * Starts the gRPC server.
  * Attempts to start with TLS if configured, falls back to insecure if TLS fails.
  */
-function startServer(): void {
+async function startServer(): Promise<void> {
     try {
+        // Register with etcd if discovery is enabled
+        if (isEtcdDiscovery()) {
+            const host = process.env.GRPC_SERVER || 'localhost'
+            const port = getServerPort()
+            const cleanup = await registerToEtcd(host, port)
+            ;(global as any).__etcdCleanup = cleanup
+            logger.info("Registered with etcd service discovery")
+        }
+
         const server = new grpc.Server()
         const serverWithReflection = reflection(server)
 
@@ -718,7 +730,7 @@ function startServer(): void {
         const serverAddress = "0.0.0.0:" + serverPort
 
         // Set up signal handlers for graceful shutdown
-        setupSignalHandlers(server);
+        setupSignalHandlers(server)
 
         // Check if TLS is enabled via environment variable
         const secure = process.env.GRPC_HELLO_SECURE
@@ -834,6 +846,10 @@ function gracefulShutdown(server: grpc.Server): void {
 
     server.tryShutdown(() => {
         clearTimeout(forceShutdownTimeout)
+        // Clean up etcd registration if active
+        if ((global as any).__etcdCleanup) {
+            (global as any).__etcdCleanup()
+        }
         logger.info("Server shutdown complete")
         process.exit(0)
     })
@@ -853,4 +869,8 @@ process.on('unhandledRejection', (reason, promise) => {
 })
 
 // Start the server
-startServer()
+startServer().catch(error => {
+    logger.error("Failed to start server: %s",
+        error instanceof Error ? error.message : String(error))
+    process.exit(1)
+})

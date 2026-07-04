@@ -20,6 +20,7 @@ use uuid::Uuid;
 
 use hello_grpc_rust::common::FILE_DESCRIPTOR_SET;
 use hello_grpc_rust::common::conn::{CONFIG_PATH, build_client, grpc_backend_host, has_backend};
+use hello_grpc_rust::common::etcd;
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::landing_service_server::{
     LandingService, LandingServiceServer,
@@ -102,6 +103,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
+
+    // Register with etcd if discovery is enabled
+    let etcd_cleanup = if etcd::is_etcd_discovery() {
+        let port: u16 = get_server_port().parse().unwrap_or(9996);
+        let host = std::env::var("GRPC_SERVER").unwrap_or_else(|_| "localhost".to_string());
+        match etcd::register_to_etcd(&host, port).await {
+            Ok(tx) => {
+                info!("Registered with etcd service discovery");
+                Some(tx)
+            }
+            Err(e) => {
+                error!("Failed to register with etcd: {}", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     let address = format!("[::0]:{}", get_server_port()).parse()?;
     let is_tls = env::var("GRPC_HELLO_SECURE").unwrap_or_default();

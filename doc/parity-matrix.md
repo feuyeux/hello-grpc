@@ -111,6 +111,7 @@ This document reflects a source audit of the current workspace. It counts checke
 - **Swift source parity**: Swift registers `HealthService` and `ReflectionService` in `HelloServer.swift`, and enables `HelloServerInterceptor`/`HelloClientInterceptor` when `GRPC_HELLO_OTEL=Y`. The source implementation is counted even though Windows build verification is still blocked by upstream `grpc-swift` Windows support.
 - **Dart reflection**: Dart has a handwritten reflection service that answers service listing, file-by-filename, and file-containing-symbol requests for `landing.proto`.
 - **PHP reflection and middleware**: PHP registers handwritten health and reflection service implementations alongside `LandingService`, and uses a service-level middleware chain because the PHP gRPC extension does not expose a standard server interceptor hook.
+- **etcd service discovery**: When `GRPC_HELLO_DISCOVERY=etcd` is set, the server registers its `host:port` with etcd (lease-based keepalive) and the client resolves the target address from etcd before connecting. Implemented in Go, Java, Python, Rust, C#, Node.js, TypeScript, PHP, and Kotlin (9 languages) using the etcd v3 HTTP gRPC-gateway API — no native etcd client library required. Swift and Dart are blocked: neither ecosystem has an etcd client library or an HTTP client suitable for the v3 API.
 
 ## Source Audit Evidence
 
@@ -154,4 +155,4 @@ Helm chart at `scripts/k8s/helm/` enables/disables each language server through 
 
 ---
 
-*Last updated: 2026-07-04. Source: source audit + build verification against current workspace (generated/vendor/node_modules/venv/build outputs excluded).*
+*Last updated: 2026-07-04. Source: source audit + build verification + etcd service discovery audit against current workspace (generated/vendor/node_modules/venv/build outputs excluded).*

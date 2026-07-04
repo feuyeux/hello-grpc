@@ -35,6 +35,7 @@ namespace HelloServer
     {
         private static readonly ILog Logger = LogManager.GetLogger(typeof(ProtoServer));
         private static readonly ManualResetEvent ShutdownEvent = new ManualResetEvent(false);
+        private static CancellationTokenSource? _etcdCts;
 
         // Certificate paths
         private static readonly string CertBasePath = GetCertBasePath();
@@ -197,6 +198,9 @@ namespace HelloServer
                 // Wait for manual shutdown signal
                 ShutdownEvent.WaitOne();
 
+                // Clean up etcd registration
+                _etcdCts?.Cancel();
+
                 // Stop the server gracefully
                 await app.StopAsync();
             }
@@ -224,6 +228,21 @@ namespace HelloServer
             var port = Connection.GetGrcServerPort();
             var tlsEnabled = Environment.GetEnvironmentVariable("GRPC_HELLO_SECURE");
             var backendServer = Environment.GetEnvironmentVariable("GRPC_HELLO_BACKEND");
+
+            // Register with etcd if discovery is enabled
+            if (EtcdDiscovery.IsEtcdDiscovery())
+            {
+                try
+                {
+                    var host = Environment.GetEnvironmentVariable("GRPC_SERVER") ?? "localhost";
+                    _etcdCts = EtcdDiscovery.RegisterToEtcdAsync(host, int.Parse(port)).GetAwaiter().GetResult();
+                    Logger.Info("Registered with etcd service discovery");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to register with etcd: {ex.Message}");
+                }
+            }
 
             // Create service implementation
             var landingServiceImpl = new LandingServiceImpl();

@@ -481,6 +481,14 @@ def serve():
         server.add_insecure_port(address)
         logger.info("Starting insecure gRPC server on port %s", port)
 
+    # Register with etcd if discovery is enabled
+    from conn.etcd_discovery import is_etcd_discovery, register_to_etcd
+    etcd_stop = None
+    if is_etcd_discovery():
+        server_host = os.getenv("GRPC_SERVER", "localhost")
+        etcd_stop = register_to_etcd(server_host, port)
+        logger.info("Registered with etcd: %s:%s", server_host, port)
+
     # Start server
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     logger.info(
@@ -493,6 +501,11 @@ def serve():
     except KeyboardInterrupt:
         logger.info("Received interrupt signal, shutting down...")
     finally:
+        # Stop etcd keepalive if active
+        if etcd_stop:
+            etcd_stop.set()
+            logger.info("Stopped etcd keepalive")
+
         # Graceful shutdown
         logger.info("Initiating graceful shutdown (grace period: %ds)...",
                     SHUTDOWN_GRACE_PERIOD_SECONDS)

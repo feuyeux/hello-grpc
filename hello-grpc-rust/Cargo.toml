@@ -71,6 +71,9 @@ opentelemetry-semantic-conventions = "0.27"
 tracing-opentelemetry = "0.28"
 # rustls with ring crypto provider for TLS
 rustls = { version = "0.23", features = ["ring"] }
+# HTTP client for etcd v3 API discovery
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+base64 = "0.22"
 
 [build-dependencies]
 # https://lib.rs/crates/tonic-prost-build

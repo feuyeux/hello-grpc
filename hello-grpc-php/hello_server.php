@@ -21,6 +21,7 @@ use Common\Utils\Otel;
 require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/LandingService.php';
 require dirname(__FILE__) . '/conn/Connection.php';
+require dirname(__FILE__) . '/conn/EtcdDiscovery.php';
 require dirname(__FILE__) . '/common/utils/VersionUtils.php';
 require_once dirname(__FILE__) . '/common/utils/Otel.php';
 // B7 — gRPC health check service (grpc.health.v1.Health)
@@ -117,7 +118,19 @@ try {
 
     // Initialize connection configuration
     $conn = new Connection();
-    
+
+    // Register with etcd if discovery is enabled
+    $etcdCleanup = null;
+    if (EtcdDiscovery::isEtcdDiscovery()) {
+        try {
+            $host = getenv('GRPC_SERVER') ?: 'localhost';
+            $etcdCleanup = EtcdDiscovery::registerToEtcd($host, (int)$conn->port);
+            $log->info("Registered with etcd service discovery");
+        } catch (Exception $e) {
+            $log->error("Failed to register with etcd: " . $e->getMessage());
+        }
+    }
+
     $server = new RpcServer();
     
     $port = '0.0.0.0:' . $conn->port;

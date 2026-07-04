@@ -13,6 +13,7 @@ use Monolog\Formatter\LineFormatter;
 
 require dirname(__FILE__) . '/vendor/autoload.php';
 require dirname(__FILE__) . '/conn/Connection.php';
+require dirname(__FILE__) . '/conn/EtcdDiscovery.php';
 require dirname(__FILE__) . '/common/utils/Otel.php';
 
 // Constants for configuration
@@ -86,12 +87,23 @@ function checkShutdown() {
     return $shutdown;
 }
 
-// Get server connection details
-$host = getenv('GRPC_SERVER');
-if (empty($host)) {
-    $host = 'localhost';
+// Get server connection details — check etcd discovery first
+if (EtcdDiscovery::isEtcdDiscovery()) {
+    $resolved = EtcdDiscovery::resolveFromEtcd();
+    if ($resolved) {
+        $log->info(sprintf("Resolved service via etcd: %s", $resolved));
+        $hostWithPort = $resolved;
+    } else {
+        $log->error("GRPC_HELLO_DISCOVERY=etcd but no service instance found in etcd");
+        exit(1);
+    }
+} else {
+    $host = getenv('GRPC_SERVER');
+    if (empty($host)) {
+        $host = 'localhost';
+    }
+    $hostWithPort = $host . ':' . $conn->port;
 }
-$hostWithPort = $host . ':' . $conn->port;
 $log->info(sprintf("Starting PHP gRPC client [version: %s]", getVersion()));
 $log->info(sprintf("Connecting to: %s", $hostWithPort));
 

@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import {LandingServiceClient} from "../proto/landing_grpc_pb";
+import { isEtcdDiscovery, resolveFromEtcd } from "./etcd_discovery";
 
 // 定义默认端口
 export const port = "9996";
@@ -137,18 +138,29 @@ export function getServerPort(): string {
  * Creates a gRPC client with proper connection settings
  * @returns {LandingServiceClient} The configured gRPC client
  */
-export function createClient(): LandingServiceClient {
+export async function createClient(): Promise<LandingServiceClient> {
   // Determine server to connect to
-  const backend = process.env.GRPC_HELLO_BACKEND;
-  const connectTo = typeof backend !== 'undefined' && backend !== null ? backend : grpcServerHost();
-
-  // Determine port to connect to
-  const backPort = process.env.GRPC_HELLO_BACKEND_PORT;
+  let connectTo: string;
   let port: string;
-  if (typeof backPort !== 'undefined' && backPort !== null) {
-    port = backPort;
+
+  if (isEtcdDiscovery()) {
+    const resolved = await resolveFromEtcd();
+    if (!resolved) {
+      throw new Error("GRPC_HELLO_DISCOVERY=etcd but no service instance found in etcd");
+    }
+    logger.info("Resolved service via etcd: %s", resolved);
+    const parts = resolved.split(':');
+    connectTo = parts[0];
+    port = parts[1] || getServerPort();
   } else {
-    port = getServerPort();
+    const backend = process.env.GRPC_HELLO_BACKEND;
+    connectTo = typeof backend !== 'undefined' && backend !== null ? backend : grpcServerHost();
+    const backPort = process.env.GRPC_HELLO_BACKEND_PORT;
+    if (typeof backPort !== 'undefined' && backPort !== null) {
+      port = backPort;
+    } else {
+      port = getServerPort();
+    }
   }
 
   const address = `${connectTo}:${port}`;

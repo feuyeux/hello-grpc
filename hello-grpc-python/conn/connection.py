@@ -136,25 +136,36 @@ def build_channel():
     Returns:
         grpc.Channel: Configured gRPC channel
     """
-    # Determine server address
-    backend = os.getenv("GRPC_HELLO_BACKEND")
-    if backend:
-        connect_to = backend
-    else:
-        connect_to = get_grpc_server()
-
-    # Determine port
-    back_port = os.getenv("GRPC_HELLO_BACKEND_PORT")
-    if back_port:
-        port = back_port
-    else:
-        server_port = os.getenv("GRPC_SERVER_PORT")
-        if server_port:
-            port = server_port
+    # Check for etcd service discovery
+    from conn.etcd_discovery import is_etcd_discovery, resolve_from_etcd
+    if is_etcd_discovery():
+        resolved = resolve_from_etcd()
+        if resolved:
+            logger.info("Resolved service via etcd: %s", resolved)
+            address = resolved
         else:
-            port = "9996"
+            raise RuntimeError(
+                "GRPC_HELLO_DISCOVERY=etcd but no service instance found")
+    else:
+        # Determine server address
+        backend = os.getenv("GRPC_HELLO_BACKEND")
+        if backend:
+            connect_to = backend
+        else:
+            connect_to = get_grpc_server()
 
-    address = f"{connect_to}:{port}"
+        # Determine port
+        back_port = os.getenv("GRPC_HELLO_BACKEND_PORT")
+        if back_port:
+            port = back_port
+        else:
+            server_port = os.getenv("GRPC_SERVER_PORT")
+            if server_port:
+                port = server_port
+            else:
+                port = "9996"
+
+        address = f"{connect_to}:{port}"
 
     # Check if TLS is enabled
     secure = os.getenv("GRPC_HELLO_SECURE")

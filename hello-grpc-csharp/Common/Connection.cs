@@ -100,11 +100,26 @@ namespace Common
         /// <returns>A configured GrpcChannel</returns>
         public static GrpcChannel GetChannel()
         {
-            var backPort = Environment.GetEnvironmentVariable("GRPC_HELLO_BACKEND_PORT");
-            var port = backPort ?? GetGrcServerPort();
-            var backServer = Environment.GetEnvironmentVariable("GRPC_HELLO_BACKEND");
-            var connectTo = backServer ?? GetGrcServerHost();
-            var endpoint = connectTo + ":" + port;
+            string endpoint;
+
+            // Check etcd service discovery first
+            if (EtcdDiscovery.IsEtcdDiscovery())
+            {
+                var resolved = EtcdDiscovery.ResolveFromEtcdAsync().GetAwaiter().GetResult();
+                if (resolved == null)
+                    throw new InvalidOperationException("GRPC_HELLO_DISCOVERY=etcd but no service instance found in etcd");
+                Log.Info($"Resolved service via etcd: {resolved}");
+                endpoint = resolved;
+            }
+            else
+            {
+                var backPort = Environment.GetEnvironmentVariable("GRPC_HELLO_BACKEND_PORT");
+                var port = backPort ?? GetGrcServerPort();
+                var backServer = Environment.GetEnvironmentVariable("GRPC_HELLO_BACKEND");
+                var connectTo = backServer ?? GetGrcServerHost();
+                endpoint = connectTo + ":" + port;
+            }
+
             var tls = Environment.GetEnvironmentVariable("GRPC_HELLO_SECURE");
             
             if (tls is "Y")

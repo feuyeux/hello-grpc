@@ -11,6 +11,7 @@ use tonic::codec::CompressionEncoding;
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
 use tonic::{Code, Status};
 
+use crate::common::etcd;
 use crate::common::landing::landing_service_client::LandingServiceClient;
 use crate::common::trans;
 
@@ -83,6 +84,28 @@ fn with_keepalive(endpoint: Endpoint) -> Endpoint {
 }
 
 pub async fn build_client() -> LandingServiceClient<Channel> {
+    // Check etcd service discovery first
+    if etcd::is_etcd_discovery() {
+        match etcd::resolve_from_etcd().await {
+            Ok(address) => {
+                info!("Resolved service via etcd: {}", address);
+                let endpoint = Endpoint::from_shared(address.clone())
+                    .unwrap_or_else(|error| panic!("Invalid etcd-resolved address: {:?}", error));
+                let channel = with_keepalive(endpoint)
+                    .connect()
+                    .await
+                    .unwrap_or_else(|error| panic!("Failed to connect to etcd-resolved address: {:?}", error));
+                return LandingServiceClient::new(channel)
+                    .send_compressed(CompressionEncoding::Gzip)
+                    .accept_compressed(CompressionEncoding::Gzip);
+            }
+            Err(e) => {
+                error!("etcd discovery enabled but resolution failed: {}", e);
+                panic!("GRPC_HELLO_DISCOVERY=etcd but no service instance found: {}", e);
+            }
+        }
+    }
+
     let is_tls = env::var("GRPC_HELLO_SECURE").is_ok_and(|v| v == "Y");
 
     if is_tls {

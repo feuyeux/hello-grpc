@@ -10,6 +10,8 @@ import io.netty.handler.ssl.ClientAuth
 import io.netty.handler.ssl.SslContextBuilder
 import org.apache.logging.log4j.kotlin.logger
 import org.feuyeux.grpc.conn.Connection
+import org.feuyeux.grpc.conn.EtcdDiscovery
+import kotlinx.coroutines.Job
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -79,6 +81,7 @@ fun main() {
 class ProtoServer {
     private val logger = logger()
     private val server: Server? by lazy { createServer() }
+    private var etcdJob: Job? = null
 
     /**
      * Gets the gRPC version information for logging purposes.
@@ -96,6 +99,18 @@ class ProtoServer {
      * Starts the server and registers a shutdown hook to handle graceful termination.
      */
     fun start() {
+        // Register with etcd if discovery is enabled
+        if (EtcdDiscovery.isEtcdDiscovery()) {
+            try {
+                val host = System.getenv("GRPC_SERVER") ?: "localhost"
+                val port = System.getenv("GRPC_SERVER_PORT")?.toIntOrNull() ?: Connection.port
+                etcdJob = EtcdDiscovery.registerToEtcd(host, port)
+                logger.info("Registered with etcd service discovery")
+            } catch (e: Exception) {
+                logger.error("Failed to register with etcd: ${e.message}")
+            }
+        }
+
         server?.start()
         
         Runtime.getRuntime().addShutdownHook(Thread {
@@ -109,6 +124,7 @@ class ProtoServer {
      * Stops the server gracefully.
      */
     private fun stop() {
+        etcdJob?.cancel()
         server?.shutdown()
     }
 

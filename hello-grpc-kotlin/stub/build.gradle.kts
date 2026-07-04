@@ -23,6 +23,7 @@ dependencies {
     add("api", "org.apache.logging.log4j:log4j-api:${rootProject.extra["log4jVersion"]}")
     add("api", "org.apache.logging.log4j:log4j-core:${rootProject.extra["log4jVersion"]}")
     add("api", "com.fasterxml.jackson.core:jackson-databind:${rootProject.extra["jacksonVersion"]}")
+    add("api", "com.fasterxml.jackson.module:jackson-module-kotlin:${rootProject.extra["jacksonVersion"]}")
     add("api", "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${rootProject.extra["jacksonVersion"]}")
     add("api", "io.opentelemetry:opentelemetry-api:${rootProject.extra["opentelemetryVersion"]}")
     add("api", "io.opentelemetry:opentelemetry-sdk:${rootProject.extra["opentelemetryVersion"]}")

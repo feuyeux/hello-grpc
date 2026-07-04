@@ -22,6 +22,7 @@ const { TalkResult, TalkResponse, ResultType } = require('../proto/landing_pb');
 const services = require('../proto/landing_grpc_pb');
 const conn = require('../common/connection');
 const utils = require('../common/utils');
+const { isEtcdDiscovery, registerToEtcd } = require('../common/etcd_discovery');
 // C4 — gRPC Server Reflection
 const reflection = require('grpc-node-server-reflection').default;
 // B7 — gRPC Health Check
@@ -109,18 +110,27 @@ const certChainPath = path.join(certBasePath, "full_chain.pem");
 /**
  * Starts an RPC server that receives requests for the LandingService
  */
-function main() {
+async function main() {
     logger.info("Starting gRPC server with Node.js implementation");
 
     // Initialize backend client if configured
     if (hasBackend()) {
-        backendClient = conn.getClient();
+        backendClient = await conn.getClient();
         logger.info("Backend client initialized for proxying requests");
     }
 
     // Get server port from environment variable or use default
     const port = process.env.GRPC_SERVER_PORT || "9996";
     const address = "0.0.0.0:" + port;
+
+    // Register with etcd if discovery is enabled
+    let etcdCleanup = null;
+    if (isEtcdDiscovery()) {
+        const host = process.env.GRPC_SERVER || 'localhost';
+        etcdCleanup = await registerToEtcd(host, parseInt(port, 10));
+        global.__etcdCleanup = etcdCleanup;
+        logger.info("Registered with etcd service discovery");
+    }
 
     // Create new gRPC server
     const server = new grpc.Server();
@@ -186,6 +196,10 @@ function gracefulShutdown(server) {
 
     server.tryShutdown(() => {
         clearTimeout(forceShutdownTimeout);
+        // Clean up etcd registration if active
+        if (global.__etcdCleanup) {
+            global.__etcdCleanup();
+        }
         logger.info("Server shutdown complete");
         process.exit(0);
     });
@@ -775,4 +789,7 @@ function propagateHeaders(methodName, call) {
 }
 
 // Start the server
-main();
+main().catch(err => {
+    logger.error("Failed to start server: %s", err.message);
+    process.exit(1);
+});

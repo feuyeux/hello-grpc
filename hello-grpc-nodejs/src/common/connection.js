@@ -4,6 +4,7 @@ const path = require('path')
 const os = require('os')
 const { LandingServiceClient } = require("../proto/landing_grpc_pb")
 const { createLogger, format, transports } = require('winston')
+const { isEtcdDiscovery, resolveFromEtcd } = require('./etcd_discovery')
 
 // Function to get certificate base path based on OS and environment variable
 function getCertBasePath() {
@@ -107,9 +108,19 @@ const RESILIENCE_OPTIONS = {
  * Creates a gRPC client with proper connection settings
  * @returns {LandingServiceClient} The configured gRPC client
  */
-function getClient() {
-    const connectTo = process.env.GRPC_HELLO_BACKEND || grpcServerHost();
-    const port = process.env.GRPC_HELLO_BACKEND_PORT || process.env.GRPC_SERVER_PORT || "9996";
+async function getClient() {
+    let connectTo, port;
+    if (isEtcdDiscovery()) {
+        const resolved = await resolveFromEtcd();
+        if (!resolved) {
+            throw new Error("GRPC_HELLO_DISCOVERY=etcd but no service instance found in etcd");
+        }
+        logger.info("Resolved service via etcd: %s", resolved);
+        [connectTo, port] = resolved.split(':');
+    } else {
+        connectTo = process.env.GRPC_HELLO_BACKEND || grpcServerHost();
+        port = process.env.GRPC_HELLO_BACKEND_PORT || process.env.GRPC_SERVER_PORT || "9996";
+    }
     const address = `${connectTo}:${port}`;
     const secure = process.env.GRPC_HELLO_SECURE;
     
