@@ -14,8 +14,8 @@
 #   ./test-interop.sh [options]
 #
 # Options:
-#   -s <langs>   Server languages (comma-separated, default: go,java,python)
-#   -c <langs>   Client languages (comma-separated, default: go,java,python)
+#   -s <langs>   Server languages (comma-separated, default: go,java,python,node,rust)
+#   -c <langs>   Client languages (comma-separated, default: go,java,python,node,rust)
 #   -o <file>    JSON output file (default: interop-results.json)
 #   -k           Keep containers running (default: remove)
 #

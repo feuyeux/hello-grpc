@@ -116,7 +116,7 @@ if [[ "$RUN_INTEROP" == "true" ]]; then
   echo "================================================================"
   INTEROP_SCRIPT="../integration-tests/test-interop.sh"
   if [[ -x "$INTEROP_SCRIPT" ]]; then
-    "$INTEROP_SCRIPT" -s go,java,python -c go,java,python -o "$LOG_DIR/interop-results.json" || true
+    "$INTEROP_SCRIPT" -s go,java,python,node,rust -c go,java,python,node,rust -o "$LOG_DIR/interop-results.json" || true
   else
     echo "  SKIP: $INTEROP_SCRIPT not found or not executable"
   fi

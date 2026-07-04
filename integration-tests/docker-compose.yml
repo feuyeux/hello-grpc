@@ -1,5 +1,5 @@
 # Integration test environment for hello-grpc
-# Starts 3 language servers (Go, Java, Python) for cross-language testing
+# Starts 5 language servers (Go, Java, Python, Node, Rust) with insecure and TLS variants
 version: "3.8"
 
 services:

@@ -3,9 +3,8 @@
 # test-tls.sh — Test TLS connections to each running server.
 #
 # This test verifies that servers configured with GRPC_HELLO_SECURE=Y
-# accept TLS connections and respond correctly.
-#
-# For servers without TLS, this test is skipped with a note.
+# accept TLS connections and respond correctly. All servers use TLS
+# on ports 9901-9905 (see docker-compose.yml).
 #
 set -euo pipefail
 

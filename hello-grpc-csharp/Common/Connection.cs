@@ -124,7 +124,7 @@ namespace Common
             
             if (tls is "Y")
             {
-                Log.Info($"Connect with TLS(:{port})");
+                Log.Info($"Connect with TLS({endpoint})");
                 
                 var handler = new SocketsHttpHandler
                 {
@@ -167,7 +167,7 @@ namespace Common
                 return GrpcChannel.ForAddress($"https://{endpoint}", channelOptions);
             }
             
-            Log.Info($"Connect with InSecure(:{port})");
+            Log.Info($"Connect with InSecure({endpoint})");
             var insecureHandler = new SocketsHttpHandler();
             ConfigureKeepalive(insecureHandler);
             return GrpcChannel.ForAddress($"http://{endpoint}", new GrpcChannelOptions

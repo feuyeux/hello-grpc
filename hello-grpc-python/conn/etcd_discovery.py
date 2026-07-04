@@ -25,7 +25,7 @@ ETCD_KEY = f"/etcd/{SVC_DISC_NAME}"
 DEFAULT_TTL = 5
 
 
-def _get_endpoint():
+def get_endpoint():
     ep = os.getenv("GRPC_HELLO_DISCOVERY_ENDPOINT", "http://127.0.0.1:2379")
     if not ep.startswith("http://") and not ep.startswith("https://"):
         ep = "http://" + ep
@@ -33,7 +33,7 @@ def _get_endpoint():
 
 
 def _post(path, payload):
-    url = f"{_get_endpoint()}{path}"
+    url = f"{get_endpoint()}{path}"
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url, data=data, headers={"Content-Type": "application/json"})
@@ -41,11 +41,11 @@ def _post(path, payload):
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _b64(s):
+def b64(s):
     return base64.b64encode(s.encode("utf-8")).decode("utf-8")
 
 
-def _b64_decode(s):
+def b64_decode(s):
     return base64.b64decode(s).decode("utf-8")
 
 
@@ -65,8 +65,8 @@ def register_to_etcd(host, port):
 
     # Put key with lease
     _post("/v3/kv/put", {
-        "key": _b64(ETCD_KEY),
-        "value": _b64(address),
+        "key": b64(ETCD_KEY),
+        "value": b64(address),
         "lease": lease_id,
     })
 
@@ -91,11 +91,11 @@ def resolve_from_etcd():
     Query etcd for the service address. Returns "host:port" string
     or None if no instance is registered.
     """
-    resp = _post("/v3/kv/range", {"key": _b64(ETCD_KEY)})
+    resp = _post("/v3/kv/range", {"key": b64(ETCD_KEY)})
     kvs = resp.get("kvs", [])
     if not kvs:
         return None
-    value = _b64_decode(kvs[0]["value"])
+    value = b64_decode(kvs[0]["value"])
     return value
 
 
