@@ -4,6 +4,52 @@
 brew install ghz
 ```
 
+## Benchmark Scripts
+
+This repository includes two ghz-based benchmark scripts for cross-language performance comparison:
+
+### Single-server benchmark: `scripts/benchmark/ghz_benchmark.sh`
+
+Runs ghz against a single server with configurable concurrency and total requests.
+
+```bash
+# Basic unary call benchmark
+./scripts/benchmark/ghz_benchmark.sh localhost 9996
+
+# High-load benchmark
+./scripts/benchmark/ghz_benchmark.sh localhost 9996 -n 5000 -c 50
+
+# Test bidirectional streaming
+./scripts/benchmark/ghz_benchmark.sh localhost 9996 -r bidi -n 200 -c 5
+
+# TLS benchmark
+./scripts/benchmark/ghz_benchmark.sh localhost 9996 -t
+```
+
+Results are saved as JSON to `scripts/benchmark/results/`.
+
+### Multi-language benchmark: `scripts/benchmark/run_all.sh`
+
+Iterates over all language server Docker images, starts each server, runs ghz benchmark, and produces a summary table comparing RPS and latency percentiles.
+
+```bash
+# Benchmark all languages with defaults (1000 requests, 10 concurrent)
+./scripts/benchmark/run_all.sh
+
+# Higher load
+./scripts/benchmark/run_all.sh -n 5000 -c 50
+
+# Benchmark a single language
+./scripts/benchmark/run_all.sh -l go -n 10000
+
+# Test server streaming for all languages
+./scripts/benchmark/run_all.sh -r server-stream -n 500 -c 20
+```
+
+A summary JSON file and per-language JSON results are saved to `scripts/benchmark/results/`.
+
+---
+
 https://ghz.sh/docs/examples
 
 ### A simple insecure unary call:
