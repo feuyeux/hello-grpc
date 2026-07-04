@@ -133,18 +133,18 @@ This document reflects a source audit of the current workspace. It counts checke
 
 | Language | Command | Result |
 |----------|---------|--------|
-| Go | `go test ./...` | Not rerun in this audit; source path audited. |
-| Python | `python -m unittest discover` | Not rerun in this audit; source path audited. |
-| Java | `mvn test` | Not rerun in this audit; source path audited. |
-| C++ | `bazel build //:hello_client //:hello_server` | Not rerun in this audit; source path audited. Known Windows protobuf/toolchain risk remains separate from source parity. |
-| Rust | `cargo test` | Not rerun in this audit; source path audited. |
-| Node.js | `npm test` | Not rerun in this audit; source path audited. |
-| TypeScript | `npm test` | Not rerun in this audit; source path audited. |
-| C# | `dotnet test` | Not rerun in this audit; source path audited. |
-| Kotlin | `gradle test` | Not rerun in this audit; source path audited. |
-| Swift | `swift build` | Not rerun in this audit; source path audited. Upstream `grpc-swift` Windows support remains the known build blocker. |
-| Dart | `dart analyze`; `dart test` | Not rerun in this audit; source path audited. |
-| PHP | `composer validate --strict`; `vendor\bin\phpunit.bat` | Not rerun in this audit; source path audited. |
+| Go | `go test ./...` | PASS (2026-07-04). common + server/service tests passed. |
+| Python | `python -m unittest discover -s tests` | PARTIAL (2026-07-04). 2/3 test modules pass; `test_landing_service` fails on `ImportError: cannot import name 'build_result' from 'server.protoServer'`. |
+| Java | `mvn test` | PARTIAL (2026-07-04). 1/2 tests pass; `LandingServiceImplTest` fails with `AbstractMethodError` in `InMemoryServerBuilder` — JDK 25 / grpc-java compatibility issue. |
+| C++ | `bazel build //:hello_client //:hello_server` | FAIL (2026-07-04). `protos/BUILD.bazel` references `D:\zoo\bin\protoc27.2.exe` which does not exist on this machine. Known Windows protobuf/toolchain risk. |
+| Rust | `cargo test` | PASS (2026-07-04). 3 tests + 1 doctest passed; 2 deprecation warnings in `rnd_test.rs`. |
+| Node.js | `npm test` | PASS (2026-07-04). 2 tests passed. |
+| TypeScript | `npm test` | PASS (2026-07-04). 15 tests passed. |
+| C# | `dotnet test` | PASS (2026-07-04). 3 tests passed; 1 NuGet vulnerability warning for log4net 3.0.4. |
+| Kotlin | `gradle test` | FAIL (2026-07-04). `:stub:compileKotlin` fails with `IllegalArgumentException: 25.0.3` — Kotlin compiler does not support JDK 25 target. |
+| Swift | `swift build` | FAIL (2026-07-04). Timed out after 5min; `swift-nio-extras` fails with `no such module 'Glibc'` on Windows. Known upstream `grpc-swift` Windows blocker. |
+| Dart | `dart analyze`; `dart test` | PASS (2026-07-04). 4 tests passed; 18 info-level analyzer issues (no errors). |
+| PHP | `composer validate --strict`; `vendor\bin\phpunit.bat` | PASS (2026-07-04). composer valid; 2 tests passed. gRPC extension not loaded (using Composer package). |
 
 ---
 
@@ -154,4 +154,4 @@ Helm chart at `scripts/k8s/helm/` enables/disables each language server through 
 
 ---
 
-*Last updated: 2026-07-04. Source: source audit against current workspace (generated/vendor/node_modules/venv/build outputs excluded).*
+*Last updated: 2026-07-04. Source: source audit + build verification against current workspace (generated/vendor/node_modules/venv/build outputs excluded).*
