@@ -1,0 +1,64 @@
+# Integration test environment for hello-grpc
+# Starts 3 language servers (Go, Java, Python) for cross-language testing
+version: "3.8"
+
+services:
+  go-server:
+    image: feuyeux/grpc_server_go:1.0.0
+    ports:
+      - "9991:9996"
+    environment:
+      - GRPC_SERVER_PORT=9996
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:9996"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  java-server:
+    image: feuyeux/grpc_server_java:1.0.0
+    ports:
+      - "9992:9996"
+    environment:
+      - GRPC_SERVER_PORT=9996
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:9996"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  python-server:
+    image: feuyeux/grpc_server_python:1.0.0
+    ports:
+      - "9993:9996"
+    environment:
+      - GRPC_SERVER_PORT=9996
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:9996"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  node-server:
+    image: feuyeux/grpc_server_node:1.0.0
+    ports:
+      - "9994:9996"
+    environment:
+      - GRPC_SERVER_PORT=9996
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:9996"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rust-server:
+    image: feuyeux/grpc_server_rust:1.0.0
+    ports:
+      - "9995:9996"
+    environment:
+      - GRPC_SERVER_PORT=9996
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=localhost:9996"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

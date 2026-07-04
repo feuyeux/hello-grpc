@@ -1,6 +1,21 @@
 #!/bin/bash
+#
+# smoke_test_all.sh — Run same-language smoke tests for all 12 gRPC implementations.
+#
+# Usage:
+#   ./smoke_test_all.sh              # Same-language tests only (default)
+#   ./smoke_test_all.sh --interop    # Also run cross-language interop tests
+#
 set -u
 cd "$(dirname "$0")"
+
+RUN_INTEROP=false
+for arg in "$@"; do
+  case "$arg" in
+    --interop) RUN_INTEROP=true ;;
+    *) echo "Unknown option: $arg"; echo "Usage: $0 [--interop]"; exit 1 ;;
+  esac
+done
 
 LANGS=(cpp rust java go csharp python nodejs dart kotlin swift php ts)
 RESULTS=()
@@ -92,3 +107,17 @@ echo "================================================================"
 echo "SUMMARY: $PASS passed, $FAIL failed (of ${#LANGS[@]})"
 echo "================================================================"
 for r in "${RESULTS[@]}"; do echo "  $r"; done
+
+# Cross-language interop tests (optional, enabled with --interop)
+if [[ "$RUN_INTEROP" == "true" ]]; then
+  echo
+  echo "================================================================"
+  echo "  Cross-Language Interop Tests"
+  echo "================================================================"
+  INTEROP_SCRIPT="../integration-tests/test-interop.sh"
+  if [[ -x "$INTEROP_SCRIPT" ]]; then
+    "$INTEROP_SCRIPT" -s go,java,python -c go,java,python -o "$LOG_DIR/interop-results.json" || true
+  else
+    echo "  SKIP: $INTEROP_SCRIPT not found or not executable"
+  fi
+fi
