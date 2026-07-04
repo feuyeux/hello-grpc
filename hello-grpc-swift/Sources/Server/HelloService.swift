@@ -34,6 +34,15 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
             logger.info("Initializing backend client connection to \(config.host):\(config.port)")
             
             let backendTransport: HTTP2ClientTransport.Posix
+
+            // Client-side HTTP/2 keepalive for the proxy backend channel.
+            let transportConfig: HTTP2ClientTransport.Posix.Config = .defaults { config in
+                config.connection.keepalive = .init(
+                    time: .seconds(10),
+                    timeout: .seconds(1),
+                    allowWithoutCalls: true
+                )
+            }
             
             if config.useTLS {
                 logger.info("Using TLS for backend connection")
@@ -48,13 +57,15 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
                             serverCertificateVerification: .noVerification,
                             trustRoots: .certificates([.file(path: rootCertPath, format: .pem)])
                         )
-                    )
+                    ),
+                    config: transportConfig
                 )
             } else {
                 logger.info("Using plaintext for backend connection")
                 backendTransport = try HTTP2ClientTransport.Posix(
                     target: .ipv4(host: config.host, port: config.port),
-                    transportSecurity: .plaintext
+                    transportSecurity: .plaintext,
+                    config: transportConfig
                 )
             }
             

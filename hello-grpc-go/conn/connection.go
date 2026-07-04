@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip" // registers the gzip compressor and exposes gzip.Name for grpc.UseCompressor
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/resolver"
 
@@ -55,6 +56,11 @@ var defaultKeepaliveParams = keepalive.ClientParameters{
 	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
 	PermitWithoutStream: true,             // send pings even without active streams
 }
+
+// defaultCompressionCallOption enables gzip compression for outgoing
+// request messages on every RPC made through the dial options it is
+// attached to.
+var defaultCompressionCallOption = grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name))
 
 func init() {
 	// CERT_BASE_PATH points at the directory that contains the client
@@ -262,6 +268,7 @@ func transportInsecure(address string) (*grpc.ClientConn, error) {
 		keepaliveConfig,
 		retryConfig,
 		rateLimitConfig,
+		defaultCompressionCallOption,
 	}
 	// OpenTelemetry stats handler: traces both unary and stream RPCs in
 	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
@@ -284,6 +291,7 @@ func transportInsecureWithContext(ctx context.Context, address string) (*grpc.Cl
 		keepaliveConfig,
 		retryConfig,
 		rateLimitConfig,
+		defaultCompressionCallOption,
 	}
 	// OpenTelemetry stats handler: traces both unary and stream RPCs in
 	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
@@ -322,7 +330,8 @@ func transportCredentials(address string) (*grpc.ClientConn, error) {
 			RootCAs:      pool,
 		})),
 		grpc.WithKeepaliveParams(defaultKeepaliveParams),
-		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig))
+		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig),
+		defaultCompressionCallOption)
 }
 
 func transportCredentialsWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
@@ -341,7 +350,8 @@ func transportCredentialsWithContext(ctx context.Context, address string) (*grpc
 			RootCAs:      pool,
 		})),
 		grpc.WithKeepaliveParams(defaultKeepaliveParams),
-		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig))
+		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig),
+		defaultCompressionCallOption)
 }
 
 func GetCertPool(rootCert string) (*x509.CertPool, error) {

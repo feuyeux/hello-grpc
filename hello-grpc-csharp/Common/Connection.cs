@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -7,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Configuration;
+using Grpc.Net.Compression;
 using log4net;
 
 namespace Common
@@ -138,7 +141,12 @@ namespace Common
                 var channelOptions = new GrpcChannelOptions
                 {
                     HttpHandler = handler,
-                    ServiceConfig = BuildRetryServiceConfig()
+                    ServiceConfig = BuildRetryServiceConfig(),
+                    // Enables gzip compression for outgoing/incoming messages.
+                    CompressionProviders = new List<ICompressionProvider>
+                    {
+                        new GzipCompressionProvider(CompressionLevel.Fastest)
+                    }
                 };
                 
                 return GrpcChannel.ForAddress($"https://{endpoint}", channelOptions);
@@ -150,7 +158,12 @@ namespace Common
             return GrpcChannel.ForAddress($"http://{endpoint}", new GrpcChannelOptions
             {
                 HttpHandler = insecureHandler,
-                ServiceConfig = BuildRetryServiceConfig()
+                ServiceConfig = BuildRetryServiceConfig(),
+                // Enables gzip compression for outgoing/incoming messages.
+                CompressionProviders = new List<ICompressionProvider>
+                {
+                    new GzipCompressionProvider(CompressionLevel.Fastest)
+                }
             });
         }
 

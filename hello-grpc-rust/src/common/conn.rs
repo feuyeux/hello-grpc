@@ -3,15 +3,84 @@
 
 use std::env;
 use std::fs;
+use std::future::Future;
+use std::time::Duration;
 
-use log::{error, info};
-use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity};
+use log::{error, info, warn};
+use tonic::codec::CompressionEncoding;
+use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint, Identity};
+use tonic::{Code, Status};
 
 use crate::common::landing::landing_service_client::LandingServiceClient;
 use crate::common::trans;
 
 const DOMAIN_NAME: &str = "hello.grpc.io";
 pub const CONFIG_PATH: &str = "config/log4rs.yml";
+
+/// A6 client-retry parameters for hello.LandingService, mirroring the
+/// grpc.service_config retryPolicy used by the other language clients:
+/// https://github.com/grpc/proposal/blob/master/A6-client-retries.md
+///
+/// tonic (0.14.x) has no built-in service-config/retryPolicy support, so
+/// this is applied at the application level around unary calls instead of
+/// via channel configuration.
+pub const RETRY_MAX_ATTEMPTS: u32 = 4;
+pub const RETRY_INITIAL_BACKOFF: Duration = Duration::from_millis(100);
+pub const RETRY_MAX_BACKOFF: Duration = Duration::from_secs(1);
+pub const RETRY_BACKOFF_MULTIPLIER: f64 = 2.0;
+
+/// Returns true when `code` matches the retryableStatusCodes used by the
+/// shared A6 retry policy (`UNAVAILABLE` only).
+fn is_retryable(code: Code) -> bool {
+    code == Code::Unavailable
+}
+
+/// Runs `attempt` up to [`RETRY_MAX_ATTEMPTS`] times, retrying only on
+/// `UNAVAILABLE` with exponential backoff (initial 0.1s, multiplier 2.0,
+/// capped at 1s) — the same policy encoded in the other languages'
+/// `retryPolicy` service config for `hello.LandingService`.
+pub async fn call_with_retry<T, F, Fut>(method: &str, mut attempt: F) -> Result<T, Status>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, Status>>,
+{
+    let mut backoff = RETRY_INITIAL_BACKOFF;
+    let mut last_err = None;
+    for attempt_no in 1..=RETRY_MAX_ATTEMPTS {
+        match attempt().await {
+            Ok(value) => return Ok(value),
+            Err(status) => {
+                if attempt_no == RETRY_MAX_ATTEMPTS || !is_retryable(status.code()) {
+                    last_err = Some(status);
+                    break;
+                }
+                warn!(
+                    "{} attempt {}/{} failed with {:?}, retrying in {:?}",
+                    method,
+                    attempt_no,
+                    RETRY_MAX_ATTEMPTS,
+                    status.code(),
+                    backoff
+                );
+                tokio::time::sleep(backoff).await;
+                backoff = std::cmp::min(
+                    Duration::from_secs_f64(backoff.as_secs_f64() * RETRY_BACKOFF_MULTIPLIER),
+                    RETRY_MAX_BACKOFF,
+                );
+                last_err = Some(status);
+            }
+        }
+    }
+    Err(last_err.unwrap_or_else(|| Status::unavailable("retry loop exhausted")))
+}
+
+/// HTTP/2 keepalive settings shared by secure and insecure channels.
+fn with_keepalive(endpoint: Endpoint) -> Endpoint {
+    endpoint
+        .http2_keep_alive_interval(Duration::from_secs(10))
+        .keep_alive_timeout(Duration::from_secs(1))
+        .keep_alive_while_idle(true)
+}
 
 pub async fn build_client() -> LandingServiceClient<Channel> {
     let is_tls = env::var("GRPC_HELLO_SECURE").is_ok_and(|v| v == "Y");
@@ -56,9 +125,13 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
 
         let static_address: &'static str = Box::leak(address.into_boxed_str());
         if let Ok(channel_builder) = Channel::from_static(static_address).tls_config(tls) {
+            let channel_builder = with_keepalive(channel_builder);
             if let Ok(channel) = channel_builder.connect().await {
                 info!("Connect with TLS(:{})", grpc_backend_port());
-                return LandingServiceClient::new(channel);
+                // Enables gzip compression for outgoing/incoming messages.
+                return LandingServiceClient::new(channel)
+                    .send_compressed(CompressionEncoding::Gzip)
+                    .accept_compressed(CompressionEncoding::Gzip);
             } else {
                 error!("Failed to connect with TLS");
             }
@@ -73,9 +146,16 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
         grpc_backend_port()
     );
     info!("Connect with insecure address: {}", address);
-    LandingServiceClient::connect(address)
+    let endpoint = Endpoint::from_shared(address)
+        .unwrap_or_else(|error| panic!("Invalid gRPC server address: {:?}", error));
+    let channel = with_keepalive(endpoint)
+        .connect()
         .await
-        .unwrap_or_else(|error| panic!("Failed to connect to gRPC server: {:?}", error))
+        .unwrap_or_else(|error| panic!("Failed to connect to gRPC server: {:?}", error));
+    // Enables gzip compression for outgoing/incoming messages.
+    LandingServiceClient::new(channel)
+        .send_compressed(CompressionEncoding::Gzip)
+        .accept_compressed(CompressionEncoding::Gzip)
 }
 
 fn grpc_server() -> String {

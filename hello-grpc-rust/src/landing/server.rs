@@ -120,6 +120,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         Server::builder()
             .tls_config(ServerTlsConfig::new().identity(identity))?
+            // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+            .http2_keepalive_interval(Some(Duration::from_secs(30)))
+            .http2_keepalive_timeout(Some(Duration::from_secs(5)))
             .timeout(Duration::from_millis(REQUEST_TIMEOUT_MS)) // Add request timeout
     } else {
         info!(
@@ -128,7 +131,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             get_version()
         );
 
-        Server::builder().timeout(Duration::from_millis(REQUEST_TIMEOUT_MS)) // Add request timeout
+        Server::builder()
+            // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+            .http2_keepalive_interval(Some(Duration::from_secs(30)))
+            .http2_keepalive_timeout(Some(Duration::from_secs(5)))
+            .timeout(Duration::from_millis(REQUEST_TIMEOUT_MS)) // Add request timeout
     };
 
     // Create shared metrics

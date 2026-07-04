@@ -71,6 +71,10 @@ CHANNEL_RESILIENCE_OPTIONS = (
      '"retryableStatusCodes": ["UNAVAILABLE"]}}]}'),
 )
 
+# Enables gzip compression of outgoing request messages. Passed as the
+# `compression` kwarg to grpc.insecure_channel()/grpc.secure_channel().
+CHANNEL_COMPRESSION = grpc.Compression.Gzip
+
 # Ensure log directory exists
 os.makedirs("log", exist_ok=True)
 
@@ -189,14 +193,17 @@ def build_channel():
                 "TLS connection configured with server name: %s", server_name)
             logger.info("Connect with TLS to %s (Python %s.%s.%s)",
                         address, python_version[0], python_version[1], python_version[2])
-            return grpc.secure_channel(address, credentials, options)
+            return grpc.secure_channel(
+                address, credentials, options, compression=CHANNEL_COMPRESSION)
 
         except (FileNotFoundError, PermissionError) as e:
             logger.error("TLS certificate error: %s", e)
             if os.getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y":
                 logger.warning(
                     "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection")
-                return grpc.insecure_channel(address, options=CHANNEL_RESILIENCE_OPTIONS)
+                return grpc.insecure_channel(
+                    address, options=CHANNEL_RESILIENCE_OPTIONS,
+                    compression=CHANNEL_COMPRESSION)
             raise RuntimeError(
                 "GRPC_HELLO_SECURE=Y but TLS certificates could not be loaded: "
                 f"{e}. Set CERT_BASE_PATH to the certificate directory, or set "
@@ -206,4 +213,6 @@ def build_channel():
         # Build insecure channel
         logger.info("Connect with insecure (:%s) (Python %s.%s.%s)",
                     port, python_version[0], python_version[1], python_version[2])
-        return grpc.insecure_channel(address, options=CHANNEL_RESILIENCE_OPTIONS)
+        return grpc.insecure_channel(
+            address, options=CHANNEL_RESILIENCE_OPTIONS,
+            compression=CHANNEL_COMPRESSION)

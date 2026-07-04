@@ -432,8 +432,9 @@ public class ProtoClient {
     }
     Channel interceptChannel =
         ClientInterceptors.intercept(channel, chain.toArray(new io.grpc.ClientInterceptor[0]));
-    blockingStub = LandingServiceGrpc.newBlockingStub(interceptChannel);
-    asyncStub = LandingServiceGrpc.newStub(interceptChannel);
+    // "gzip" enables gzip compression of outgoing request messages for this stub.
+    blockingStub = LandingServiceGrpc.newBlockingStub(interceptChannel).withCompression("gzip");
+    asyncStub = LandingServiceGrpc.newStub(interceptChannel).withCompression("gzip");
   }
 
   /**

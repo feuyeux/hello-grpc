@@ -145,6 +145,8 @@ $client = new LandingServiceClient($hostWithPort, [
     'grpc.http2.min_time_between_pings_ms' => 25000,// Minimum time between pings
     'grpc.max_receive_message_length' => 8 * 1024 * 1024, // 8MB max message size
     'grpc.primary_user_agent' => 'hello-grpc-php-client/1.0.0',
+    // Enables gzip compression of outgoing messages on this channel.
+    'grpc.default_compression_algorithm' => 2,
     // Transparent retries per gRPC A6
     // (https://github.com/grpc/proposal/blob/master/A6-client-retries.md)
     'grpc.enable_retries' => 1,

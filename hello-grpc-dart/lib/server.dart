@@ -387,6 +387,12 @@ class Server {
                       certificates: await File(Conn.rootCertPath).readAsBytes(),
                     )
                     : const grpc.ChannelCredentials.insecure(),
+            // Client-side HTTP/2 keepalive for the proxy backend channel.
+            keepAlive: const grpc.ClientKeepAliveOptions(
+              pingInterval: Duration(seconds: 10),
+              timeout: Duration(seconds: 1),
+              permitWithoutCalls: true,
+            ),
           ),
         );
 

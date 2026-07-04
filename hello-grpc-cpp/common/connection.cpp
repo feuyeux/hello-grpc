@@ -36,6 +36,29 @@ namespace hello
 
   std::shared_ptr<grpc::Channel> Connection::getChannel()
   {
+    // Client resilience defaults shared by secure and insecure channels:
+    // HTTP/2 keepalive pings plus transparent retries per gRPC A6
+    // (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+    const auto applyResilienceArgs = [](grpc::ChannelArguments &args)
+    {
+      args.SetInt("grpc.keepalive_time_ms", 10000);
+      args.SetInt("grpc.keepalive_timeout_ms", 1000);
+      args.SetInt("grpc.keepalive_permit_without_calls", 1);
+      args.SetInt("grpc.enable_retries", 1);
+      // Enables gzip compression for outgoing client messages.
+      args.SetCompressionAlgorithm(GRPC_COMPRESS_GZIP);
+      args.SetString("grpc.service_config",
+                     "{\"methodConfig\": [{"
+                     "\"name\": [{\"service\": \"hello.LandingService\"}],"
+                     "\"waitForReady\": true,"
+                     "\"retryPolicy\": {"
+                     "\"maxAttempts\": 4,"
+                     "\"initialBackoff\": \"0.1s\","
+                     "\"maxBackoff\": \"1s\","
+                     "\"backoffMultiplier\": 2.0,"
+                     "\"retryableStatusCodes\": [\"UNAVAILABLE\"]}}]}");
+    };
+
     // Certificate paths for TLS. CERT_BASE_PATH (directory containing the
     // client certificates) takes precedence over the platform default.
     std::string cert_base = "/var/hello_grpc/client_certs";
@@ -66,6 +89,7 @@ namespace hello
 
       grpc::ChannelArguments channel_args;
       channel_args.SetString("grpc.default_authority", server_name);
+      applyResilienceArgs(channel_args);
 
       LOG(INFO) << "Connecting with TLS to " << target;
       return grpc::CreateCustomChannel(target, grpc::SslCredentials(ssl_opts),
@@ -74,8 +98,11 @@ namespace hello
     else
     {
       // Create insecure channel
+      grpc::ChannelArguments channel_args;
+      applyResilienceArgs(channel_args);
       LOG(INFO) << "Connecting without TLS to " << target;
-      return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
+      return grpc::CreateCustomChannel(target, grpc::InsecureChannelCredentials(),
+                                       channel_args);
     }
   }
 

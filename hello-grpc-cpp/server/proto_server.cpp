@@ -18,56 +18,62 @@
 #include "common/connection.h"
 #include "common/utils.h"
 
-namespace {
-/**
- * @brief Get the base directory for certificates
- *
- * This function determines the certificate path based on:
- * 1. The CERT_BASE_PATH environment variable if set
- * 2. Platform-specific defaults otherwise
- *
- * @return std::string The base path for certificate files
- */
-std::string getCertBasePath() {
-  // Check for environment variable override first
-  const char *envPath = std::getenv("CERT_BASE_PATH");
-  if (envPath != nullptr) {
-    return envPath;
+namespace
+{
+  /**
+   * @brief Get the base directory for certificates
+   *
+   * This function determines the certificate path based on:
+   * 1. The CERT_BASE_PATH environment variable if set
+   * 2. Platform-specific defaults otherwise
+   *
+   * @return std::string The base path for certificate files
+   */
+  std::string getCertBasePath()
+  {
+    // Check for environment variable override first
+    const char *envPath = std::getenv("CERT_BASE_PATH");
+    if (envPath != nullptr)
+    {
+      return envPath;
+    }
+
+    // Otherwise use platform-specific defaults
+#ifdef _WIN32
+    return "C:\\var\\hello_grpc\\server_certs";
+#elif __APPLE__
+    return "/var/hello_grpc/server_certs";
+#else
+    return "/var/hello_grpc/server_certs";
+#endif
   }
 
-  // Otherwise use platform-specific defaults
-#ifdef _WIN32
-  return "C:\\var\\hello_grpc\\server_certs";
-#elif __APPLE__
-  return "/var/hello_grpc/server_certs";
-#else
-  return "/var/hello_grpc/server_certs";
-#endif
-}
+  // Certificate paths based on platform
+  const std::string certBasePath = getCertBasePath();
+  const std::string cert = certBasePath + "/cert.pem";
+  const std::string certKey = certBasePath + "/private.key";
+  const std::string certChain = certBasePath + "/full_chain.pem";
+  const std::string rootCert = certBasePath + "/myssl_root.cer";
 
-// Certificate paths based on platform
-const std::string certBasePath = getCertBasePath();
-const std::string cert = certBasePath + "/cert.pem";
-const std::string certKey = certBasePath + "/private.key";
-const std::string certChain = certBasePath + "/full_chain.pem";
-const std::string rootCert = certBasePath + "/myssl_root.cer";
-
-// Tracing headers to propagate
-const std::vector<std::string> TRACING_HEADERS = {
-    "x-request-id", "x-b3-traceid", "x-b3-spanid",      "x-b3-parentspanid",
-    "x-b3-sampled", "x-b3-flags",   "x-ot-span-context"};
+  // Tracing headers to propagate
+  const std::vector<std::string> TRACING_HEADERS = {
+      "x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid",
+      "x-b3-sampled", "x-b3-flags", "x-ot-span-context"};
 
 } // namespace
 
 // C5 — Server interceptor: logs method name for every incoming RPC.
-class LoggingInterceptor : public grpc::experimental::Interceptor {
+class LoggingInterceptor : public grpc::experimental::Interceptor
+{
 public:
   explicit LoggingInterceptor(grpc::experimental::ServerRpcInfo *info)
       : info_(info) {}
 
-  void Intercept(grpc::experimental::InterceptorBatchMethods *methods) override {
+  void Intercept(grpc::experimental::InterceptorBatchMethods *methods) override
+  {
     if (methods->QueryInterceptionHookPoint(
-            grpc::experimental::InterceptionHookPoints::PRE_SEND_INITIAL_METADATA)) {
+            grpc::experimental::InterceptionHookPoints::PRE_SEND_INITIAL_METADATA))
+    {
       LOG(INFO) << "[interceptor] RPC " << info_->method();
     }
     methods->Proceed();
@@ -78,10 +84,12 @@ private:
 };
 
 class LoggingInterceptorFactory
-    : public grpc::experimental::ServerInterceptorFactoryInterface {
+    : public grpc::experimental::ServerInterceptorFactoryInterface
+{
 public:
   grpc::experimental::Interceptor *
-  CreateServerInterceptor(grpc::experimental::ServerRpcInfo *info) override {
+  CreateServerInterceptor(grpc::experimental::ServerRpcInfo *info) override
+  {
     return new LoggingInterceptor(info);
   }
 };
@@ -111,7 +119,8 @@ using hello::Utils;
  * 3. Client Streaming RPC (TalkMoreAnswerOne)
  * 4. Bidirectional Streaming RPC (TalkBidirectional)
  */
-class LandingServiceImpl final : public LandingService::Service {
+class LandingServiceImpl final : public LandingService::Service
+{
 public:
   LandingServiceImpl() = default;
 
@@ -119,15 +128,19 @@ public:
    * @brief Implements the unary RPC method
    */
   Status Talk(ServerContext *context, const TalkRequest *request,
-              TalkResponse *response) override {
+              TalkResponse *response) override
+  {
     logRpcAttrs("Talk");
-    if (client) {
+    if (client)
+    {
       // Proxy mode - forward request to backend
       grpc::ClientContext c;
       propagateHeaders(context, c);
       LOG(INFO) << "Proxying unary request to backend";
       return client->Talk(&c, *request, response);
-    } else {
+    }
+    else
+    {
       // Direct mode - handle locally
       logHeaders(context, "Talk");
 
@@ -152,11 +165,13 @@ public:
    * @brief Implements the server streaming RPC method
    */
   Status TalkOneAnswerMore(ServerContext *context, const TalkRequest *request,
-                           ServerWriter<TalkResponse> *writer) override {
+                           ServerWriter<TalkResponse> *writer) override
+  {
     logRpcAttrs("TalkOneAnswerMore");
     logHeaders(context, "TalkOneAnswerMore");
 
-    if (client) {
+    if (client)
+    {
       // Proxy mode - forward request to backend
       LOG(INFO) << "Proxying server streaming request to backend";
       grpc::ClientContext c;
@@ -165,10 +180,13 @@ public:
       TalkResponse talkResponse;
       const auto &response = client->TalkOneAnswerMore(&c, *request);
 
-      while (response->Read(&talkResponse)) {
+      while (response->Read(&talkResponse))
+      {
         writer->Write(talkResponse);
       }
-    } else {
+    }
+    else
+    {
       // Direct mode - handle locally
       const auto &data = request->data();
       LOG(INFO) << "Server streaming call received - data: " << data
@@ -181,7 +199,8 @@ public:
           std::sregex_token_iterator()};
 
       // Send a response for each data item
-      for (const auto &id : ids) {
+      for (const auto &id : ids)
+      {
         TalkResponse response;
         response.set_status(200);
         TalkResult *talkResult = response.add_results();
@@ -198,11 +217,13 @@ public:
    */
   Status TalkMoreAnswerOne(ServerContext *context,
                            ServerReader<TalkRequest> *reader,
-                           TalkResponse *response) override {
+                           TalkResponse *response) override
+  {
     logRpcAttrs("TalkMoreAnswerOne");
     logHeaders(context, "TalkMoreAnswerOne");
 
-    if (client) {
+    if (client)
+    {
       // Proxy mode - forward requests to backend
       LOG(INFO) << "Proxying client streaming request to backend";
       grpc::ClientContext c;
@@ -211,8 +232,10 @@ public:
       auto writer = client->TalkMoreAnswerOne(&c, response);
       TalkRequest request;
 
-      while (reader->Read(&request)) {
-        if (!writer->Write(request)) {
+      while (reader->Read(&request))
+      {
+        if (!writer->Write(request))
+        {
           // Stream has been closed
           LOG(WARNING) << "Backend stream closed prematurely";
           break;
@@ -221,12 +244,15 @@ public:
 
       writer->WritesDone();
       return writer->Finish();
-    } else {
+    }
+    else
+    {
       // Direct mode - handle locally
       response->set_status(200);
       TalkRequest request;
 
-      while (reader->Read(&request)) {
+      while (reader->Read(&request))
+      {
         const auto &id = request.data();
         LOG(INFO) << "Client streaming request received - data: " << id
                   << ", meta: " << request.meta();
@@ -244,11 +270,13 @@ public:
    */
   Status TalkBidirectional(
       ServerContext *context,
-      ServerReaderWriter<TalkResponse, TalkRequest> *stream) override {
+      ServerReaderWriter<TalkResponse, TalkRequest> *stream) override
+  {
     logRpcAttrs("TalkBidirectional");
     logHeaders(context, "TalkBidirectional");
 
-    if (client) {
+    if (client)
+    {
       // Proxy mode - forward request to backend
       LOG(INFO) << "Proxying bidirectional streaming request to backend";
       grpc::ClientContext c;
@@ -259,21 +287,26 @@ public:
       TalkRequest request;
 
       // Forward client requests to backend
-      while (stream->Read(&request)) {
+      while (stream->Read(&request))
+      {
         s->Write(request);
       }
 
       // Forward backend responses to client
-      while (s->Read(&talkResponse)) {
+      while (s->Read(&talkResponse))
+      {
         stream->Write(talkResponse);
       }
 
       return s->Finish();
-    } else {
+    }
+    else
+    {
       // Direct mode - handle locally
       TalkRequest request;
 
-      while (stream->Read(&request)) {
+      while (stream->Read(&request))
+      {
         const auto &id = request.data();
         LOG(INFO) << "Bidirectional streaming request received - data: " << id
                   << ", meta: " << request.meta();
@@ -295,7 +328,8 @@ public:
    * @param id The request ID (typically a language index)
    * @param talkResult Pointer to TalkResult to populate
    */
-  static void createResponse(const std::string &id, TalkResult *talkResult) {
+  static void createResponse(const std::string &id, TalkResult *talkResult)
+  {
     talkResult->set_id(Utils::now());
     talkResult->set_type(ResultType::OK);
 
@@ -321,7 +355,8 @@ public:
    *
    * @param methodName Name of the RPC method (e.g. "Talk")
    */
-  static void logRpcAttrs(const std::string &methodName) {
+  static void logRpcAttrs(const std::string &methodName)
+  {
     otel::RecordRpcCall(methodName);
     otel::EmitRpcSpan(methodName);
   }
@@ -333,9 +368,11 @@ public:
    * @param methodName Name of the RPC method for logging
    */
   static void logHeaders(const ServerContext *context,
-                         const std::string &methodName) {
+                         const std::string &methodName)
+  {
     const auto &metadata = context->client_metadata();
-    for (const auto &[key, value] : metadata) {
+    for (const auto &[key, value] : metadata)
+    {
       LOG(INFO) << methodName << " - header: " << key << ":" << value;
     }
   }
@@ -347,13 +384,16 @@ public:
    * @param clientContext Client context to propagate headers to
    */
   static void propagateHeaders(const ServerContext *context,
-                               grpc::ClientContext &clientContext) {
+                               grpc::ClientContext &clientContext)
+  {
     const auto &metadata = context->client_metadata();
 
     // Copy trace headers to outgoing request
-    for (const auto &header : TRACING_HEADERS) {
+    for (const auto &header : TRACING_HEADERS)
+    {
       auto it = metadata.find(header);
-      if (it != metadata.end()) {
+      if (it != metadata.end())
+      {
         const std::string headerValue(it->second.begin(), it->second.end());
         clientContext.AddMetadata(header, headerValue);
         LOG(INFO) << "Propagating header: " << header << ":" << headerValue;
@@ -366,8 +406,10 @@ public:
    *
    * @param channel Shared pointer to gRPC channel
    */
-  void setChannel(const std::shared_ptr<grpc::Channel> &channel) {
-    if (channel) {
+  void setChannel(const std::shared_ptr<grpc::Channel> &channel)
+  {
+    if (channel)
+    {
       client = LandingService::NewStub(channel);
       LOG(INFO) << "Backend client configured";
     }
@@ -384,7 +426,8 @@ private:
  * Configures the server with TLS if enabled, and registers
  * the LandingService implementation.
  */
-void RunServer() {
+void RunServer()
+{
   const auto &port = Utils::getServerPort();
   std::string server_address("0.0.0.0:" + port);
 
@@ -400,6 +443,11 @@ void RunServer() {
   grpc::reflection::InitProtoReflectionServerBuilderPlugin();
 
   ServerBuilder builder;
+  // Server-side HTTP/2 keepalive, mirroring the Go server settings.
+  builder.AddChannelArgument("grpc.keepalive_time_ms", 30000);
+  builder.AddChannelArgument("grpc.keepalive_timeout_ms", 5000);
+  builder.AddChannelArgument("grpc.http2.min_recv_ping_interval_without_data_ms", 5000);
+  builder.AddChannelArgument("grpc.keepalive_permit_without_calls", 1);
   // C5 — register logging interceptor for all RPCs
   std::vector<std::unique_ptr<grpc::experimental::ServerInterceptorFactoryInterface>> creators;
   creators.push_back(std::make_unique<LoggingInterceptorFactory>());
@@ -407,14 +455,17 @@ void RunServer() {
   const auto &secure = Utils::getSecure();
 
   // Configure server with TLS if enabled
-  if (!secure.empty() && secure == "Y") {
+  if (!secure.empty() && secure == "Y")
+  {
     LOG(INFO) << "Starting secure gRPC server with TLS on port " << port
               << " [version: " << Utils::getVersion() << "]";
 
-    try {
+    try
+    {
       // Check if certificate files exist
       if (!std::filesystem::exists(certKey) ||
-          !std::filesystem::exists(certChain)) {
+          !std::filesystem::exists(certChain))
+      {
         throw std::runtime_error("Certificate files not found");
       }
 
@@ -427,19 +478,23 @@ void RunServer() {
       pemKeyCertPair.cert_chain = Connection::getFileContent(certChain.c_str());
       ssl_opts.pem_key_cert_pairs.push_back(pemKeyCertPair);
 
-      LOG(INFO) << "TLS configuration: root_certs=" << ssl_opts.pem_root_certs.size() 
+      LOG(INFO) << "TLS configuration: root_certs=" << ssl_opts.pem_root_certs.size()
                 << " bytes, private_key=" << pemKeyCertPair.private_key.size()
                 << " bytes, cert_chain=" << pemKeyCertPair.cert_chain.size() << " bytes";
 
       builder.AddListeningPort(server_address,
                                grpc::SslServerCredentials(ssl_opts));
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
       LOG(ERROR) << "Failed to configure TLS: " << e.what()
                  << ". Falling back to insecure mode.";
       builder.AddListeningPort(server_address,
                                grpc::InsecureServerCredentials());
     }
-  } else {
+  }
+  else
+  {
     LOG(INFO) << "Starting insecure gRPC server on port " << port
               << " [version: " << Utils::getVersion() << "]";
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
@@ -450,10 +505,13 @@ void RunServer() {
   const char *backend = std::getenv("GRPC_HELLO_BACKEND");
   std::string endpoint(backend ? backend : "");
 
-  if (!endpoint.empty()) {
+  if (!endpoint.empty())
+  {
     LOG(INFO) << "Operating in proxy mode with backend at " << endpoint;
     landingService.setChannel(Connection::getChannel());
-  } else {
+  }
+  else
+  {
     LOG(INFO) << "Operating in standalone mode (no backend)";
   }
 
@@ -470,7 +528,8 @@ void RunServer() {
 /**
  * @brief Main entry point for the application
  */
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   // Initialize logging
   Utils::initLog(argv);
 
@@ -480,9 +539,12 @@ int main(int argc, char **argv) {
   otel::InitOtel("hello-grpc-cpp-server");
 
   // Run the server
-  try {
+  try
+  {
     RunServer();
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception &e)
+  {
     LOG(ERROR) << "Server failed with error: " << e.what();
     google::ShutdownGoogleLogging();
     return 1;

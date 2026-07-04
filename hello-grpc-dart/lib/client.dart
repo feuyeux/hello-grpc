@@ -20,6 +20,7 @@ import 'common/common.dart';
 import 'common/landing.pbgrpc.dart';
 import 'common/otel.dart';
 import 'conn/conn.dart';
+import 'conn/retry.dart';
 
 // Configuration constants
 const int retryAttempts = 3;
@@ -169,7 +170,15 @@ class Client {
     return ClientChannel(
       grpcServer,
       port: Conn.getServerPort(),
-      options: ChannelOptions(credentials: credentials),
+      options: ChannelOptions(
+        credentials: credentials,
+        // Client-side HTTP/2 keepalive, mirroring the Go client settings.
+        keepAlive: const ClientKeepAliveOptions(
+          pingInterval: Duration(seconds: 10),
+          timeout: Duration(seconds: 1),
+          permitWithoutCalls: true,
+        ),
+      ),
     );
   }
 
@@ -242,10 +251,16 @@ class Client {
     final startTime = DateTime.now();
 
     try {
-      final response = await _stub!.talk(
-        request,
-        options: CallOptions(metadata: metadata),
-      );
+      // A6 client retry: retries only on UNAVAILABLE with exponential
+      // backoff, matching the retryPolicy service config used by the
+      // other language clients (the Dart grpc package has no built-in
+      // service-config support).
+      final response = await Retry.run('Talk', () {
+        return _stub!.talk(
+          request,
+          options: CallOptions(metadata: metadata),
+        );
+      });
       final duration = DateTime.now().difference(startTime);
       _logger.info('Unary call successful in ${duration.inMilliseconds}ms');
       _logResponse(response);

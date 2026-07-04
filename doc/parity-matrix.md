@@ -1,6 +1,6 @@
 # hello-grpc Feature Parity Matrix
 
-**12 x 20 matrix** - 12 languages x 20 capability columns (A1-A7, B1-B7, C1-C6).
+**12 x 23 matrix** - 12 languages x 23 capability columns (A1-A10, B1-B7, C1-C6).
 
 Symbols: ✅ = implemented and registered on the current source path · ⚪ = absent, stub-only, or not registered
 
@@ -32,6 +32,9 @@ This document reflects a source audit of the current workspace. It counts checke
 | A5 | TLS / secure channel |
 | A6 | Metadata (headers) propagation |
 | A7 | Error status mapping |
+| A8 | Client retry policy (A6 client retries, `UNAVAILABLE`, channel-level service config or equivalent application-level retry) |
+| A9 | Client-side HTTP/2 keepalive |
+| A10 | gzip message compression (channel/call level) |
 
 ### Group B - Observability
 
@@ -60,20 +63,24 @@ This document reflects a source audit of the current workspace. It counts checke
 
 ## Parity Matrix
 
-| Lang       | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B1 | B2 | B3 | B4 | B5 | B6 | B7 | C1 | C2 | C3 | C4 | C5 | C6 |
-|------------|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
-| Go         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Python     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Java       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| C++        | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Rust       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Node.js    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| TypeScript | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| C#         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Kotlin     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Swift      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Dart       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| PHP        | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Lang       | A1 | A2 | A3 | A4 | A5 | A6 | A7 | A8 | A9 | A10 | B1 | B2 | B3 | B4 | B5 | B6 | B7 | C1 | C2 | C3 | C4 | C5 | C6 |
+|------------|----|----|----|----|----|----|----|----|----|-----|----|----|----|----|----|----|----|----|----|----|----|----|----|
+| Go         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Python     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Java       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| C++        | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Rust       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Node.js    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| TypeScript | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| C#         | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Kotlin     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Swift      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚪  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Dart       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚪  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| PHP        | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**A8 implementation note**: Go, Python, Java, C++, Node.js, TypeScript, C#, Kotlin, and PHP implement A8 as a channel-level `grpc.service_config` `retryPolicy` (maxAttempts=4, initialBackoff=0.1s, maxBackoff=1s, multiplier=2.0, retryable=`UNAVAILABLE`) applied at connection setup. Rust (`hello-grpc-rust/src/common/conn.rs`), Swift (`hello-grpc-swift/Sources/Common/Retry.swift`), and Dart (`hello-grpc-dart/lib/conn/retry.dart`) implement the same policy as an application-level retry wrapper around the unary `Talk` call, because tonic, grpc-swift, and the Dart `grpc` package have no built-in service-config/retryPolicy support.
+
+**A10 implementation note**: gzip compression is enabled at the client channel level in Go (`grpc.UseCompressor(gzip.Name)`), Python (`compression=grpc.Compression.Gzip` channel kwarg), Java (`.withCompression("gzip")` on both stubs), Kotlin (`.withCompression("gzip")` on the coroutine stub), C++ (`grpc.default_compression_algorithm` / `SetCompressionAlgorithm(GRPC_COMPRESS_GZIP)` channel arg), C# (`GrpcChannelOptions.CompressionProviders` with `GzipCompressionProvider`), Node.js/TypeScript (`grpc.default_compression_algorithm: 2` channel arg on `@grpc/grpc-js`), PHP (`grpc.default_compression_algorithm => 2` channel arg), and Rust (`tonic`'s `send_compressed`/`accept_compressed(CompressionEncoding::Gzip)` with the `gzip` cargo feature enabled). **Swift and Dart are ⚪**: grpc-swift 2.x's `HTTP2ClientTransport.Posix.Config` and the Dart `grpc` package's `ChannelOptions` (both pinned per AGENTS.md) currently expose no message-compression/codec configuration hook, so there is no API surface to wire this into yet.
 
 ---
 
@@ -81,18 +88,18 @@ This document reflects a source audit of the current workspace. It counts checke
 
 | Lang       | ✅ | ⚪ | Remaining gaps |
 |------------|---|---|----------------|
-| Go         | 20 | 0 | None |
-| Python     | 20 | 0 | None |
-| Java       | 20 | 0 | None |
-| C++        | 20 | 0 | None |
-| Rust       | 20 | 0 | None |
-| Node.js    | 20 | 0 | None |
-| TypeScript | 20 | 0 | None |
-| C#         | 20 | 0 | None |
-| Kotlin     | 20 | 0 | None |
-| Swift      | 20 | 0 | None |
-| Dart       | 20 | 0 | None |
-| PHP        | 20 | 0 | None |
+| Go         | 23 | 0 | None |
+| Python     | 23 | 0 | None |
+| Java       | 23 | 0 | None |
+| C++        | 23 | 0 | None |
+| Rust       | 23 | 0 | None |
+| Node.js    | 23 | 0 | None |
+| TypeScript | 23 | 0 | None |
+| C#         | 23 | 0 | None |
+| Kotlin     | 23 | 0 | None |
+| Swift      | 22 | 1 | A10: grpc-swift 2.x has no message-compression config hook |
+| Dart       | 22 | 1 | A10: Dart `grpc` package has no message-compression config hook |
+| PHP        | 23 | 0 | None |
 
 ## Notes on Implementation Parity
 
@@ -147,4 +154,4 @@ Helm chart at `scripts/k8s/helm/` enables/disables each language server through 
 
 ---
 
-*Last updated: 2026-07-02. Source: source audit against current workspace (generated/vendor/node_modules/venv/build outputs excluded).*
+*Last updated: 2026-07-04. Source: source audit against current workspace (generated/vendor/node_modules/venv/build outputs excluded).*

@@ -181,8 +181,10 @@ private fun getVersion(): String {
  */
 class ProtoClient(private val channel: ManagedChannel) : Closeable {
     private val logger = logger()
+    // "gzip" enables gzip compression of outgoing request messages for this stub.
     private val stub = LandingServiceCoroutineStub(channel)
         .withDeadlineAfter(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .withCompression("gzip")
 
     override fun close() {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)

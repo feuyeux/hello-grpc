@@ -86,6 +86,8 @@ const RESILIENCE_OPTIONS = {
     "grpc.http2.min_time_between_pings_ms": 120000,
     "grpc.http2.max_pings_without_data": 0,
     "grpc.enable_retries": 1,
+    // Enables gzip compression of outgoing messages on this channel.
+    "grpc.default_compression_algorithm": 2,
     "grpc.service_config": JSON.stringify({
         methodConfig: [{
             name: [{ service: "hello.LandingService" }],

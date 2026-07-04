@@ -105,6 +105,15 @@ struct HelloClient: AsyncParsableCommand {
         let conn = HelloConn()
         let connectTo = conn.host ?? "127.0.0.1"
         let useTLS = ProcessInfo.processInfo.environment["GRPC_HELLO_SECURE"] == "Y"
+
+        // Client-side HTTP/2 keepalive, mirroring the Go client settings.
+        let transportConfig: HTTP2ClientTransport.Posix.Config = .defaults { config in
+            config.connection.keepalive = .init(
+                time: .seconds(10),
+                timeout: .seconds(1),
+                allowWithoutCalls: true
+            )
+        }
         
         logger.info("Connecting to \(connectTo):\(conn.port ?? 9996)")
         logger.info("TLS Mode: \(useTLS ? "Enabled" : "Disabled")")
@@ -127,7 +136,8 @@ struct HelloClient: AsyncParsableCommand {
                             serverCertificateVerification: .noVerification,
                             trustRoots: .certificates([.file(path: rootCertPath, format: .pem)])
                         )
-                    )
+                    ),
+                    config: transportConfig
                 )
             } else {
                 logger.warning("Root certificate not found, falling back to plaintext")
@@ -137,7 +147,8 @@ struct HelloClient: AsyncParsableCommand {
         logger.info("Using plaintext connection")
         return try HTTP2ClientTransport.Posix(
             target: .ipv4(host: connectTo, port: conn.port ?? 9996),
-            transportSecurity: .plaintext
+            transportSecurity: .plaintext,
+            config: transportConfig
         )
     }
     
@@ -208,7 +219,13 @@ struct HelloClient: AsyncParsableCommand {
         let startTime = Date()
         
         do {
-            let response = try await client.talk(request, metadata: metadata)
+            // A6 client retry: retries only on UNAVAILABLE with exponential
+            // backoff, matching the retryPolicy service config used by the
+            // other language clients (grpc-swift has no built-in
+            // service-config support).
+            let response = try await Retry.call(method: "Talk", logger: logger) {
+                try await client.talk(request, metadata: metadata)
+            }
             let duration = Date().timeIntervalSince(startTime) * 1000
             logger.info("Unary call successful in \(Int(duration))ms")
             logResponse(response, logger: logger)

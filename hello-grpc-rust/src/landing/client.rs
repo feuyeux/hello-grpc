@@ -18,7 +18,7 @@ use tokio::time;
 use tonic::transport::Channel;
 use tonic::Request;
 
-use hello_grpc_rust::common::conn::{build_client, CONFIG_PATH};
+use hello_grpc_rust::common::conn::{build_client, call_with_retry, CONFIG_PATH};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
 use hello_grpc_rust::common::utils::{build_link_requests, get_version, random_id};
@@ -128,12 +128,28 @@ async fn execute_unary_call(
     info!("Sending unary request: data={}, meta=RUST", message.data);
     let start_time = Instant::now();
 
-    let mut request = Request::new(message);
-    request.metadata_mut().insert("request-id", request_id.parse()?);
-    request.metadata_mut().insert("client", "rust-client".parse()?);
-    request.set_timeout(Duration::from_secs(REQUEST_TIMEOUT_SECONDS));
+    // A6 client retry: retries only on UNAVAILABLE with exponential
+    // backoff, matching the retryPolicy service config used by the other
+    // language clients (tonic has no built-in service-config support).
+    let result = call_with_retry("Talk", || {
+        let mut client = client.clone();
+        let message = message.clone();
+        let request_id = request_id.clone();
+        async move {
+            let mut request = Request::new(message);
+            request
+                .metadata_mut()
+                .insert("request-id", request_id.parse().unwrap());
+            request
+                .metadata_mut()
+                .insert("client", "rust-client".parse().unwrap());
+            request.set_timeout(Duration::from_secs(REQUEST_TIMEOUT_SECONDS));
+            client.talk(request).await
+        }
+    })
+    .await;
 
-    match client.talk(request).await {
+    match result {
         Ok(response) => {
             let duration = start_time.elapsed();
             info!("Unary call successful in {}ms", duration.as_millis());
