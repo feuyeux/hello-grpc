@@ -1,8 +1,7 @@
-# Build-base: alpine gRPC PHP base image (php:8.5-cli-alpine + composer + protoc
-# + grpc_php_plugin + grpc.so already installed). We only need to add project
-# sources and run composer install here — no more pecl/grpc.so compilation
-# inside the per-target build (saves ~10 min per client/server build).
-FROM feuyeux/grpc_php_base:latest AS build-base
+# Build-base: slim Alpine gRPC PHP base image (php:8.5-cli-alpine + composer + 
+# protoc + grpc_php_plugin + grpc.so, ~223MB uncompressed vs 1.96GB previously).
+# We only need to add project sources and run composer install here.
+FROM feuyeux/grpc_php_base:slim AS build-base
 
 WORKDIR /app/hello-grpc
 COPY hello-grpc-php /app/hello-grpc/hello-grpc-php
@@ -12,10 +11,10 @@ WORKDIR /app/hello-grpc/hello-grpc-php
 RUN ../proto2x.sh php
 RUN composer install --no-interaction --no-progress --no-scripts --ignore-platform-reqs
 
-# Runtime base reuses the same image — grpc.so, protoc, grpc_php_plugin
-# all already present. Final published client/server images inherit only the
-# slim layer below (~150MB instead of ~1.5GB previously).
-FROM feuyeux/grpc_php_base:latest AS runtime-base
+# Runtime base reuses the same slim image (~223MB).
+# Final published client/server images inherit only the slim layer below
+# (~170-190MB vs ~1.87GB previously, reduction of ~90%).
+FROM feuyeux/grpc_php_base:slim AS runtime-base
 
 FROM runtime-base AS server
 WORKDIR /app
