@@ -3,7 +3,14 @@ plugins {
     // https://plugins.gradle.org/plugin/com.google.protobuf
     id("com.google.protobuf") version "0.10.0"
     // https://kotlinlang.org/docs/jvm-get-started.html
-    kotlin("jvm") version "1.9.24"
+    // kotlin("jvm") 2.2.21 is the project's pinned Kotlin compiler
+    // version (see AGENTS.md table "Kotlin 2.2.21"). 1.9.24 was the
+    // pre-existing baseline but it cannot target JDK 25: kotlinc throws
+    // java.lang.IllegalArgumentException: 25 in compileKotlin because
+    // its fallback-to-JVM_21 path passes 25 to an internal API that
+    // does not accept it. K2 (2.x) adds JDK 25 as a first-class
+    // language target.
+    kotlin("jvm") version "2.2.21"
 }
 
 //https://github.com/grpc/grpc/releases
@@ -24,10 +31,13 @@ extra["protobufJavaUtilVersion"] = "4.28.2"
 extra["log4jVersion"] = "2.24.0"
 //https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api-kotlin
 extra["log4jKotlinVersion"] = "1.5.0"
-// OpenTelemetry SDK + contrib gRPC instrumentations, mirroring
-// the hello-grpc-java wiring (PR #496) without the grpc-java dep
-// bump since Kotlin's grpc-java version is held at 1.68.0 by the
-// grpc-kotlin-stub dependency above.
+// OpenTelemetry SDK + contrib gRPC instrumentations. NOTE: this project
+// is held on kotlin("jvm") 1.9.24, which does not support JDK 25 as a
+// target bytecode level (kotlinc throws IllegalArgumentException: 25
+// during compileKotlin). Until the kotlin plugin is bumped to >= 2.1
+// we cannot adopt the otel 1.63 / otel-contrib 2.29 upgrades from
+// hello-grpc-java; bumping the deps here would break Otel.kt's
+// ResourceAttributes import and the GrpcTelemetry API rename.
 extra["opentelemetryVersion"] = "1.43.0"
 extra["opentelemetryContribVersion"] = "2.10.0-alpha"
 //https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
@@ -44,5 +54,25 @@ allprojects {
         mavenCentral()
         gradlePluginPortal()
         google()
+    }
+    // NOTE: io.netty is not forced to 4.2.9.Final here like in
+    // hello-grpc-java/pom.xml, because this project is held on
+    // kotlin("jvm") 1.9.24 which cannot target JDK 25. The kotlin
+    // upgrade must precede any netty dep bump so the kotlinc compile
+    // step can run at all.
+}
+
+// Force every subproject's Java source / target to 21, matching the
+// Gradle build-base image (gradle:8.14-jdk21) and AGENTS.md's "Java 21
+// compatibility as the source target unless a language project explicitly
+// updates it". Kotlin 2.2.21's JVM target defaults to 21 on JDK 21, so
+// pinning both compileJava and compileKotlin to 21 keeps Gradle's
+// jvm-target validation happy.
+subprojects {
+    plugins.withType<org.gradle.api.plugins.JavaPlugin>().configureEach {
+        extensions.configure<org.gradle.api.plugins.JavaPluginExtension>("java") {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
     }
 }

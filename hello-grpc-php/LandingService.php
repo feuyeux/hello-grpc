@@ -21,6 +21,7 @@ use Grpc\ServerContext;
 use Hello\TalkRequest;
 use Hello\TalkResponse;
 use Hello\TalkResult;
+use Hello\ResultType;
 use Ramsey\Uuid\Uuid;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -372,7 +373,7 @@ class LandingService extends LandingServiceStub
         foreach ($results as $index => $data) {
             $result = new TalkResult();
             $result->setId($index);
-            $result->setType($data['type'] ?? 0);
+            $result->setType($data['type'] ?? ResultType::OK);
             
             // Set key-value map
             $kvMap = [
@@ -430,9 +431,9 @@ class LandingService extends LandingServiceStub
             $results[] = [
                 'id' => $idx,
                 'idx' => $index,
-                'type' => 1,
+                'type' => ResultType::OK,
                 'data' => $greetings[$greetingIndex],
-                'meta' => $request->getMeta()
+                'meta' => 'PHP'
             ];
         }
         
@@ -524,6 +525,7 @@ class LandingService extends LandingServiceStub
 
                     $this->metrics['proxy_success']++;
                     $this->logSuccess('TalkOneAnswerMore');
+                    $writer->finish();
                     return;
                 } catch (\Exception $e) {
                     $this->logError('TalkOneAnswerMore', $e->getMessage(), true);
@@ -546,9 +548,9 @@ class LandingService extends LandingServiceStub
                     $results = [[
                         'id' => $idx,
                         'idx' => $index,
-                        'type' => 2,
+                        'type' => ResultType::OK,
                         'data' => 'Stream message ' . ($idx + 1),
-                        'meta' => $request->getMeta()
+                        'meta' => 'PHP'
                     ]];
 
                     $response = $this->createResponse(0, $results);
@@ -557,6 +559,9 @@ class LandingService extends LandingServiceStub
                     // Small delay between responses to simulate processing time
                     usleep(200000); // 200ms
                 }
+
+                // Explicitly finish the stream to signal end to the client
+                $writer->finish();
 
                 $this->logSuccess('TalkOneAnswerMore');
                 $this->metrics['success_count']++;
@@ -639,9 +644,9 @@ class LandingService extends LandingServiceStub
                         $allResults[] = [
                             'id' => $requestCount,
                             'idx' => $data,
-                            'type' => 3,
+                            'type' => ResultType::OK,
                             'data' => 'Response from request ' . $requestCount,
-                            'meta' => $meta
+                            'meta' => 'PHP'
                         ];
                     }
                 }
@@ -719,6 +724,7 @@ class LandingService extends LandingServiceStub
 
                     $this->metrics['proxy_success']++;
                     $this->logSuccess('TalkBidirectional');
+                    $writer->finish();
                     return;
                 } catch (\Exception $e) {
                     $this->logError('TalkBidirectional', $e->getMessage(), true);
@@ -755,9 +761,9 @@ class LandingService extends LandingServiceStub
                         $results = [[
                             'id' => $requestIndex,
                             'idx' => $request->getData(),
-                            'type' => 4,
+                            'type' => ResultType::OK,
                             'data' => "Bidirectional response $requestIndex",
-                            'meta' => $request->getMeta()
+                            'meta' => 'PHP'
                         ]];
 
                         $response = $this->createResponse(0, $results);
@@ -765,6 +771,9 @@ class LandingService extends LandingServiceStub
                         $responseCount++;
                     }
                 }
+
+                // Explicitly finish the stream to signal end to the client
+                $writer->finish();
 
                 $this->logSuccess('TalkBidirectional');
                 $this->metrics['success_count']++;

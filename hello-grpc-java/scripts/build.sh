@@ -17,7 +17,7 @@ VERBOSE=false
 log_build() { echo "[BUILD] $*"; }
 log_success() { echo "[SUCCESS] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
-log_debug() { [ "$VERBOSE" = true ] && echo "[DEBUG] $*"; }
+log_debug() { [ "$VERBOSE" = true ] && echo "[DEBUG] $*" || true; }
 
 # Parse command line arguments
 parse_arguments() {
@@ -187,6 +187,7 @@ if [ "$NEEDS_BUILD" = true ]; then
     fi
 else
     log_debug "Java project is up to date, skipping build"
+    log_build "Java project is up to date"
 fi
 
 # Run tests if requested (and not already run during build)

@@ -35,13 +35,16 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
             
             let backendTransport: HTTP2ClientTransport.Posix
 
-            // Client-side HTTP/2 keepalive for the proxy backend channel.
+            // Client-side HTTP/2 keepalive and gzip compression for the proxy backend channel.
             let transportConfig: HTTP2ClientTransport.Posix.Config = .defaults { config in
                 config.connection.keepalive = .init(
                     time: .seconds(10),
                     timeout: .seconds(1),
                     allowWithoutCalls: true
                 )
+                // Enable gzip compression for outbound and inbound messages
+                config.compression.algorithm = .gzip
+                config.compression.enabledAlgorithms = [.gzip, .deflate]
             }
             
             if config.useTLS {

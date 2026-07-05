@@ -12,6 +12,15 @@ build:windows --cxxopt=/std:c++17
 build:windows --host_cxxopt=/std:c++17
 build:windows --define=grpc_no_xds=true
 
+# Windows: the protobuf host protoc built by Bazel can segfault
+# (Exit -1073741819 / 0xC0000005), deadlocking well-known proto codegen
+# (api_proto [for tool]). Use the system protoc 27.2 (//protos:system_protoc
+# -> D:\zoo\bin\protoc27.2.exe), matched to the resolved protobuf@27.2, for
+# the default proto compiler + the C++ proto toolchain.
+# On macOS/Linux the default Bazel-built protoc is used.
+build:windows --proto_compiler=//protos:system_protoc
+build:windows --proto_toolchain_for_cc=//protos:system_cc_toolchain
+
 # Disable strict layering check to work around module dependency issues
 build --features=-layering_check
 

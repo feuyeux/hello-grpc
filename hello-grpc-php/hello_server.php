@@ -8,6 +8,10 @@
  * @author Hello gRPC Team
  */
 
+// Suppress E_DEPRECATED from google/protobuf on PHP 8.5+
+// (null used as array offset in Descriptor.php / DescriptorPool.php).
+error_reporting(E_ALL & ~E_DEPRECATED);
+
 use Grpc\RpcServer;
 use Grpc\ServerCredentials;
 use Monolog\Logger;
@@ -69,27 +73,45 @@ if (isset($options['addr'])) {
     }
 }
 
-// Define signal handler function
-/**
- * Signal handler for graceful shutdown
- * 
- * @param int $signal Signal number
- */
+// Signal handler for graceful shutdown.
+// The gRPC C extension's RpcServer::run() blocks at the OS level inside
+// a C call.  On macOS the PHP engine cannot dispatch tick callbacks or
+// async-signal handlers while the VM is stuck in that blocking C frame,
+// so Ctrl-C (SIGINT) appears to be ignored.
+//
+// Strategy: install a real POSIX handler via pcntl_signal + pcntl_async_signals.
+// When the handler fires (it may be delayed until the next I/O boundary on
+// macOS), we force-kill with SIGKILL to guarantee the process exits — the
+// gRPC C extension does not expose a PHP-level stop() method, and exit(0)
+// from inside the handler can deadlock on the extension's internal mutexes.
+$shutdownRequested = false;
+
 function handleShutdown($signal) {
-    global $log;
-    
-    if ($signal === SIGTERM) {
-        $log->info("Received SIGTERM signal, shutting down gracefully");
-    } else {
-        $log->info("Received SIGINT signal, shutting down gracefully");
+    global $log, $shutdownRequested;
+
+    $sigName = ($signal === SIGTERM) ? 'SIGTERM' : 'SIGINT';
+
+    // Avoid re-entrant handling
+    if ($shutdownRequested) {
+        // Second signal — force immediate exit
+        posix_kill(posix_getpid(), SIGKILL);
     }
-    
-    exit(0);
+    $shutdownRequested = true;
+
+    if (isset($log)) {
+        $log->info("Received $sigName signal, shutting down");
+    }
+
+    // Force-kill because exit(0) from a signal handler inside the
+    // gRPC C extension's blocking run() can deadlock.
+    posix_kill(posix_getpid(), SIGKILL);
 }
 
-// Setup signal handling for graceful shutdown
+// Setup signal handling.
+if (function_exists('pcntl_async_signals')) {
+    pcntl_async_signals(true);
+}
 if (function_exists('pcntl_signal')) {
-    // Register signal handlers
     pcntl_signal(SIGTERM, 'handleShutdown');
     pcntl_signal(SIGINT, 'handleShutdown');
     $log->debug("Signal handlers registered");
@@ -262,18 +284,10 @@ try {
     $log->info(sprintf("Version: %s", getVersion()));
     $log->info(sprintf("========================================"));
     
-    // Enable signal polling if pcntl extension is available
-    if (function_exists('pcntl_signal_dispatch')) {
-        // Register a timer to check for signals
-        register_tick_function(function() {
-            pcntl_signal_dispatch();
-        });
-        
-        // Enable ticks for the main loop
-        declare(ticks = 1);
-    }
-    
-    // Start the server
+    // Start the server (blocks until killed).
+    // Note: on macOS, signal delivery during this blocking C call may be
+    // delayed.  Pressing Ctrl-C twice will force-kill via SIGKILL if the
+    // first signal hasn't been dispatched yet.
     $server->run();
     
 } catch (Exception $e) {

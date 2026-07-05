@@ -3,7 +3,7 @@ import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("application")
-    id("org.jetbrains.kotlin.jvm") version "1.9.24"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
     // Shadow plugin compatibility with Gradle 9.x is pending
     // Will be re-enabled when shadow 9.x stable is released
     // id("com.github.johnrengelman.shadow") version "9.x"

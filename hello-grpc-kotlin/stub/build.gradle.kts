@@ -6,7 +6,7 @@ import org.gradle.api.tasks.testing.Test
 plugins {
     id("idea")
     id("java-library")
-    id("org.jetbrains.kotlin.jvm") version "1.9.24"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
     id("com.google.protobuf") version "0.10.0"
 }
 
@@ -60,7 +60,12 @@ extensions.configure<Any>("protobuf") {
 }
 
 extensions.configure<org.gradle.api.plugins.JavaPluginExtension>("java") {
+    // Kotlin 2.2.21's JVM target defaults to 21 on JDK 21. compileJava
+    // must match, otherwise Gradle's jvm-target validation aborts the
+    // build. Aligns with root build.gradle.kts and AGENTS.md's "Java
+    // 21 compatibility as the source target".
     sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType<Test>().configureEach {

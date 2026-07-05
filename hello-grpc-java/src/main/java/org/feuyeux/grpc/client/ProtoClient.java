@@ -1,6 +1,5 @@
 package org.feuyeux.grpc.client;
 
-import static org.feuyeux.grpc.common.Connection.*;
 import static org.feuyeux.grpc.common.HelloUtils.buildLinkRequests;
 import static org.feuyeux.grpc.common.HelloUtils.getVersion;
 
@@ -17,6 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLException;
+import lombok.Getter;
 import org.feuyeux.grpc.common.Connection;
 import org.feuyeux.grpc.common.ErrorMapper;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
@@ -52,7 +52,7 @@ public class ProtoClient {
   private static final long REQUEST_TIMEOUT_SECONDS = 5;
   private static final int DEFAULT_BATCH_SIZE = 5;
 
-  private ManagedChannel channel;
+  @Getter private final ManagedChannel channel;
   private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
   private LandingServiceGrpc.LandingServiceStub asyncStub;
 
@@ -61,7 +61,7 @@ public class ProtoClient {
     connect(this.channel);
   }
 
-  public static void main(String[] args) {
+  static void main() {
     log.info("Starting gRPC client [version: {}]", getVersion());
 
     ProtoClient protoClient = null;
@@ -186,9 +186,8 @@ public class ProtoClient {
    * Demonstrates the server streaming RPC pattern.
    *
    * @param request The request to send
-   * @throws Exception If the RPC call fails
    */
-  public void executeServerStreamingCall(TalkRequest request) throws Exception {
+  public void executeServerStreamingCall(TalkRequest request) {
     String requestId = "server-stream-" + System.nanoTime();
     log.info(
         "Starting server streaming with request: data={}, meta={}",
@@ -419,9 +418,8 @@ public class ProtoClient {
    * Establishes connection to the gRPC server.
    *
    * @param channel The managed channel to use
-   * @throws SSLException If SSL context setup fails
    */
-  public void connect(ManagedChannel channel) throws SSLException {
+  public void connect(ManagedChannel channel) {
     io.opentelemetry.api.OpenTelemetry clientOtel =
         org.feuyeux.grpc.common.OtelSupport.initOtel("hello-grpc-java-client");
     var chain = new java.util.ArrayList<io.grpc.ClientInterceptor>();
@@ -447,9 +445,5 @@ public class ProtoClient {
       log.debug("Closing client connection");
       channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
-  }
-
-  public ManagedChannel getChannel() {
-    return channel;
   }
 }

@@ -18,13 +18,18 @@ log_error() { echo "[ERROR] $*" >&2; }
 USE_TLS=false
 ADDITIONAL_ARGS=""
 
-# Set GOPATH based on OS
-if [ "$(uname)" == "Darwin" ] || [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-    export GOPATH=$GOPATH:${PWD}
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
-    windows_path=$GOPATH
-    linux_path=$(echo "$windows_path" | sed 's/^\([a-zA-Z]\):/\/\1/' | sed 's/\\/\//g')
-    export GOPATH=$linux_path:${PWD}
+# Ensure GOPATH and GOMODCACHE are set. The previous version of this
+# script appended ":${PWD}" to a possibly-empty $GOPATH, which produced
+# a relative path like ":/Users/han/..." that `go run` rejects with
+# "module cache not found: neither GOMODCACHE nor GOPATH is set" when
+# the calling shell had not exported GOPATH itself. Go modules do not
+# need $PWD in GOPATH at all (GO111MODULE=on already disables the
+# GOPATH/src workspace mode); we just need a real absolute directory.
+if [ -z "${GOPATH:-}" ]; then
+    export GOPATH="${HOME}/go"
+fi
+if [ -z "${GOMODCACHE:-}" ]; then
+    export GOMODCACHE="${GOPATH}/pkg/mod"
 fi
 
 # Process command line arguments

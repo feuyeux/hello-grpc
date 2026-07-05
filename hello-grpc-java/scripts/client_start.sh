@@ -22,16 +22,46 @@ bash scripts/build.sh
 # Set JAVA_HOME based on OS
 case "$(uname -s)" in
 Darwin)
-    export JAVA_HOME="/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home"
+    if [ -d "/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home" ]; then
+        export JAVA_HOME="/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home"
+    elif JAVA_HOME_PATH="$(/usr/libexec/java_home 2>/dev/null)" && [ -n "$JAVA_HOME_PATH" ]; then
+            export JAVA_HOME="$JAVA_HOME_PATH"
+    else
+        log_error "JAVA_HOME not found. Please install Java or set JAVA_HOME manually."
+        exit 1
+    fi
     ;;
 Linux)
-    export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+    if [ -d "/usr/lib/jvm/java-21-openjdk-amd64" ]; then
+        export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+    elif [ -d "/usr/lib/jvm/java-21-openjdk" ]; then
+        export JAVA_HOME="/usr/lib/jvm/java-21-openjdk"
+    elif [ -d "/usr/lib/jvm/default-java" ]; then
+        export JAVA_HOME="/usr/lib/jvm/default-java"
+    elif [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
+        export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+    else
+        log_error "JAVA_HOME not found. Please install Java or set JAVA_HOME manually."
+        exit 1
+    fi
     ;;
 MSYS_NT* | MINGW64_NT*)
-    export JAVA_HOME="D:/zoo/jdk-24.0.1"
+    if [ -d "D:/zoo/jdk-25.0.2" ]; then
+        export JAVA_HOME="D:/zoo/jdk-25.0.2"
+    elif [ -d "D:/zoo/jdk-25" ]; then
+        export JAVA_HOME="D:/zoo/jdk-25"
+    elif [ -d "C:/Program Files/Eclipse Adoptium/jdk-25.0.3.9-hotspot" ]; then
+        export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-25.0.3.9-hotspot"
+    elif [ -d "D:/zoo/jdk-24.0.1" ]; then
+        export JAVA_HOME="D:/zoo/jdk-24.0.1"
+    else
+        log_error "JAVA_HOME not found. Please install Java or set JAVA_HOME manually."
+        exit 1
+    fi
     ;;
 *)
-    echo "Unsupported OS: $(uname -s)"
+    log_error "Unsupported OS: $(uname -s). Please set JAVA_HOME manually before running this script."
+    exit 1
     ;;
 esac
 

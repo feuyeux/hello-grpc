@@ -393,6 +393,11 @@ class Server {
               timeout: Duration(seconds: 1),
               permitWithoutCalls: true,
             ),
+            // Advertise gzip + identity so the backend can accept
+            // compressed responses when it supports them.
+            codecRegistry: grpc.CodecRegistry(
+              codecs: [grpc.IdentityCodec(), grpc.GzipCodec()],
+            ),
           ),
         );
 
@@ -410,6 +415,11 @@ class Server {
           ReflectionService(),
         ],
         serverInterceptors: [serverInterceptor],
+        // Enable gzip decompression so cross-language clients (e.g. Java)
+        // that send grpc-encoding: gzip are handled transparently.
+        codecRegistry: grpc.CodecRegistry(
+          codecs: [grpc.IdentityCodec(), grpc.GzipCodec()],
+        ),
       );
 
       // Set up signal handling for graceful shutdown

@@ -178,6 +178,12 @@ class Client {
           timeout: Duration(seconds: 1),
           permitWithoutCalls: true,
         ),
+        // Enable gzip + identity so the client can accept compressed
+        // responses from servers that support them, matching other
+        // language clients in this repo.
+        codecRegistry: CodecRegistry(
+          codecs: [IdentityCodec(), GzipCodec()],
+        ),
       ),
     );
   }

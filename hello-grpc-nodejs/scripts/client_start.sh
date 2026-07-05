@@ -13,13 +13,15 @@ log_error() { echo "[ERROR] $*" >&2; }
 
 # Preparation steps
 log_info "Checking and installing dependencies if needed..."
-if [ ! -d "node_modules" ] || [ ! -d "node_modules/@grpc" ]; then
-    log_info "Installing required gRPC dependencies..."
-    # Check if package.json exists, create if not
+if [ ! -d "node_modules" ]; then
+    # First-run setup: ensure a package.json exists, then install everything
+    # declared in it. We deliberately do NOT pass an explicit package list —
+    # package.json is the single source of truth for what the project needs.
     if [ ! -f "package.json" ]; then
         npm init -y
     fi
-    npm install @grpc/grpc-js @grpc/proto-loader winston
+    log_info "Installing dependencies from package.json..."
+    npm install
 else
     log_info "Dependencies already installed"
 fi

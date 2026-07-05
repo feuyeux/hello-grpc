@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS build-base
+FROM golang:1.26-alpine AS build-base
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update git bash protobuf protobuf-dev make && rm -rf /var/cache/apk/*
 
@@ -22,7 +22,7 @@ WORKDIR /app/hello-grpc/hello-grpc-go
 RUN go build -o proto_server server/proto_server.go
 RUN go build -o proto_client client/proto_client.go
 
-FROM alpine:latest AS server
+FROM alpine:3.21 AS server
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update ca-certificates && rm -rf /var/cache/apk/*
 
@@ -36,7 +36,7 @@ COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
 
 ENTRYPOINT ["./proto_server"]
 
-FROM alpine:latest AS client
+FROM alpine:3.21 AS client
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update ca-certificates && rm -rf /var/cache/apk/*
 

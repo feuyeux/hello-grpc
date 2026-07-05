@@ -17,7 +17,7 @@ import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
 
 /**
  * OpenTelemetry wiring for hello-grpc-java.
@@ -55,7 +55,7 @@ public final class OtelSupport {
     }
     Resource resource =
         Resource.getDefault()
-            .merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, serviceName)));
+            .merge(Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, serviceName)));
     SdkTracerProvider tracerProvider =
         SdkTracerProvider.builder()
             .addSpanProcessor(SimpleSpanProcessor.create(LoggingSpanExporter.create()))
@@ -81,7 +81,7 @@ public final class OtelSupport {
       return null;
     }
     GrpcTelemetry grpcTelemetry = GrpcTelemetry.builder(openTelemetry).build();
-    return grpcTelemetry.newServerInterceptor();
+    return grpcTelemetry.createServerInterceptor();
   }
 
   /**
@@ -93,7 +93,7 @@ public final class OtelSupport {
       return null;
     }
     GrpcTelemetry grpcTelemetry = GrpcTelemetry.builder(openTelemetry).build();
-    return grpcTelemetry.newClientInterceptor();
+    return grpcTelemetry.createClientInterceptor();
   }
 
   /**
@@ -119,10 +119,10 @@ public final class OtelSupport {
   }
 
   /**
-   * Marker onAttribute() re-export to avoid breaking the ResourceAttributes AttributeKey API
-   * surface for callers.
+   * Marker onAttribute() re-export to avoid breaking the ServiceAttributes AttributeKey API surface
+   * for callers.
    */
   public static AttributeKey<String> serviceNameKey() {
-    return ResourceAttributes.SERVICE_NAME;
+    return ServiceAttributes.SERVICE_NAME;
   }
 }

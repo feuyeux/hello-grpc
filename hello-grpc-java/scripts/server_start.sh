@@ -10,13 +10,17 @@ readonly SCRIPT_VERSION="2.0.0"
 readonly SCRIPT_PATH="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd -P)"
 
 # 颜色输出
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly NC='\033[0m' # No Color
+# Note: '\033' in single-quoted strings is the literal 4-char sequence
+# backslash-zero-three-three, NOT the ESC byte (0x1b). To emit a real
+# ANSI escape, we use $'...' which is bash's ANSI-C quoting syntax:
+# $'\033' expands to the ESC byte. Use $'\033[0;36m' for cyan, etc.
+readonly RED=$'\033[0;31m'
+readonly GREEN=$'\033[0;32m'
+readonly YELLOW=$'\033[1;33m'
+readonly BLUE=$'\033[0;34m'
+readonly PURPLE=$'\033[0;35m'
+readonly CYAN=$'\033[0;36m'
+readonly NC=$'\033[0m' # No Color
 
 # 默认配置
 DEFAULT_ADDR="127.0.0.1:9996"

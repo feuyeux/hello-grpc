@@ -42,6 +42,7 @@ bazel-*/
 # Log files
 *.log
 *.gz
+*.tgz
 log/
 logs/*
 !logs/.gitkeep
@@ -110,6 +111,8 @@ docker/glog/
 docker/gflags/
 docker/Catch2/
 docker/hello-grpc-*
+docker/composer.phar
+docker/grpc-src.tar
 hello-grpc-cpp-cmake/grpc/*
 bazel-*
 

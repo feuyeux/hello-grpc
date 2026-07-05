@@ -6,7 +6,7 @@ publish_to: none
 # brew search dart
 # dart --version
 environment:
-  sdk: '>=3.7.0'
+  sdk: '>=3.9.0'
 
 dependencies:
   #  https://pub.dev/packages/async
@@ -16,14 +16,8 @@ dependencies:
   # https://pub.dev/packages/protobuf
   protobuf: ^5.1.0
   # OpenTelemetry (for env-gated tracing behind GRPC_HELLO_OTEL=Y).
-  # The published opentelemetry_dart package currently pins protobuf ^2.1.0,
-  # which conflicts with grpc ^4.0.1/protobuf ^4.0.0. We consume Workiva's
-  # opentelemetry-dart implementation directly from GitHub (main branch)
-  # because it has looser constraints and a stable API surface.
-  opentelemetry:
-    git:
-      url: https://github.com/Workiva/opentelemetry-dart.git
-      ref: master
+  # https://pub.dev/packages/opentelemetry
+  opentelemetry: ^0.18.11
   # https://pub.dev/packages/collection
   collection: ^1.19.0
   # https://pub.dev/packages/logging

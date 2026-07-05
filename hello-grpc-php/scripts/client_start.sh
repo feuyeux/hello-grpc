@@ -4,6 +4,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT" || exit
 
+# Pre-flight: ensure the PHP gRPC C-extension is available
+# shellcheck source=check_grpc_ext.sh
+source "$SCRIPT_DIR/check_grpc_ext.sh"
+check_grpc_extension || exit 1
+
 # Default configuration
 USE_TLS=false
 ADDITIONAL_ARGS=""
@@ -92,7 +97,9 @@ fi
 mkdir -p ./log
 
 # Construct the PHP command with all needed settings
-PHP_CMD="php -d error_reporting=E_ALL \
+# Inject -d extension=… when the extension was found but not enabled by default
+PHP_CMD="php $GRPC_EXT_FLAG \
+    -d error_reporting='E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED' \
     -d display_errors=1 \
     -d display_startup_errors=1 \
     -d log_errors=1 \

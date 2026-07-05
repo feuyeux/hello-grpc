@@ -14,7 +14,6 @@ use std::env;
 use std::time::Duration;
 use tokio::sync::oneshot;
 
-const SVC_DISC_NAME: &str = "hello-grpc";
 const ETCD_KEY: &str = "/etcd/hello-grpc";
 const DEFAULT_TTL: i64 = 5;
 

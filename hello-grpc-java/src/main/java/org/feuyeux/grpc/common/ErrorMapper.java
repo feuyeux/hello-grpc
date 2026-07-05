@@ -25,10 +25,9 @@ public class ErrorMapper {
     }
 
     Status status;
-    String message = "";
+    String message;
 
-    if (throwable instanceof StatusRuntimeException) {
-      StatusRuntimeException sre = (StatusRuntimeException) throwable;
+    if (throwable instanceof StatusRuntimeException sre) {
       status = sre.getStatus();
       message = status.getDescription() != null ? status.getDescription() : "";
     } else {
@@ -50,44 +49,25 @@ public class ErrorMapper {
    * @return Human-readable description
    */
   private static String getStatusDescription(Status.Code code) {
-    switch (code) {
-      case OK:
-        return "Success";
-      case CANCELLED:
-        return "Operation cancelled";
-      case UNKNOWN:
-        return "Unknown error";
-      case INVALID_ARGUMENT:
-        return "Invalid request parameters";
-      case DEADLINE_EXCEEDED:
-        return "Request timeout";
-      case NOT_FOUND:
-        return "Resource not found";
-      case ALREADY_EXISTS:
-        return "Resource already exists";
-      case PERMISSION_DENIED:
-        return "Permission denied";
-      case RESOURCE_EXHAUSTED:
-        return "Resource exhausted";
-      case FAILED_PRECONDITION:
-        return "Precondition failed";
-      case ABORTED:
-        return "Operation aborted";
-      case OUT_OF_RANGE:
-        return "Out of range";
-      case UNIMPLEMENTED:
-        return "Not implemented";
-      case INTERNAL:
-        return "Internal server error";
-      case UNAVAILABLE:
-        return "Service unavailable";
-      case DATA_LOSS:
-        return "Data loss";
-      case UNAUTHENTICATED:
-        return "Authentication required";
-      default:
-        return "Unknown error code";
-    }
+    return switch (code) {
+      case OK -> "Success";
+      case CANCELLED -> "Operation cancelled";
+      case UNKNOWN -> "Unknown error";
+      case INVALID_ARGUMENT -> "Invalid request parameters";
+      case DEADLINE_EXCEEDED -> "Request timeout";
+      case NOT_FOUND -> "Resource not found";
+      case ALREADY_EXISTS -> "Resource already exists";
+      case PERMISSION_DENIED -> "Permission denied";
+      case RESOURCE_EXHAUSTED -> "Resource exhausted";
+      case FAILED_PRECONDITION -> "Precondition failed";
+      case ABORTED -> "Operation aborted";
+      case OUT_OF_RANGE -> "Out of range";
+      case UNIMPLEMENTED -> "Not implemented";
+      case INTERNAL -> "Internal server error";
+      case UNAVAILABLE -> "Service unavailable";
+      case DATA_LOSS -> "Data loss";
+      case UNAUTHENTICATED -> "Authentication required";
+    };
   }
 
   /**
@@ -101,22 +81,16 @@ public class ErrorMapper {
       return false;
     }
 
-    if (!(throwable instanceof StatusRuntimeException)) {
+    if (!(throwable instanceof StatusRuntimeException sre)) {
       return false;
     }
 
-    StatusRuntimeException sre = (StatusRuntimeException) throwable;
     Status.Code code = sre.getStatus().getCode();
 
-    switch (code) {
-      case UNAVAILABLE:
-      case DEADLINE_EXCEEDED:
-      case RESOURCE_EXHAUSTED:
-      case INTERNAL:
-        return true;
-      default:
-        return false;
-    }
+    return switch (code) {
+      case UNAVAILABLE, DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED, INTERNAL -> true;
+      default -> false;
+    };
   }
 
   /**

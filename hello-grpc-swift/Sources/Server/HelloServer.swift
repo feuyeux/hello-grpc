@@ -74,6 +74,11 @@ struct HelloServer: AsyncParsableCommand {
 
             let transport: HTTP2ServerTransport.Posix
 
+            // Configure transport with gzip compression enabled
+            let transportConfig: HTTP2ServerTransport.Posix.Config = .defaults { config in
+                config.compression.enabledAlgorithms = [.gzip, .deflate]
+            }
+
             // Configure TLS if enabled
             if options.useTLS {
                 logger.info("TLS is enabled, configuring secure transport")
@@ -85,6 +90,7 @@ struct HelloServer: AsyncParsableCommand {
                     options: options,
                     host: host,
                     port: conn.port ?? 9996,
+                    config: transportConfig,
                     logger: logger
                 )
             } else {
@@ -95,7 +101,8 @@ struct HelloServer: AsyncParsableCommand {
                 }
                 transport = HTTP2ServerTransport.Posix(
                     address: .ipv4(host: host, port: conn.port ?? 9996),
-                    transportSecurity: .plaintext
+                    transportSecurity: .plaintext,
+                    config: transportConfig
                 )
             }
 
@@ -153,6 +160,7 @@ struct HelloServer: AsyncParsableCommand {
         options: Options,
         host: String,
         port: Int,
+        config: HTTP2ServerTransport.Posix.Config,
         logger: Logger
     ) -> HTTP2ServerTransport.Posix {
         let keyPath = "\(options.certBasePath)/private.key"
@@ -166,7 +174,8 @@ struct HelloServer: AsyncParsableCommand {
             transportSecurity: .tls(
                 certificateChain: [.file(path: chainPath, format: .pem)],
                 privateKey: .file(path: keyPath, format: .pem)
-            )
+            ),
+            config: config
         )
     }
 

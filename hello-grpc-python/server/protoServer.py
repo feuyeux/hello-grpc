@@ -25,10 +25,12 @@ from conn import connection, utils, landing_pb2, landing_pb2_grpc, error_mapper
 import os
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 import time
 import uuid
 import platform
 import signal
+import threading
 from concurrent import futures
 from pathlib import Path
 import grpc
@@ -45,17 +47,36 @@ DEFAULT_PORT = "9996"
 SHUTDOWN_GRACE_PERIOD_SECONDS = 30
 
 # Configure logging
+# Dual handler: StreamHandler for terminal visibility (so users running
+# the server interactively see live output), RotatingFileHandler into the
+# same log/hello-grpc.log the client writes to so a single log file
+# captures the whole client<->server conversation. Pattern mirrors
+# conn/connection.py (client side).
+os.makedirs("log", exist_ok=True)
 logger = logging.getLogger('grpc-server')
 logger.setLevel(logging.INFO)
+
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
-formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
-                              datefmt='%Y-%m-%d %H:%M:%S.%f')
-console.setFormatter(formatter)
+console_formatter = logging.Formatter(
+    '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S.%f')
+console.setFormatter(console_formatter)
+
+file_handler = RotatingFileHandler(
+    'log/hello-grpc.log', maxBytes=19500 * 1024, backupCount=5)
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter(
+    '[%(asctime)s] [%(threadName)s] [%(levelname)s] [%(name)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S.%f')
+file_handler.setFormatter(file_formatter)
+
 logger.addHandler(console)
+logger.addHandler(file_handler)
 
 # Global flag for graceful shutdown
 shutdown_requested = False
+shutdown_event = threading.Event()
 rpc_calls_counter = None
 
 # Define tracing headers to propagate
@@ -81,6 +102,7 @@ def signal_handler(signum, frame):
     global shutdown_requested
     logger.info("Received shutdown signal, initiating graceful shutdown")
     shutdown_requested = True
+    shutdown_event.set()
 
 
 def get_certificate_paths():
@@ -497,7 +519,7 @@ def serve():
 
     try:
         logger.info("Server started successfully, waiting for requests...")
-        server.wait_for_termination()
+        shutdown_event.wait()
     except KeyboardInterrupt:
         logger.info("Received interrupt signal, shutting down...")
     finally:
@@ -509,7 +531,8 @@ def serve():
         # Graceful shutdown
         logger.info("Initiating graceful shutdown (grace period: %ds)...",
                     SHUTDOWN_GRACE_PERIOD_SECONDS)
-        server.stop(SHUTDOWN_GRACE_PERIOD_SECONDS)
+        stopped_event = server.stop(SHUTDOWN_GRACE_PERIOD_SECONDS)
+        stopped_event.wait()
 
         if channel:
             logger.debug("Closing backend channel")

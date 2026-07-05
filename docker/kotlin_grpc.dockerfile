@@ -1,4 +1,4 @@
-FROM gradle:8.13-jdk21 AS build-base
+FROM gradle:8.14-jdk21 AS build-base
 # Gradle 8.13 only supports running on JDK <=24; Bumping to jdk25 requires
 # Gradle 9.1+, which in turn bumps the embedded Kotlin from 1.9.x to 2.2.x
 # and breaks this project's Kotlin DSL sources (compileKotlin targets JVM

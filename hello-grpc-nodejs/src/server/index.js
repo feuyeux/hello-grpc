@@ -26,7 +26,11 @@ const { isEtcdDiscovery, registerToEtcd } = require('../common/etcd_discovery');
 // C4 — gRPC Server Reflection
 const reflection = require('grpc-node-server-reflection').default;
 // B7 — gRPC Health Check
-const { HealthCheckResponse, HealthImplementation } = require('grpc-health-check');
+// grpc-health-check v2.x changed the API: there is no `HealthCheckResponse`
+// enum and `ServingStatus` is now a string-union type, not an object. Pass
+// the literal `'SERVING'` directly into the status map instead of digging
+// it out of a nested enum.
+const { HealthImplementation } = require('grpc-health-check');
 // C5 — Logging middleware
 const { withLogging } = require('../common/interceptor');
 
@@ -139,7 +143,7 @@ async function main() {
     const serverWithReflection = reflection(server);
 
     // B7 — Health check
-    const statusMap = { '': HealthCheckResponse.ServingStatus.SERVING };
+    const statusMap = { '': 'SERVING' };
     const healthImpl = new HealthImplementation(statusMap);
     healthImpl.addToServer(serverWithReflection);
 

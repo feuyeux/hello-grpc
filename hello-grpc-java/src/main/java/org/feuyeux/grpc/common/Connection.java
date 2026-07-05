@@ -6,7 +6,6 @@ import static org.feuyeux.grpc.common.HelloUtils.getVersion;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
-import com.google.common.base.Charsets;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
 import io.etcd.jetcd.Lease;
@@ -22,6 +21,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.File;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -69,28 +69,28 @@ public class Connection {
   private static final String serverName = "hello.grpc.io";
   public static final String HELLO_LANDING_SERVICE = "hello.LandingService";
 
-  public static String server = System.getenv(GRPC_SERVER);
-  public static String currentPort = System.getenv(GRPC_SERVER_PORT);
+  public static final String server = System.getenv(GRPC_SERVER);
+  public static final String currentPort = System.getenv(GRPC_SERVER_PORT);
 
-  public static String backEnd = System.getenv(GRPC_HELLO_BACKEND);
-  public static String backPort = System.getenv(GRPC_HELLO_BACKEND_PORT);
-  public static String secure = System.getenv(GRPC_HELLO_SECURE);
+  public static final String backEnd = System.getenv(GRPC_HELLO_BACKEND);
+  public static final String backPort = System.getenv(GRPC_HELLO_BACKEND_PORT);
+  public static final String secure = System.getenv(GRPC_HELLO_SECURE);
 
   /* == discovery == */
-  public static String discovery = System.getenv(GRPC_HELLO_DISCOVERY);
-  public static String discoveryEndpoint = System.getenv(GRPC_HELLO_DISCOVERY_ENDPOINT);
+  public static final String discovery = System.getenv(GRPC_HELLO_DISCOVERY);
+  public static final String discoveryEndpoint = System.getenv(GRPC_HELLO_DISCOVERY_ENDPOINT);
 
   private static final long TTL = 5L;
 
-  public static String SVC_DISC_NAME = "hello-grpc";
+  public static final String SVC_DISC_NAME = "hello-grpc";
   /* == discovery == */
   // https://github.com/grpc/grpc/blob/master/doc/load-balancing.md
   public static final String LB_ROUND_ROBIN = "round_robin";
   public static final String LB_PICK_FIRST = "pick_first";
 
   /**
-   * Retry service config for hello.LandingService following gRPC A6 client retries
-   * (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
+   * Retry service config for hello.LandingService following gRPC A6 client retries (<a
+   * href="https://github.com/grpc/proposal/blob/master/A6-client-retries.md">...</a>).
    */
   private static java.util.Map<String, ?> retryServiceConfig() {
     java.util.Map<String, Object> retryPolicy = new java.util.HashMap<>();
@@ -168,10 +168,14 @@ public class Connection {
       builder = NettyChannelBuilder.forAddress(connectTo, port);
     }
     // Client resilience: HTTP/2 keepalive pings plus transparent retries,
-    // mirroring the Go client settings.
+    // mirroring the Go client settings.  keepAliveTime is set to 30s to
+    // stay within the PHP gRPC C extension server's default minimum ping
+    // interval (GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS = 30s).
+    // Other servers (Java/Go/Python) permit pings as often as 5s, so 30s
+    // is a safe common denominator.
     builder
-        .keepAliveTime(10, java.util.concurrent.TimeUnit.SECONDS)
-        .keepAliveTimeout(1, java.util.concurrent.TimeUnit.SECONDS)
+        .keepAliveTime(30, java.util.concurrent.TimeUnit.SECONDS)
+        .keepAliveTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
         .keepAliveWithoutCalls(true)
         .defaultServiceConfig(retryServiceConfig())
         .enableRetry();
@@ -203,8 +207,8 @@ public class Connection {
       try (Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build()) {
         long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
         ByteSequence key =
-            ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), Charsets.US_ASCII);
-        ByteSequence value = ByteSequence.from(Long.toString(leaseId), Charsets.US_ASCII);
+            ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), StandardCharsets.US_ASCII);
+        ByteSequence value = ByteSequence.from(Long.toString(leaseId), StandardCharsets.US_ASCII);
         PutOption option = PutOption.builder().withLeaseId(leaseId).build();
         etcd.getKVClient().put(key, value, option);
         try (Lease leaseClient = etcd.getLeaseClient()) {

@@ -1,12 +1,11 @@
 import 'package:grpc/grpc.dart';
 
 // NOTE on gzip compression: the Dart `grpc` package (pinned per AGENTS.md)
-// does not expose a message-compression / codec configuration hook on
-// [ChannelOptions] as of this writing, unlike Go/Python/Java/C++/C#/Node/
-// TS/PHP/Rust in this repo which all enable gzip at the channel level.
-// There is nothing to wire up here until the package adds that support;
-// tracked as a known parity gap rather than implemented with a nonexistent
-// API.
+// exposes message-compression via [CodecRegistry] and [GzipCodec].
+// Both the server (`Server.create(codecRegistry: ...)`) and client
+// (`ChannelOptions(codecRegistry: ...)`) register [IdentityCodec] +
+// [GzipCodec] to match Go/Python/Java/C++/C#/Node/TS/PHP/Rust in this
+// repo which all enable gzip at the channel level.
 
 /// A6 client-retry parameters for hello.LandingService, mirroring the
 /// grpc.service_config retryPolicy used by the other language clients:

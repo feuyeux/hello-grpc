@@ -1,6 +1,5 @@
 package org.feuyeux.grpc.discovery;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import io.etcd.jetcd.*;
 import io.etcd.jetcd.kv.GetResponse;
@@ -15,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,7 +63,7 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
       String svcAddress;
       switch (event.getEventType()) {
         case PUT:
-          svcAddress = event.getKeyValue().getKey().toString(Charsets.UTF_8);
+          svcAddress = event.getKeyValue().getKey().toString(StandardCharsets.UTF_8);
           try {
             URI uri = new URI(svcAddress);
             serviceUris.add(uri);
@@ -76,7 +76,7 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
           }
           break;
         case DELETE:
-          svcAddress = event.getKeyValue().getKey().toString(Charsets.UTF_8);
+          svcAddress = event.getKeyValue().getKey().toString(StandardCharsets.UTF_8);
           try {
             URI uri = new URI(svcAddress);
             boolean removed = serviceUris.remove(uri);
@@ -110,8 +110,8 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
   public void onCompleted() {}
 
   private void initializeAndWatch() {
-    ByteSequence prefix = ByteSequence.from(serviceDir, Charsets.UTF_8);
-    GetOption option = GetOption.builder().withPrefix(prefix).build();
+    ByteSequence prefix = ByteSequence.from(serviceDir, StandardCharsets.UTF_8);
+    GetOption option = GetOption.builder().isPrefix(true).build();
 
     GetResponse query;
     try (KV kv = etcd.getKVClient()) {
@@ -121,7 +121,7 @@ public class EtcdNameResolver extends NameResolver implements Watch.Listener {
     }
 
     for (KeyValue kv : query.getKvs()) {
-      String svcAddress = getUriFromDir(kv.getKey().toString(Charsets.UTF_8));
+      String svcAddress = getUriFromDir(kv.getKey().toString(StandardCharsets.UTF_8));
       try {
         URI uri = new URI(svcAddress);
         serviceUris.add(uri);

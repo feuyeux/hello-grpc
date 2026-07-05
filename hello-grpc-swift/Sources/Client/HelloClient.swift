@@ -106,13 +106,17 @@ struct HelloClient: AsyncParsableCommand {
         let connectTo = conn.host ?? "127.0.0.1"
         let useTLS = ProcessInfo.processInfo.environment["GRPC_HELLO_SECURE"] == "Y"
 
-        // Client-side HTTP/2 keepalive, mirroring the Go client settings.
+        // Client-side HTTP/2 keepalive and gzip compression, mirroring the
+        // Go/Java/Python/etc. client settings.
         let transportConfig: HTTP2ClientTransport.Posix.Config = .defaults { config in
             config.connection.keepalive = .init(
                 time: .seconds(10),
                 timeout: .seconds(1),
                 allowWithoutCalls: true
             )
+            // Enable gzip compression for outbound and inbound messages
+            config.compression.algorithm = .gzip
+            config.compression.enabledAlgorithms = [.gzip, .deflate]
         }
         
         logger.info("Connecting to \(connectTo):\(conn.port ?? 9996)")

@@ -9,10 +9,23 @@ service, request_id, method, peer, secure, duration_ms, status
 import os
 import time
 import logging
+import uuid
+
 import grpc
 
 SERVICE_NAME = "python"
 IS_SECURE = os.getenv("GRPC_HELLO_SECURE") == "Y"
+
+# Substrings that appear in auth_context()["security_level"] when the
+# underlying transport has no encryption. grpc-python sets this entry on
+# every connection (secure or not), so checking the value is the only way
+# to tell an unauthenticated plaintext channel from a TLS-without-mTLS
+# one. Inspecting "len(auth_context()) > 0" reports insecure channels as
+# secure because the dict still contains the security_level marker.
+_INSECURITY_MARKERS = (
+    b"TSI_SECURITY_NONE",
+    b"INTEGRITY_ONLY",
+)
 
 # Define tracing headers to extract
 TRACING_HEADERS = [
@@ -27,15 +40,23 @@ TRACING_HEADERS = [
 ]
 
 
-def extract_request_id(context):
+def extract_request_id(context, generate=True):
     """
     Extract request ID from context metadata.
 
+    The client is encouraged to send ``x-request-id`` (or ``request-id``)
+    so a single id can correlate the call across server log, client log,
+    and any downstream tracing system. When the client omits the header,
+    generate a UUID server-side so the log line still carries a unique
+    tag and operators can grep for it. Pass ``generate=False`` to fall
+    back to the literal string ``"unknown"``.
+
     Args:
         context (grpc.ServicerContext): The RPC context
+        generate (bool): If True and no header is present, mint a UUID.
 
     Returns:
-        str: The request ID or "unknown" if not found
+        str: The request ID, a freshly minted UUID, or ``"unknown"``.
     """
     metadata = context.invocation_metadata()
 
@@ -44,6 +65,8 @@ def extract_request_id(context):
         if item.key in ["x-request-id", "request-id"]:
             return item.value
 
+    if generate:
+        return f"gen-{uuid.uuid4()}"
     return "unknown"
 
 
@@ -66,24 +89,46 @@ def extract_peer(context):
 
 def is_secure(context):
     """
-    Check if the connection is secure.
+    Check whether the underlying transport is actually encrypted.
 
-    Args:
-        context (grpc.ServicerContext): The RPC context
+    grpc-python's ``auth_context()`` returns a non-empty dict on every
+    connection (insecure included) because the security metadata itself
+    is recorded there as ``transport_security_type`` and
+    ``security_level``. The previous implementation only checked the
+    dict length, which made insecure channels report ``secure=True``.
 
     Returns:
-        bool: True if connection is secure, False otherwise
+        bool: True only when ``security_level`` indicates a real cipher
+        (i.e. anything other than ``TSI_SECURITY_NONE`` /
+        ``INTEGRITY_ONLY``). Falls back to the ``GRPC_HELLO_SECURE``
+        env var if the auth context cannot be read.
     """
     try:
         auth_context = context.auth_context()
-        return auth_context is not None and len(auth_context) > 0
     except Exception:
         return IS_SECURE
+
+    if not auth_context:
+        return IS_SECURE
+
+    # security_level is a list of bytes entries; any marker that names
+    # the no-encryption or integrity-only levels means the wire is
+    # plaintext (or signed but not encrypted).
+    for level in auth_context.get("security_level", ()) or ():
+        if isinstance(level, (bytes, bytearray)):
+            for marker in _INSECURITY_MARKERS:
+                if marker in level:
+                    return False
+
+    # No insecure marker -> the transport negotiated an actual cipher.
+    return True
 
 
 def log_request_start(logger, method, context):
     """
-    Log the start of an RPC request.
+    Log the start of an RPC request and (best-effort) echo the request
+    id back as initial metadata so the client side of the same RPC can
+    see the same id in its own log lines.
 
     Args:
         logger (logging.Logger): The logger instance
@@ -102,6 +147,16 @@ def log_request_start(logger, method, context):
         "service=%s request_id=%s method=%s peer=%s secure=%s status=STARTED",
         SERVICE_NAME, request_id, method, peer, secure
     )
+
+    # Try to attach the (possibly generated) request id as initial
+    # metadata so the client can correlate its log line with ours.
+    # Initial metadata can only be sent from the servicer thread on
+    # unary-unary / unary-stream; for streaming handlers the call may
+    # already be in progress, so failures are swallowed.
+    try:
+        context.send_initial_metadata((("x-request-id", request_id),))
+    except Exception:
+        pass
 
     return request_id, peer, secure, start_time
 

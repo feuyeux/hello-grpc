@@ -103,11 +103,6 @@ file_handler.setFormatter(file_formatter)
 logger.addHandler(console)
 logger.addHandler(file_handler)
 
-# Log certificate paths for debugging
-logger.info(
-    "Using certificate paths: cert=%s, cert_key=%s, cert_chain=%s, root_cert=%s",
-    cert, cert_key, cert_chain, root_cert)
-
 
 def get_grpc_server():
     """
@@ -202,6 +197,10 @@ def build_channel():
 
             logger.info(
                 "TLS connection configured with server name: %s", server_name)
+            logger.info(
+                "Using certificate paths: cert=%s, cert_key=%s, "
+                "cert_chain=%s, root_cert=%s",
+                cert, cert_key, cert_chain, root_cert)
             logger.info("Connect with TLS to %s (Python %s.%s.%s)",
                         address, python_version[0], python_version[1], python_version[2])
             return grpc.secure_channel(

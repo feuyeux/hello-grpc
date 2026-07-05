@@ -73,7 +73,10 @@ async function main() {
         logger.info(`Connection attempt ${attempt}/${RETRY_ATTEMPTS}`);
 
         try {
-            const client = conn.getClient();
+            // getClient is async (it can resolve a backend address via etcd),
+            // so it must be awaited — otherwise `client` is a Promise and
+            // `client.talk(...)` blows up with "client.talk is not a function".
+            const client = await conn.getClient();
 
             // Run all gRPC patterns
             const success = await runGrpcCalls(client, REQUEST_DELAY_MS, ITERATION_COUNT);

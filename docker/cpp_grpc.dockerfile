@@ -49,12 +49,15 @@ COPY proto /app/proto
 WORKDIR /app/hello-grpc-cpp
 # Determine CPU core count (cross-platform)
 RUN CPU_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) && \
-    echo "CPU cores=$CPU_CORES" && \
+    # Cap parallel jobs to avoid OOM on memory-constrained Docker hosts
+    # (gRPC C++ actions are memory-heavy; 14 cores / 8 GB RAM exhausts memory)
+    BAZEL_JOBS=$((CPU_CORES > 4 ? 4 : CPU_CORES)) && \
+    echo "CPU cores=$CPU_CORES, Bazel jobs=$BAZEL_JOBS" && \
     # Clean Bazel
     bazel clean --expunge && \
     # Build hello_server and hello_client with optimized flags
     bazel build \
-    --jobs=$CPU_CORES \
+    --jobs=$BAZEL_JOBS \
     --cxxopt="-std=c++17" \
     --host_cxxopt="-std=c++17" \
     --conlyopt="-std=c11" \

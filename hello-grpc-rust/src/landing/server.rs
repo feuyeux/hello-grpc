@@ -11,6 +11,7 @@ use std::time::Duration;
 use tokio::sync::{Mutex, mpsc};
 use tonic::{
     IntoRequest, Request, Response, Status, Streaming,
+    codec::CompressionEncoding,
     metadata::{KeyAndValueRef, MetadataMap},
     transport::{Channel, Identity, Server, ServerTlsConfig},
 };
@@ -104,8 +105,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
 
-    // Register with etcd if discovery is enabled
-    let etcd_cleanup = if etcd::is_etcd_discovery() {
+    // Register with etcd if discovery is enabled.
+    // The returned `oneshot::Sender` would be used to stop the keepalive task
+    // on graceful shutdown, but we currently rely on process-exit cleanup;
+    // suppress the unused warning by prefixing with `_`.
+    let _etcd_cleanup = if etcd::is_etcd_discovery() {
         let port: u16 = get_server_port().parse().unwrap_or(9996);
         let host = std::env::var("GRPC_SERVER").unwrap_or_else(|_| "localhost".to_string());
         match etcd::register_to_etcd(&host, port).await {
@@ -182,9 +186,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
         None
     };
 
-    // Create service implementation with C5 interceptor
-    let service = LandingServiceServer::with_interceptor(
-        ProtoServer {
+    // Create service implementation with C5 interceptor.
+    // accept_compressed(Gzip) is configured on the generated server so that
+    // incoming requests with `grpc-encoding: gzip` (sent by conn.rs clients via
+    // .send_compressed(CompressionEncoding::Gzip)) are decoded instead of
+    // rejected with Code::Unimplemented.
+    //
+    // We build the chain in two steps because the codegen-provided
+    // `LandingServiceServer::with_interceptor(inner: T, ...)` requires a raw
+    // `LandingService` trait object and does not let us pass an already-built
+    // `LandingServiceServer`. Instead we construct the server with compression
+    // enabled, then wrap it in tonic's `InterceptedService` directly.
+    let service = tonic::service::interceptor::InterceptedService::new(
+        LandingServiceServer::new(ProtoServer {
             backend: if has_backend() {
                 grpc_backend_host()
             } else {
@@ -192,7 +206,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             },
             client_pool,
             metrics: metrics.clone(),
-        },
+        })
+        .accept_compressed(CompressionEncoding::Gzip),
         log_request,
     );
 

@@ -17,7 +17,7 @@ public class NacosNameResolverProvider extends NameResolverProvider {
 
   protected static final String NACOS = "nacos";
 
-  private URI uri;
+  private final URI uri;
 
   public NacosNameResolverProvider(URI targetUri) {
     this.uri = targetUri;

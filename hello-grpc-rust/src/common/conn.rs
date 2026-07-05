@@ -182,7 +182,12 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
 }
 
 fn grpc_server() -> String {
-    env::var("GRPC_SERVER").unwrap_or_else(|_| "[::1]".to_string())
+    // Default to IPv4 "localhost" rather than "[::1]" so that this client
+    // interoperates with TS / Java / Go servers, which default to binding
+    // `0.0.0.0` / `127.0.0.1`. A pure-IPv6 target here would hit
+    // `ConnectionRefused` when the server only listens on IPv4. Override with
+    // `GRPC_SERVER=<host>` if you need to point at an explicit address.
+    env::var("GRPC_SERVER").unwrap_or_else(|_| "localhost".to_string())
 }
 
 pub fn has_backend() -> bool {

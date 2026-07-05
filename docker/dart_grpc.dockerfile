@@ -1,4 +1,4 @@
-FROM dart:3.9.2 AS build-base
+FROM dart:latest AS build-base
 RUN if [ -f "/etc/apt/sources.list.d/debian.sources" ]; then \
     cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak && \
     sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \

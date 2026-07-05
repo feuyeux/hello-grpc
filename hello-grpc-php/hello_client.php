@@ -1,5 +1,10 @@
 <?php
 
+// Suppress E_DEPRECATED from google/protobuf on PHP 8.5+
+// (null used as array offset in Descriptor.php / DescriptorPool.php).
+// This must be set before the autoloader triggers descriptor registration.
+error_reporting(E_ALL & ~E_DEPRECATED);
+
 use Grpc\ChannelCredentials;
 use Common\Utils\Otel;
 use Hello\LandingServiceClient;
@@ -19,9 +24,8 @@ require dirname(__FILE__) . '/common/utils/Otel.php';
 // Constants for configuration
 const MAX_RETRIES = 3;
 const BASE_BACKOFF_MS = 500;
-const STREAM_TIMEOUT_MS = 10000;
+const STREAM_TIMEOUT_MS = 5000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 5000;
-const BIDIRECTIONAL_READ_TIMEOUT_MS = 100;
 
 // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The PHP C
 // extension does not currently expose interceptor callbacks at the
@@ -375,6 +379,11 @@ function serverStreaming($client, $data, $meta): void
         $responses = $call->responses();
         $responseCount = 0;
         
+        // NOTE: on macOS the gRPC C extension's responses() iterator does
+        // not promptly detect the server's trailing metadata (stream close).
+        // After the last response, the foreach next() call blocks in C code
+        // until the stream deadline fires.  The STREAM_TIMEOUT_MS is kept
+        // short to minimise this delay.
         foreach ($responses as $response) {
             if ($shutdown) {
                 $log->info("Shutdown requested during server streaming, breaking loop");
@@ -478,10 +487,8 @@ function bidirectionalStreaming($client, $data, $meta): void
         $requestCount = 5;
         $responseCount = 0;
         $requestsSent = 0;
+        $writesDone = false;
         $completed = false;
-        
-        // Track last response time to detect end of stream
-        $lastResponseTime = microtime(true);
         
         while (!$shutdown && !$completed) {
             // Send requests if we still have more to send
@@ -493,34 +500,37 @@ function bidirectionalStreaming($client, $data, $meta): void
                 
                 // Short delay between writes
                 usleep(200000); // 200ms
-            } else if ($requestsSent === $requestCount) {
+            } else if (!$writesDone) {
                 // Close sending side of stream once we've sent all requests
                 $call->writesDone();
-                $requestsSent++; // Increment to prevent calling writesDone multiple times
+                $writesDone = true;
             }
             
-            // Try to read a response if available
+            // Try to read a response
             $response = $call->read();
             if ($response !== null) {
                 $responseCount++;
                 printResponse("TalkBidirectional<-", $response);
-                $lastResponseTime = microtime(true);
-            } else {
-                // No response available right now
-                // If we've waited long enough since the last response and we're done sending,
-                // assume the server is done too
-                if ($requestsSent > $requestCount && 
-                    microtime(true) - $lastResponseTime > (BIDIRECTIONAL_READ_TIMEOUT_MS / 1000)) {
+                
+                // After writesDone, cancel the stream once all expected
+                // responses are received.  The gRPC C extension's read()
+                // blocks until the stream deadline fires instead of
+                // promptly returning null when the server closes its end
+                // (macOS).  Cancelling terminates the pending read.
+                if ($writesDone && $responseCount >= $requestCount) {
+                    $call->cancel();
                     $completed = true;
-                } else {
-                    // Small pause to avoid CPU spinning
-                    usleep(50000); // 50ms
                 }
+            } else {
+                // read() returned null — server closed its end or cancel took effect
+                $completed = true;
             }
         }
         
-        // Make sure stream is properly closed
-        $call->cancel();
+        // Ensure stream resources are released
+        if (!$completed) {
+            $call->cancel();
+        }
         
         if ($shutdown) {
             $log->info("Bidirectional streaming interrupted by shutdown request");

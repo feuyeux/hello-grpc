@@ -1,13 +1,12 @@
 import Foundation
 import GRPCCore
+import Logging
 
-// NOTE on gzip compression: grpc-swift 2.x (GRPCCore / GRPCNIOTransportHTTP2,
-// currently pinned per AGENTS.md) does not expose a message-compression
-// configuration hook on HTTP2ClientTransport.Posix.Config as of this
-// writing, unlike Go/Python/Java/C++/C#/Node/TS/PHP/Rust in this repo which
-// all enable gzip at the channel level. There is nothing to wire up here
-// until grpc-swift adds that support; tracked as a known parity gap rather
-// than implemented with a nonexistent API.
+// NOTE on gzip compression: grpc-swift 2.x (GRPCCore / GRPCNIOTransportHTTP2)
+// supports message compression via HTTP2ServerTransport.Posix.Config.compression
+// and HTTP2ClientTransport.Posix.Config.compression. Both the server and client
+// transports are configured with gzip/deflate enabled in HelloServer.swift and
+// HelloClient.swift respectively.
 
 /// A6 client-retry parameters for hello.LandingService, mirroring the
 /// grpc.service_config retryPolicy used by the other language clients:

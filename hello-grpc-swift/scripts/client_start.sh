@@ -5,6 +5,5 @@ cd "$(
 )/" || exit
 set -e
 
-# Enable TLS communication
-export GRPC_HELLO_SECURE=Y
+# Plaintext communication (matches server default)
 swift run HelloClient

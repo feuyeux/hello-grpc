@@ -5,5 +5,4 @@ cd "$(
 )/" || exit
 set -e
 
-export GRPC_HELLO_SECURE=Y
 swift run HelloServer

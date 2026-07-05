@@ -16,8 +16,8 @@ import io.grpc.ServerTransportFilter;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
-import io.grpc.protobuf.services.ProtoReflectionService;
-import io.grpc.services.HealthStatusManager;
+import io.grpc.protobuf.services.HealthStatusManager;
+import io.grpc.protobuf.services.ProtoReflectionServiceV1;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.opentelemetry.api.OpenTelemetry;
@@ -134,8 +134,7 @@ public class ProtoServer {
    *
    * @param args Command line arguments (not used)
    */
-  public static void main(String[] args)
-      throws InterruptedException, IOException, ExecutionException {
+  static void main(String[] args) {
     log.info("Starting gRPC server [version: {}]", getVersion());
 
     try {
@@ -236,7 +235,7 @@ public class ProtoServer {
     NettyServerBuilder serverBuilder =
         NettyServerBuilder.forPort(port)
             .addService(interceptedService)
-            .addService(ProtoReflectionService.newInstance())
+            .addService(ProtoReflectionServiceV1.newInstance())
             .addService(healthStatusManager.getHealthService())
             // Server-side HTTP/2 keepalive, mirroring the Go server settings.
             .keepAliveTime(30, java.util.concurrent.TimeUnit.SECONDS)

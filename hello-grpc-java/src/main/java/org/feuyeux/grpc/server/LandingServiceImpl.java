@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Setter;
 import org.feuyeux.grpc.common.OtelSupport;
 import org.feuyeux.grpc.proto.LandingServiceGrpc;
 import org.feuyeux.grpc.proto.ResultType;
@@ -36,8 +37,19 @@ import org.slf4j.LoggerFactory;
  */
 public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBase {
   private static final Logger logger = LoggerFactory.getLogger(LandingServiceImpl.class);
-  private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
-  private LandingServiceGrpc.LandingServiceStub asyncStub;
+
+  /**
+   * -- SETTER -- Sets the blocking stub for connecting to a backend gRPC service. Used for proxying
+   * requests to another gRPC server in a chain.
+   */
+  @Setter private LandingServiceGrpc.LandingServiceBlockingStub blockingStub;
+
+  /**
+   * -- SETTER -- Sets the async stub for connecting to a backend gRPC service. Used for proxying
+   * streaming requests to another gRPC server in a chain.
+   */
+  @Setter private LandingServiceGrpc.LandingServiceStub asyncStub;
+
   private final LongCounter rpcCallsCounter;
 
   public LandingServiceImpl() {
@@ -46,26 +58,6 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
 
   public LandingServiceImpl(OpenTelemetry openTelemetry) {
     this.rpcCallsCounter = OtelSupport.rpcCallsCounter(openTelemetry);
-  }
-
-  /**
-   * Sets the blocking stub for connecting to a backend gRPC service. Used for proxying requests to
-   * another gRPC server in a chain.
-   *
-   * @param blockingStub The blocking stub for the backend service
-   */
-  public void setBlockingStub(LandingServiceGrpc.LandingServiceBlockingStub blockingStub) {
-    this.blockingStub = blockingStub;
-  }
-
-  /**
-   * Sets the async stub for connecting to a backend gRPC service. Used for proxying streaming
-   * requests to another gRPC server in a chain.
-   *
-   * @param asyncStub The async stub for the backend service
-   */
-  public void setAsyncStub(LandingServiceGrpc.LandingServiceStub asyncStub) {
-    this.asyncStub = asyncStub;
   }
 
   /**

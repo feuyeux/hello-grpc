@@ -40,17 +40,21 @@ cc_library(
 
 # The protobuf host protoc built by Bazel can segfault on Windows
 # (Exit -1073741819 / 0xC0000005), deadlocking well-known proto codegen
-# (api_proto [for tool]). Expose a system protoc exactly matched to the
-# resolved protobuf series: D:\zoo\bin\protoc27.2.exe (libprotoc 27.2)
-# matches protobuf@27.2 in MODULE.bazel. The header-only runtime shim above
-# gives generated well-known-type compile actions the protobuf/Abseil include
-# roots without depending on @com_google_protobuf//:protobuf, which would
-# create a WKT dependency cycle.
+# (api_proto [for tool]). On Windows, expose a system protoc exactly matched
+# to the resolved protobuf series: D:\zoo\bin\protoc27.2.exe (libprotoc 27.2)
+# matches protobuf@27.2 in MODULE.bazel. On macOS/Linux this target produces
+# a harmless stub since the default Bazel-built protoc is used instead.
+# The header-only runtime shim above gives generated well-known-type compile
+# actions the protobuf/Abseil include roots without depending on
+# @com_google_protobuf//:protobuf, which would create a WKT dependency cycle.
 genrule(
     name = "system_protoc",
     srcs = [],
     outs = ["protoc.exe"],
-    cmd = "cp /d/zoo/bin/protoc27.2.exe $@",
+    cmd = select({
+        "@platforms//os:windows": "cp /d/zoo/bin/protoc27.2.exe $@",
+        "//conditions:default": "echo '#!/bin/sh' > $@ && echo 'echo system_protoc is only functional on Windows >&2; exit 1' >> $@ && chmod +x $@",
+    }),
     executable = True,
 )
 

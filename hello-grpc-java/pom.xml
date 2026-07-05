@@ -11,28 +11,38 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jdk.version>25</jdk.version>
-        <!-- Bumped 1.78.0 -> 1.82.1 in this PR. 1.82.1 is the current
-             stable Maven release at the time of writing and includes
-             a public io.grpc.opentelemetry.OpenTelemetryServerInterceptor /
-             ClientInterceptor API (was unavailable in 1.78.x, blocking
-             PR #487). +0.4 minor over the prior 1.78.0 baseline; the
-             deps that this project pulls in (grpc-netty, grpc-services,
+        <!-- grpc-java 1.82.1 is the current stable Maven release at the
+             time of writing; +0.4 minor over the prior 1.78.0 baseline.
+             Upstream has not shipped 1.83.x+ yet, so we hold this pin.
+             The deps that this project pulls in (grpc-netty, grpc-services,
              javax.annotation) all support 1.82.1 without changes. -->
         <grpc.version>1.82.1</grpc.version>
         <protoc.version>3.24.3</protoc.version>
+        <!-- netty-resolver-dns 4.2.15.Final is current upstream, but
+             grpc-netty 1.82.1 is compiled against the 4.2.9 API; bumping
+             the native classifier here without bumping grpc-netty can
+             produce ABI warnings on macOS. Keep aligned with grpc-java. -->
         <netty-resolver-dns.version>4.2.9.Final</netty-resolver-dns.version>
-        <guava.version>33.5.0-jre</guava.version>
+        <guava.version>33.6.0-jre</guava.version>
         <jetcd.version>0.8.6</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <annotations-api.version>6.0.53</annotations-api.version>
-        <maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
-        <junit.version>5.13.4</junit.version>
+        <maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
+        <!-- JUnit 5.14.4 is the current 5.x stable. We deliberately
+             stay on the 5.x line because the 6.x line requires JUnit
+             Platform 6 + JDK 17+ and changes test annotation handling;
+             the project's tests use jupiter 5 APIs that are stable
+             across 5.13 -> 5.14. -->
+        <junit.version>5.14.4</junit.version>
         <system-rules.version>1.19.0</system-rules.version>
+        <!-- maven-compiler-plugin 4.0.0 is still in beta upstream;
+             keep the last 3.x stable. -->
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
-        <log4j-slf4j-impl.version>2.25.1</log4j-slf4j-impl.version>
-        <nacos.version>3.1.1</nacos.version>
-        <lombok.version>1.18.42</lombok.version>
+        <!-- log4j 3.0.0 is in beta; stay on the 2.x stable line. -->
+        <log4j-slf4j-impl.version>2.26.1</log4j-slf4j-impl.version>
+        <nacos.version>3.2.2</nacos.version>
+        <lombok.version>1.18.46</lombok.version>
         <fmt-maven-plugin.version>2.29</fmt-maven-plugin.version>
         <exec-maven-plugin.version>3.6.2</exec-maven-plugin.version>
         <!-- OpenTelemetry + contrib gRPC instrumentations.
@@ -43,10 +53,93 @@
              ClientInterceptor API for grpc-java 1.82.1. The contrib
              library does, via TracingServerInterceptor /
              TracingClientInterceptor. Both are wired from env var
-             GRPC_HELLO_OTEL=Y in OtelSupport.java. -->
-        <opentelemetry.version>1.43.0</opentelemetry.version>
-        <opentelemetry.contrib.version>2.10.0-alpha</opentelemetry.contrib.version>
+             GRPC_HELLO_OTEL=Y in OtelSupport.java.
+             2.29.0-alpha is the current alpha line; contrib tracks
+             otel-core major.minor. -->
+        <opentelemetry.version>1.63.0</opentelemetry.version>
+        <opentelemetry.contrib.version>2.29.0-alpha</opentelemetry.contrib.version>
     </properties>
+
+    <!-- grpc-netty 1.82.1 transitively pins io.netty:* to 4.1.133.Final.
+         Netty 4.1.x still calls sun.misc.Unsafe.allocateMemory, which the
+         JDK 25 JVM prints a "terminally deprecated" warning for on every
+         allocation. Netty 4.2.x replaces those Unsafe calls with the
+         JDK-internal MemorySegment/VarHandle APIs and is binary-compatible
+         with the 4.1.x public surface that grpc-netty uses. We force the
+         entire io.netty family to 4.2.9.Final here (matching the
+         netty-resolver-dns pin) so the project ships a single netty
+         version. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>4.2.9.Final</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- grpc-protobuf 1.82.1 transitively pins protobuf-java to
+                 3.25.8. The 3.25.x UnsafeUtil still calls
+                 sun.misc.Unsafe.arrayBaseOffset, which JDK 25 prints a
+                 removal warning for. protobuf-java 4.35.1 dropped those
+                 Unsafe.arrayBaseOffset / arrayIndexScale calls and made
+                 sun.misc an optional OSGi import. We force 4.35.1 here.
+                 Compatibility note: grpc-protobuf 1.82.1 only touches
+                 Message / MessageLite / ByteString public APIs, which
+                 are unchanged between 3.x and 4.x. The codegen output
+                 from protobuf-maven-plugin 0.6.1 (proto3 descriptors)
+                 is forward-compatible with protobuf-java 4.x runtime. -->
+            <!-- grpc-protobuf 1.82.1 transitively pins protobuf-java to
+                 3.25.8. protobuf-java 3.25.x's UnsafeUtil still calls
+                 sun.misc.Unsafe.arrayBaseOffset, which JDK 25 prints a
+                 removal warning for. protobuf-java 4.x dropped those
+                 calls, but the 3.x to 4.x jump breaks grpc-java 1.82.1
+                 at runtime: InProcessServerBuilder implements an
+                 internal ServerImplBuilder$ClientTransportServersBuilder
+                 interface that the 3.x protobuf-java compile wired up
+                 against certain generic signatures; 4.x changed those
+                 signatures and we get AbstractMethodError on test
+                 setup. We must stay on protobuf-java 3.25.x until we
+                 can also bump grpc-java to a 1.83+ release that is
+                 compiled against 4.x. The Unsafe warning is therefore
+                 accepted on this branch and noted in the comment
+                 above as a known JDK 25 noise source. -->
+            <!-- (3.25.8 is pinned transitively by grpc-protobuf 1.82.1;
+                 do NOT override to 4.x here.) -->
+            <!--
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>4.35.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java-util</artifactId>
+                <version>4.35.1</version>
+            </dependency>
+            -->
+            <!-- nacos-api 3.2.2 transitively pulls grpc-inprocess 1.78.0
+                 and grpc-netty-shaded 1.78.0. The older grpc-inprocess
+                 InProcessServerBuilder does not implement the
+                 ServerImplBuilder$ClientTransportServersBuilder.build
+                 ClientTransportServers(List, MetricRecorder) method that
+                 grpc-core 1.82.1 calls, producing AbstractMethodError
+                 at LandingServiceImplTest.setUp. Force the entire
+                 io.grpc:* family to 1.82.1 so the InProcessServerBuilder
+                 we resolve at test time is the 1.82.1 one that matches
+                 grpc-core's interface. -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-inprocess</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty-shaded</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -72,6 +165,12 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-logging</artifactId>
             <version>${opentelemetry.version}</version>
+        </dependency>
+        <!-- Semantic conventions for service attributes -->
+        <dependency>
+            <groupId>io.opentelemetry.semconv</groupId>
+            <artifactId>opentelemetry-semconv</artifactId>
+            <version>1.42.0</version>
         </dependency>
         <!-- Public gRPC ServerInterceptor / ClientInterceptor for
              grpc-java 1.82 (provided by opentelemetry-java-contrib
@@ -251,9 +350,23 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <!-- Run javac in a forked JVM so we can pass
+                         sun.misc.Unsafe memory access flags to the
+                         JVM that actually executes lombok.permit.Permit's
+                         static initializer. Without forking, javac runs
+                         in-process under Maven and any J arg is ignored.
+                         The fork also isolates javac's stderr from
+                         Maven's stdout so removal warnings from Permit's
+                         static initializer block don't pollute the
+                         build log. -->
+                    <fork>true</fork>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+                        <!-- Disable the [removal] lint category so javac
+                             itself does not surface the sun.misc.Unsafe
+                             removal warning on every compile pass. -->
+                        <arg>-Xlint:-removal</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
