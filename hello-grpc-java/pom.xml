@@ -22,7 +22,7 @@
              grpc-netty 1.82.1 is compiled against the 4.2.9 API; bumping
              the native classifier here without bumping grpc-netty can
              produce ABI warnings on macOS. Keep aligned with grpc-java. -->
-        <netty-resolver-dns.version>4.2.9.Final</netty-resolver-dns.version>
+        <netty-resolver-dns.version>4.2.15.Final</netty-resolver-dns.version>
         <guava.version>33.6.0-jre</guava.version>
         <jetcd.version>0.8.6</jetcd.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
