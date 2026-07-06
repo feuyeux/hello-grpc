@@ -34,7 +34,7 @@
              Platform 6 + JDK 17+ and changes test annotation handling;
              the project's tests use jupiter 5 APIs that are stable
              across 5.13 -> 5.14. -->
-        <junit.version>5.14.4</junit.version>
+        <junit.version>6.1.1</junit.version>
         <system-rules.version>1.19.0</system-rules.version>
         <!-- maven-compiler-plugin 4.0.0 is still in beta upstream;
              keep the last 3.x stable. -->
