@@ -66,7 +66,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # matches tracing-opentelemetry 0.28's documented compat matrix.
 opentelemetry = { version = "0.27", features = ["trace"] }
 opentelemetry_sdk = { version = "0.27", features = ["trace"] }
-opentelemetry-stdout = { version = "0.27", features = ["trace"] }
+opentelemetry-stdout = { version = "0.32", features = ["trace"] }
 opentelemetry-semantic-conventions = "0.27"
 tracing-opentelemetry = "0.28"
 # rustls with ring crypto provider for TLS
