@@ -170,7 +170,7 @@
         <dependency>
             <groupId>io.opentelemetry.semconv</groupId>
             <artifactId>opentelemetry-semconv</artifactId>
-            <version>1.42.0</version>
+            <version>1.43.0</version>
         </dependency>
         <!-- Public gRPC ServerInterceptor / ClientInterceptor for
              grpc-java 1.82 (provided by opentelemetry-java-contrib
