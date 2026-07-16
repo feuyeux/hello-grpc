@@ -1,12 +1,31 @@
 # Docker Build Guide for gRPC Multi-language Project
 
-This directory contains scripts and Dockerfiles for building gRPC server and client images across 12 programming languages. The build system is designed to work on any machine with Docker installed, without requiring local development environments.
+This directory contains scripts and Dockerfiles for building gRPC server and client images across 12 programming languages. The build system is designed to work on any machine with Docker installed, without requiring local development environments. On an Apple-silicon Mac running macOS 26, the scripts can instead use Apple's [`container`](https://github.com/apple/container) OCI runtime.
 
 ## Key Features
 
 - All compilation and building happens within Docker containers
 - Multi-stage builds for smaller final images
 - Supports 12 programming languages: C++, Rust, Java, Go, C#, Python, Node.js, Dart, Kotlin, Swift, PHP, TypeScript
+
+## Container Runtimes
+
+`run_container.sh` and `build_image.sh` select a runtime as follows:
+
+| Host | Auto-selected runtime | Requirement |
+|:---|:---|:---|
+| macOS 26+ on Apple silicon, with `container` installed | Apple `container` | Run `container system start` once after installation |
+| Other supported hosts | Docker | Docker daemon is running |
+
+Set `GRPC_CONTAINER_RUNTIME=docker` or `GRPC_CONTAINER_RUNTIME=container` to override automatic selection. The `container` option is valid only on an Apple-silicon Mac.
+
+Apple `container` consumes OCI images, including the published Docker Hub images used by this repository. Its server command publishes port `9996` to the Mac loopback interface. Before running a client container, configure the one-time host DNS mapping below so the client can reach that published port:
+
+```sh
+sudo container system dns create host.container.internal --localhost 203.0.113.113
+```
+
+The helper script reports this command if the mapping is absent. `--cross` does not use Docker's host-network mode with Apple `container`; it uses `host.container.internal` instead. See the [Chinese Apple container guide](CONTAINER_RUNTIME.md) for setup, verification, and limitations.
 
 ## Image Naming Convention
 
@@ -44,6 +63,9 @@ sh build_image.sh --language ${lang} [--component server|client|both]
 
 # Example: Build Java server image
 sh build_image.sh --language java --component server
+
+# Force Docker even when Apple container is installed
+GRPC_CONTAINER_RUNTIME=docker sh build_image.sh --language java --component server
 ```
 
 ### 2. Running Containers
@@ -60,6 +82,9 @@ sh run_container.sh -l go -c server
 sh run_container.sh --language go --component client
 # Or using shorter options:
 sh run_container.sh -l go -c client
+
+# On an Apple-silicon Mac, force Apple's container runtime explicitly
+GRPC_CONTAINER_RUNTIME=container sh run_container.sh -l go -c server
 ```
 
 #### Proxy Mode

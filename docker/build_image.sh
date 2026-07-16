@@ -5,6 +5,10 @@ cd "$(
 )/" || exit
 set -e # Removed -x for cleaner output, we'll add more targeted debugging
 
+SCRIPT_DIR="$(pwd -P)"
+# shellcheck source=container_runtime.sh
+source "$SCRIPT_DIR/container_runtime.sh"
+
 # Function to display usage information
 usage() {
     echo "Usage: $0 [options]"
@@ -82,14 +86,41 @@ fi
 # 记录开始时间
 start_time=$(date +%s)
 
-# Check if Docker is running
+# Check that the selected container runtime is available.
 check_docker() {
-    if ! docker info >/dev/null 2>&1; then
-        echo "Error: Docker does not appear to be running. Please start Docker and try again."
-        exit 1
-    else
-        echo "Docker is running, proceeding with build..."
+    grpc_container_runtime_init
+}
+
+# The existing Dockerfile commands below deliberately keep their Docker spelling.
+# On Apple container, translate the compatible subset used by this script.
+docker() {
+    if [[ "${GRPC_CONTAINER_RUNTIME:-}" != "container" ]]; then
+        command docker "$@"
+        return
     fi
+
+    case "$1" in
+    build)
+        shift
+        container build "$@"
+        ;;
+    run)
+        shift
+        container run "$@"
+        ;;
+    images)
+        shift
+        container image list "$@"
+        ;;
+    info)
+        shift
+        container system status "$@"
+        ;;
+    *)
+        echo "Error: docker $1 is not supported by the Apple container compatibility wrapper." >&2
+        return 1
+        ;;
+    esac
 }
 
 # Function to validate language

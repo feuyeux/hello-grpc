@@ -5,6 +5,10 @@ cd "$(
 )/" || exit
 set -e
 
+SCRIPT_DIR="$(pwd -P)"
+# shellcheck source=container_runtime.sh
+source "$SCRIPT_DIR/container_runtime.sh"
+
 # Function to display usage information
 usage() {
     echo "Usage: $0 [options]"
@@ -16,6 +20,8 @@ usage() {
     echo "  -i, --ip              Use local IP address instead of hostname for client"
     echo "                       (Swift 客户端在 macOS 下必须加此参数，否则无法连接服务端)"
     echo "  -v, --verbose         Enable verbose output"
+    echo "  Runtime: macOS Apple Silicon uses Apple container when installed; otherwise Docker is used."
+    echo "           Set GRPC_CONTAINER_RUNTIME=docker|container to override auto detection."
     echo "  -h, --help            Display this help message"
     echo
     echo "Examples:"
@@ -137,7 +143,7 @@ run_base() {
     export IMG=$(get_image_name "$lang" "base")
 
     echo "Running $lang base ..."
-    docker run -it --rm --name "$NAME" -p 9996:9996 "$IMG" bash
+    grpc_container_run -it --rm --name "$NAME" -p 9996:9996 "$IMG" bash
 
 }
 
@@ -154,27 +160,21 @@ run_server() {
 
     if [[ "$secure" == true ]]; then
         # Remove existing container if present to prevent name conflicts
-        if docker ps -a --format '{{.Names}}' | grep -Eq "^${SERVER_NAME}$"; then
-            echo "Removing existing container ${SERVER_NAME}..."
-            docker rm -f "$SERVER_NAME"
-        fi
+        grpc_container_remove "$SERVER_NAME" >/dev/null 2>&1 || true
         
         # Debug: Check certificates in the container first
         echo "Checking certificates in the container..."
-        docker run --rm --entrypoint sh "$SERVER_IMG" -c "ls -la /var/hello_grpc/client_certs/ && echo '---' && cat /var/hello_grpc/client_certs/private.pkcs8.key 2>/dev/null || echo 'Private key file not found or not readable'"
+        grpc_container_run --rm --entrypoint sh "$SERVER_IMG" -c "ls -la /var/hello_grpc/client_certs/ && echo '---' && cat /var/hello_grpc/client_certs/private.pkcs8.key 2>/dev/null || echo 'Private key file not found or not readable'"
         
         # Run secure server
         echo "SERVER_NAME=$SERVER_NAME SERVER_IMG=$SERVER_IMG"
-        docker run --rm --name "$SERVER_NAME" -p 9996:9996 -e GRPC_HELLO_SECURE=Y "$SERVER_IMG"
+        grpc_container_run --rm --name "$SERVER_NAME" -p 9996:9996 -e GRPC_HELLO_SECURE=Y "$SERVER_IMG"
     else
         # Remove existing container if present to prevent name conflicts
-        if docker ps -a --format '{{.Names}}' | grep -Eq "^${SERVER_NAME}$"; then
-            echo "Removing existing container ${SERVER_NAME}..."
-            docker rm -f "$SERVER_NAME"
-        fi
+        grpc_container_remove "$SERVER_NAME" >/dev/null 2>&1 || true
         # Run insecure server
         echo "SERVER_NAME=$SERVER_NAME SERVER_IMG=$SERVER_IMG"
-        docker run --rm --name "$SERVER_NAME" -p 9996:9996 "$SERVER_IMG"
+        grpc_container_run --rm --name "$SERVER_NAME" -p 9996:9996 "$SERVER_IMG"
     fi
 }
 
@@ -191,9 +191,15 @@ run_client() {
 
     # Set the server address
     local server_addr="host.docker.internal"
+    if [[ "$GRPC_CONTAINER_RUNTIME" == "container" ]]; then
+        grpc_container_require_host_domain
+        server_addr="host.container.internal"
+    fi
     # Swift 客户端在 macOS 下无法识别 host.docker.internal，需用本机 IP，否则连接会报 failedToParseIPString 错误。
     # 建议 Swift 客户端在 macOS 下使用 -i 参数（即 --ip），自动获取本机 en0 的 IP 地址。
-    if [[ "$use_ip" == true ]]; then
+    if [[ "$use_ip" == true && "$GRPC_CONTAINER_RUNTIME" == "container" ]]; then
+        echo "Warning: --ip is ignored for Apple container; using host.container.internal."
+    elif [[ "$use_ip" == true ]]; then
         # Use local IP address if requested
         if command -v ipconfig &>/dev/null; then
             # macOS
@@ -203,7 +209,7 @@ run_client() {
             # Linux
             server_addr=$(ip route get 1 | awk '{print $7; exit}')
         fi
-    elif [[ "$cross" == true ]]; then
+    elif [[ "$cross" == true && "$GRPC_CONTAINER_RUNTIME" == "docker" ]]; then
         # For cross-language testing use localhost
         server_addr="localhost"
     fi
@@ -213,15 +219,19 @@ run_client() {
     if [[ "$cross" == true ]]; then
         # Run cross-language client
         echo "CLIENT_NAME=$CLIENT_NAME CLIENT_IMG=$CLIENT_IMG"
-        docker run --rm --name "$CLIENT_NAME" --network="host" -e GRPC_SERVER="$server_addr" "$CLIENT_IMG"
+        if [[ "$GRPC_CONTAINER_RUNTIME" == "docker" ]]; then
+            grpc_container_run --rm --name "$CLIENT_NAME" --network="host" -e GRPC_SERVER="$server_addr" "$CLIENT_IMG"
+        else
+            grpc_container_run --rm --name "$CLIENT_NAME" -e GRPC_SERVER="$server_addr" "$CLIENT_IMG"
+        fi
     elif [[ "$secure" == true ]]; then
         # Run secure client
         echo "CLIENT_NAME=$CLIENT_NAME CLIENT_IMG=$CLIENT_IMG"
-        docker run --rm --name "$CLIENT_NAME" -e GRPC_SERVER="$server_addr" -e GRPC_HELLO_SECURE=Y "$CLIENT_IMG"
+        grpc_container_run --rm --name "$CLIENT_NAME" -e GRPC_SERVER="$server_addr" -e GRPC_HELLO_SECURE=Y "$CLIENT_IMG"
     else
         # Run insecure client
         echo "CLIENT_NAME=$CLIENT_NAME CLIENT_IMG=$CLIENT_IMG"
-        docker run --rm --name "$CLIENT_NAME" -e GRPC_SERVER="$server_addr" "$CLIENT_IMG"
+        grpc_container_run --rm --name "$CLIENT_NAME" -e GRPC_SERVER="$server_addr" "$CLIENT_IMG"
     fi
 }
 
@@ -240,6 +250,7 @@ echo "Validate parameters"
 
 validate_language "$LANGUAGE"
 validate_component "$COMPONENT"
+grpc_container_runtime_init
 
 # Execute based on component type
 if [[ "$COMPONENT" == "server" ]]; then

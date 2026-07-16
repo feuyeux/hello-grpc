@@ -18,6 +18,8 @@
 
 This repository demonstrates comparable gRPC implementations across 12 programming languages, with Docker, Kubernetes, gateway, service mesh, TLS, and observability examples. It is a learning and interoperability repository rather than a drop-in production platform.
 
+On macOS 26+ with Apple silicon, the Dockerfile-based build and run scripts can use Apple's `container` OCI runtime; see [docker/CONTAINER_RUNTIME.md](docker/CONTAINER_RUNTIME.md).
+
 
 
 ## Supported Programming Languages & Frameworks
