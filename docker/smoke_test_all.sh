@@ -73,7 +73,10 @@ for lang in "${LANGS[@]}"; do
   if [[ "$lang" == "swift" ]]; then
     timeout 60 docker run --rm --name "$CLI_CTR" --network="host" -e GRPC_SERVER=127.0.0.1 "$CLIENT_IMG" > "$CLI_LOG" 2>&1 || cli_exit=$?
   else
-    timeout 60 docker run --rm --name "$CLI_CTR" -e GRPC_SERVER=host.docker.internal "$CLIENT_IMG" > "$CLI_LOG" 2>&1 || cli_exit=$?
+    timeout 60 docker run --rm --name "$CLI_CTR" \
+      --add-host=host.docker.internal:host-gateway \
+      -e GRPC_SERVER=host.docker.internal \
+      "$CLIENT_IMG" > "$CLI_LOG" 2>&1 || cli_exit=$?
   fi
 
   docker logs "$SVR_CTR" > "$SVR_LOG" 2>&1 || true
@@ -116,8 +119,15 @@ if [[ "$RUN_INTEROP" == "true" ]]; then
   echo "================================================================"
   INTEROP_SCRIPT="../integration-tests/test-interop.sh"
   if [[ -x "$INTEROP_SCRIPT" ]]; then
-    "$INTEROP_SCRIPT" -s go,java,python,node,rust -c go,java,python,node,rust -o "$LOG_DIR/interop-results.json" || true
+    if ! "$INTEROP_SCRIPT" -s go,java,python,nodejs,rust -c go,java,python,nodejs,rust -o "$LOG_DIR/interop-results.json"; then
+      FAIL=$((FAIL+1))
+    fi
   else
-    echo "  SKIP: $INTEROP_SCRIPT not found or not executable"
+    echo "  FAIL: $INTEROP_SCRIPT not found or not executable"
+    FAIL=$((FAIL+1))
   fi
+fi
+
+if [[ $FAIL -ne 0 ]]; then
+  exit 1
 fi

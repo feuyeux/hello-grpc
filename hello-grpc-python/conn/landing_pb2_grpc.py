@@ -5,7 +5,7 @@ import warnings
 
 import conn.landing_pb2 as landing__pb2
 
-GRPC_GENERATED_VERSION = '1.66.2'
+GRPC_GENERATED_VERSION = '1.81.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -18,14 +18,14 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in conn.landing_pb2_grpc.py depends on'
+        + ' but the generated code in landing_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
-class LandingServiceStub(object):
+class LandingServiceStub:
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -56,7 +56,7 @@ class LandingServiceStub(object):
                 _registered_method=True)
 
 
-class LandingServiceServicer(object):
+class LandingServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
     def Talk(self, request, context):
@@ -118,7 +118,7 @@ def add_LandingServiceServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class LandingService(object):
+class LandingService:
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod

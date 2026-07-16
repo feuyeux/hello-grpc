@@ -9,16 +9,15 @@ COPY proto /app/hello-grpc/proto
 
 # Build TypeScript project
 WORKDIR /app/hello-grpc/hello-grpc-ts
-RUN npm install
-RUN npm run generate-proto
-RUN npm run compile
-RUN mkdir -p dist/proto && cp src/proto/*_pb.js dist/proto/
+RUN npm ci
+RUN npm run build
 
 FROM node:24-alpine AS server
 WORKDIR /app
 COPY --from=build-base /app/hello-grpc/hello-grpc-ts/dist /app/dist
 COPY --from=build-base /app/hello-grpc/hello-grpc-ts/package*.json /app/
-RUN npm install --production
+COPY --from=build-base /app/hello-grpc/proto /app/proto
+RUN npm ci --omit=dev --ignore-scripts
 COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
 COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
 ENTRYPOINT ["node", "dist/hello_server.js"]

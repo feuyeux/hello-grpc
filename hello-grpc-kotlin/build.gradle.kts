@@ -31,13 +31,9 @@ extra["protobufJavaUtilVersion"] = "4.28.2"
 extra["log4jVersion"] = "2.24.0"
 //https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api-kotlin
 extra["log4jKotlinVersion"] = "1.5.0"
-// OpenTelemetry SDK + contrib gRPC instrumentations. NOTE: this project
-// is held on kotlin("jvm") 1.9.24, which does not support JDK 25 as a
-// target bytecode level (kotlinc throws IllegalArgumentException: 25
-// during compileKotlin). Until the kotlin plugin is bumped to >= 2.1
-// we cannot adopt the otel 1.63 / otel-contrib 2.29 upgrades from
-// hello-grpc-java; bumping the deps here would break Otel.kt's
-// ResourceAttributes import and the GrpcTelemetry API rename.
+// OpenTelemetry SDK + contrib gRPC instrumentation versions used by Otel.kt.
+// Upgrade these together because newer contrib releases rename GrpcTelemetry
+// APIs and require corresponding source changes.
 extra["opentelemetryVersion"] = "1.43.0"
 extra["opentelemetryContribVersion"] = "2.10.0-alpha"
 //https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
@@ -55,11 +51,6 @@ allprojects {
         gradlePluginPortal()
         google()
     }
-    // NOTE: io.netty is not forced to 4.2.9.Final here like in
-    // hello-grpc-java/pom.xml, because this project is held on
-    // kotlin("jvm") 1.9.24 which cannot target JDK 25. The kotlin
-    // upgrade must precede any netty dep bump so the kotlinc compile
-    // step can run at all.
 }
 
 // Force every subproject's Java source / target to 21, matching the
@@ -73,6 +64,12 @@ subprojects {
         extensions.configure<org.gradle.api.plugins.JavaPluginExtension>("java") {
             sourceCompatibility = JavaVersion.VERSION_21
             targetCompatibility = JavaVersion.VERSION_21
+        }
+    }
+
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
+            compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
 }

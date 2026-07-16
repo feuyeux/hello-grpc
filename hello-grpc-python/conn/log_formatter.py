@@ -6,9 +6,9 @@ Provides consistent logging format across all RPC methods with standard fields:
 service, request_id, method, peer, secure, duration_ms, status
 """
 
+import logging
 import os
 import time
-import logging
 import uuid
 
 import grpc
@@ -36,7 +36,7 @@ TRACING_HEADERS = [
     "x-b3-parentspanid",
     "x-b3-sampled",
     "x-b3-flags",
-    "x-ot-span-context"
+    "x-ot-span-context",
 ]
 
 
@@ -145,7 +145,11 @@ def log_request_start(logger, method, context):
 
     logger.info(
         "service=%s request_id=%s method=%s peer=%s secure=%s status=STARTED",
-        SERVICE_NAME, request_id, method, peer, secure
+        SERVICE_NAME,
+        request_id,
+        method,
+        peer,
+        secure,
     )
 
     # Try to attach the (possibly generated) request id as initial
@@ -161,7 +165,9 @@ def log_request_start(logger, method, context):
     return request_id, peer, secure, start_time
 
 
-def log_request_end(logger, method, request_id, peer, secure, start_time, status_code="OK"):
+def log_request_end(
+    logger, method, request_id, peer, secure, start_time, status_code="OK"
+):
     """
     Log the completion of an RPC request.
 
@@ -178,12 +184,28 @@ def log_request_end(logger, method, request_id, peer, secure, start_time, status
 
     logger.info(
         "service=%s request_id=%s method=%s peer=%s secure=%s duration_ms=%d status=%s",
-        SERVICE_NAME, request_id, method, peer, secure, duration_ms, status_code
+        SERVICE_NAME,
+        request_id,
+        method,
+        peer,
+        secure,
+        duration_ms,
+        status_code,
     )
 
 
-def log_request_error(logger, method, request_id, peer, secure, start_time,
-                      status_code, error_code, message, exception=None):
+def log_request_error(
+    logger,
+    method,
+    request_id,
+    peer,
+    secure,
+    start_time,
+    status_code,
+    error_code,
+    message,
+    exception=None,
+):
     """
     Log an error during RPC processing.
 
@@ -204,15 +226,29 @@ def log_request_error(logger, method, request_id, peer, secure, start_time,
     if exception:
         logger.error(
             "service=%s request_id=%s method=%s peer=%s secure=%s duration_ms=%d status=%s error_code=%s message=%s",
-            SERVICE_NAME, request_id, method, peer, secure, duration_ms,
-            status_code, error_code, message,
-            exc_info=exception
+            SERVICE_NAME,
+            request_id,
+            method,
+            peer,
+            secure,
+            duration_ms,
+            status_code,
+            error_code,
+            message,
+            exc_info=exception,
         )
     else:
         logger.error(
             "service=%s request_id=%s method=%s peer=%s secure=%s duration_ms=%d status=%s error_code=%s message=%s",
-            SERVICE_NAME, request_id, method, peer, secure, duration_ms,
-            status_code, error_code, message
+            SERVICE_NAME,
+            request_id,
+            method,
+            peer,
+            secure,
+            duration_ms,
+            status_code,
+            error_code,
+            message,
         )
 
 
@@ -246,12 +282,14 @@ def set_response_headers(context, request_id):
     """
     try:
         # Send initial metadata (headers)
-        context.send_initial_metadata([
-            ('server-id', 'python-server'),
-            ('x-server-version', '1.0.0'),
-            ('x-request-id', request_id),
-            ('x-response-timestamp', str(int(time.time() * 1000)))
-        ])
+        context.send_initial_metadata(
+            [
+                ("server-id", "python-server"),
+                ("x-server-version", "1.0.0"),
+                ("x-request-id", request_id),
+                ("x-response-timestamp", str(int(time.time() * 1000))),
+            ]
+        )
     except Exception as e:
         # Ignore errors if headers already sent
         pass
@@ -267,10 +305,9 @@ def set_response_trailers(context, duration_ms, status_code):
         status_code (str): The gRPC status code
     """
     try:
-        context.set_trailing_metadata([
-            ('x-duration-ms', str(duration_ms)),
-            ('x-status', status_code)
-        ])
+        context.set_trailing_metadata(
+            [("x-duration-ms", str(duration_ms)), ("x-status", status_code)]
+        )
     except Exception as e:
         # Ignore errors if trailers already set
         pass
@@ -315,92 +352,136 @@ class LoggingInterceptor(grpc.ServerInterceptor):
 
     def _wrap_unary_unary(self, handler, method):
         """Wrap unary-unary handler with logging."""
+
         def wrapper(request, context):
             request_id, peer, secure, start_time = log_request_start(
-                self.logger, method, context)
+                self.logger, method, context
+            )
             try:
                 response = handler.unary_unary(request, context)
-                log_request_end(self.logger, method, request_id,
-                                peer, secure, start_time)
+                log_request_end(
+                    self.logger, method, request_id, peer, secure, start_time
+                )
                 return response
             except Exception as e:
                 log_request_error(
-                    self.logger, method, request_id, peer, secure, start_time,
-                    "INTERNAL", "INTERNAL", str(e), e
+                    self.logger,
+                    method,
+                    request_id,
+                    peer,
+                    secure,
+                    start_time,
+                    "INTERNAL",
+                    "INTERNAL",
+                    str(e),
+                    e,
                 )
                 raise
 
         return grpc.unary_unary_rpc_method_handler(
             wrapper,
             request_deserializer=handler.request_deserializer,
-            response_serializer=handler.response_serializer
+            response_serializer=handler.response_serializer,
         )
 
     def _wrap_unary_stream(self, handler, method):
         """Wrap unary-stream handler with logging."""
+
         def wrapper(request, context):
             request_id, peer, secure, start_time = log_request_start(
-                self.logger, method, context)
+                self.logger, method, context
+            )
             try:
                 for response in handler.unary_stream(request, context):
                     yield response
-                log_request_end(self.logger, method, request_id,
-                                peer, secure, start_time)
+                log_request_end(
+                    self.logger, method, request_id, peer, secure, start_time
+                )
             except Exception as e:
                 log_request_error(
-                    self.logger, method, request_id, peer, secure, start_time,
-                    "INTERNAL", "INTERNAL", str(e), e
+                    self.logger,
+                    method,
+                    request_id,
+                    peer,
+                    secure,
+                    start_time,
+                    "INTERNAL",
+                    "INTERNAL",
+                    str(e),
+                    e,
                 )
                 raise
 
         return grpc.unary_stream_rpc_method_handler(
             wrapper,
             request_deserializer=handler.request_deserializer,
-            response_serializer=handler.response_serializer
+            response_serializer=handler.response_serializer,
         )
 
     def _wrap_stream_unary(self, handler, method):
         """Wrap stream-unary handler with logging."""
+
         def wrapper(request_iterator, context):
             request_id, peer, secure, start_time = log_request_start(
-                self.logger, method, context)
+                self.logger, method, context
+            )
             try:
                 response = handler.stream_unary(request_iterator, context)
-                log_request_end(self.logger, method, request_id,
-                                peer, secure, start_time)
+                log_request_end(
+                    self.logger, method, request_id, peer, secure, start_time
+                )
                 return response
             except Exception as e:
                 log_request_error(
-                    self.logger, method, request_id, peer, secure, start_time,
-                    "INTERNAL", "INTERNAL", str(e), e
+                    self.logger,
+                    method,
+                    request_id,
+                    peer,
+                    secure,
+                    start_time,
+                    "INTERNAL",
+                    "INTERNAL",
+                    str(e),
+                    e,
                 )
                 raise
 
         return grpc.stream_unary_rpc_method_handler(
             wrapper,
             request_deserializer=handler.request_deserializer,
-            response_serializer=handler.response_serializer
+            response_serializer=handler.response_serializer,
         )
 
     def _wrap_stream_stream(self, handler, method):
         """Wrap stream-stream handler with logging."""
+
         def wrapper(request_iterator, context):
             request_id, peer, secure, start_time = log_request_start(
-                self.logger, method, context)
+                self.logger, method, context
+            )
             try:
                 for response in handler.stream_stream(request_iterator, context):
                     yield response
-                log_request_end(self.logger, method, request_id,
-                                peer, secure, start_time)
+                log_request_end(
+                    self.logger, method, request_id, peer, secure, start_time
+                )
             except Exception as e:
                 log_request_error(
-                    self.logger, method, request_id, peer, secure, start_time,
-                    "INTERNAL", "INTERNAL", str(e), e
+                    self.logger,
+                    method,
+                    request_id,
+                    peer,
+                    secure,
+                    start_time,
+                    "INTERNAL",
+                    "INTERNAL",
+                    str(e),
+                    e,
                 )
                 raise
 
         return grpc.stream_stream_rpc_method_handler(
             wrapper,
             request_deserializer=handler.request_deserializer,
-            response_serializer=handler.response_serializer
+            response_serializer=handler.response_serializer,
         )

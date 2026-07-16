@@ -2,11 +2,11 @@ import os
 import unittest
 
 from conn.etcd_discovery import (
-    is_etcd_discovery,
-    get_endpoint,
+    ETCD_KEY,
     b64,
     b64_decode,
-    ETCD_KEY,
+    get_endpoint,
+    is_etcd_discovery,
 )
 
 

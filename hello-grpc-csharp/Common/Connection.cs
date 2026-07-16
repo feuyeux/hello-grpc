@@ -35,7 +35,7 @@ namespace Common
             {
                 return basePath;
             }
-            
+
             // Use platform-specific default paths
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -121,11 +121,11 @@ namespace Common
             }
 
             var tls = Environment.GetEnvironmentVariable("GRPC_HELLO_SECURE");
-            
+
             if (tls is "Y")
             {
                 Log.Info($"Connect with TLS({endpoint})");
-                
+
                 var handler = new SocketsHttpHandler
                 {
                     SslOptions = new SslClientAuthenticationOptions
@@ -135,7 +135,7 @@ namespace Common
                     }
                 };
                 ConfigureKeepalive(handler);
-                
+
                 // Add client certificate if available
                 if (File.Exists(CertPath) && File.Exists(CertKeyPath))
                 {
@@ -143,7 +143,7 @@ namespace Common
                     {
                         // Load certificate with private key using CreateFromPemFile
                         var clientCert = X509Certificate2.CreateFromPemFile(CertPath, CertKeyPath);
-                        
+
                         handler.SslOptions.ClientCertificates = new X509CertificateCollection { clientCert };
                         Log.Info("Client certificate loaded successfully");
                     }
@@ -152,7 +152,7 @@ namespace Common
                         Log.Warn($"Failed to load client certificate: {ex.Message}");
                     }
                 }
-                
+
                 var channelOptions = new GrpcChannelOptions
                 {
                     HttpHandler = handler,
@@ -163,10 +163,10 @@ namespace Common
                         new GzipCompressionProvider(CompressionLevel.Fastest)
                     }
                 };
-                
+
                 return GrpcChannel.ForAddress($"https://{endpoint}", channelOptions);
             }
-            
+
             Log.Info($"Connect with InSecure({endpoint})");
             var insecureHandler = new SocketsHttpHandler();
             ConfigureKeepalive(insecureHandler);

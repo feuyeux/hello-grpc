@@ -20,15 +20,25 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
         self.backendConfig = backendConfig
         self.certBasePath = certBasePath
     }
+
+    init(backendClient: Hello_LandingService.ClientProtocol) {
+        self.backendConfig = nil
+        self.certBasePath = ""
+        self._backendClient = backendClient
+    }
     
     private func getBackendClient() throws -> Hello_LandingService.ClientProtocol? {
-        guard let config = backendConfig else {
-            return nil
-        }
-        
         // Thread-safe lazy initialization
         backendClientLock.lock()
         defer { backendClientLock.unlock() }
+
+        if let client = _backendClient {
+            return client
+        }
+
+        guard let config = backendConfig else {
+            return nil
+        }
         
         if _backendClient == nil {
             logger.info("Initializing backend client connection to \(config.host):\(config.port)")
@@ -57,7 +67,7 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
                         .init(
                             certificateChain: [],
                             privateKey: nil,
-                            serverCertificateVerification: .noVerification,
+                            serverCertificateVerification: .fullVerification,
                             trustRoots: .certificates([.file(path: rootCertPath, format: .pem)])
                         )
                     ),
@@ -99,9 +109,10 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
             return GRPCCore.ServerResponse(message: response, metadata: [:])
         }
 
+        let result = try buildResult(rid: message.data)
         let reply: Hello_TalkResponse = .with {
             $0.status = 200
-            $0.results = [buildResult(rid: message.data)]
+            $0.results = [result]
         }
         return GRPCCore.ServerResponse(message: reply, metadata: [:])
     }
@@ -137,10 +148,11 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
         return GRPCCore.StreamingServerResponse<Hello_TalkResponse>(metadata: [:]) { [self] writer in
             let datas: [String] = message.data.components(separatedBy: ",")
             for d in datas {
+                let result = try self.buildResult(rid: d)
                 try await writer.write(
                     .with {
                         $0.status = 200
-                        $0.results = [self.buildResult(rid: d)]
+                        $0.results = [result]
                     }
                 )
                 self.logger.info("[\(requestId)] talkOneAnswerMore sent response for data=\(d)")
@@ -180,7 +192,7 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
         var results: [Hello_TalkResult] = []
         for try await req in request.messages {
             logger.info("[\(requestId)] talkMoreAnswerOne received request: data=\(req.data), meta=\(req.meta)")
-            results.append(buildResult(rid: req.data))
+            results.append(try buildResult(rid: req.data))
         }
 
         logger.info("[\(requestId)] talkMoreAnswerOne 处理完成, 返回结果")
@@ -230,7 +242,7 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
         return GRPCCore.StreamingServerResponse<Hello_TalkResponse>(metadata: [:]) { [self] writer in
             for try await req in request.messages {
                 self.logger.info("[\(requestId)] talkBidirectional received: data=\(req.data), meta=\(req.meta)")
-                let result = self.buildResult(rid: req.data)
+                let result = try self.buildResult(rid: req.data)
                 try await writer.write(
                     .with {
                         $0.status = 200
@@ -244,8 +256,13 @@ final class HelloService: Hello_LandingService.ServiceProtocol, @unchecked Senda
     }
 
     // Helper method to build a result object based on the request index
-    func buildResult(rid: String) -> Hello_TalkResult {
-        let index = Int(rid) ?? 0
+    func buildResult(rid: String) throws -> Hello_TalkResult {
+        guard let index = Int(rid), Utils.helloList.indices.contains(index) else {
+            throw RPCError(
+                code: .invalidArgument,
+                message: "data must be an integer between 0 and \(Utils.helloList.count - 1)"
+            )
+        }
         var kv: [String: String] = [:]
         kv["id"] = ""
         kv["idx"] = rid

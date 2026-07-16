@@ -31,22 +31,23 @@ Treat this table as the project version baseline. When changing a protobuf or gR
 
 | Language | Directory | Protobuf version | gRPC version | Codegen / related packages | Version source |
 |---|---|---|---|---|---|
-| C++ | `hello-grpc-cpp/` | `protobuf 27.2` | `grpc 1.66.0` | `rules_proto 6.0.2`; `//protos:system_protoc` copies `D:\zoo\bin\protoc27.2.exe` | `MODULE.bazel`, `protos/BUILD.bazel` |
+| C++ | `hello-grpc-cpp/` | `protobuf 27.2` | `grpc 1.66.0` | `rules_proto 6.0.2`; `//protos:system_protoc` copies `D:\zoo\bin\protoc27.2.exe` | `.bazelversion`, `MODULE.bazel`, `MODULE.bazel.lock`, `protos/BUILD.bazel` |
 | C# | `hello-grpc-csharp/` | `Google.Protobuf 3.35.1` | `Grpc.* 2.80.0` | `Grpc.Tools 2.80.0`; server health/reflection packages also `2.80.0` | `Common/Common.csproj`, `HelloServer/HelloServer.csproj`, `HelloClient/HelloClient.csproj` |
 | Dart | `hello-grpc-dart/` | Declared `protobuf ^5.1.0`; resolved `5.1.0` | Declared `grpc ^4.0.1`; resolved `4.3.1` | Generated Dart protobuf files are committed under `lib/common/` | `pubspec.yaml`, `pubspec.lock` |
-| Go | `hello-grpc-go/` | `google.golang.org/protobuf v1.36.11` | `google.golang.org/grpc v1.81.1` | Code generation tools are not pinned in `go.mod`; do not infer tool versions from runtime modules | `go.mod` |
+| Go | `hello-grpc-go/` | `google.golang.org/protobuf v1.36.11` | `google.golang.org/grpc v1.81.1` | Code generation tools are not pinned in `go.mod`; do not infer tool versions from runtime modules | `go.mod`, `go.sum` |
 | Java | `hello-grpc-java/` | `com.google.protobuf:protoc 3.24.3`; runtime protobuf is pulled through `grpc-protobuf` unless explicitly overridden | `io.grpc:* 1.82.1` | `protobuf-maven-plugin 0.6.1`; `protoc-gen-grpc-java 1.82.1` | `pom.xml` |
-| Kotlin | `hello-grpc-kotlin/` | `protobufVersion 4.28.2`; `protobuf-java-util 4.28.2` | `grpc-java 1.82.1`; `grpc-kotlin 1.4.1` | Gradle protobuf plugin `0.10.0`; `protoc-gen-grpc-java 1.82.1`; `protoc-gen-grpc-kotlin 1.4.1` | `build.gradle.kts`, `stub/build.gradle.kts` |
-| Node.js | `hello-grpc-nodejs/` | `google-protobuf ^3.21.2`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; health `grpc-health-check ^2.0.1`; reflection `grpc-node-server-reflection ^1.0.2` | `package.json`; no project lockfile |
+| Kotlin | `hello-grpc-kotlin/` | `protobufVersion 4.28.2`; `protobuf-java-util 4.28.2` | `grpc-java 1.82.1`; `grpc-kotlin 1.4.1` | Gradle protobuf plugin `0.10.0`; `protoc-gen-grpc-java 1.82.1`; `protoc-gen-grpc-kotlin 1.4.1`; Gradle wrapper `9.3.1` | `build.gradle.kts`, `stub/build.gradle.kts`, `gradle/wrapper/gradle-wrapper.properties` |
+| Node.js | `hello-grpc-nodejs/` | `google-protobuf ^3.21.2`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; health `grpc-health-check ^2.0.1`; reflection `@grpc/reflection ^1.0.4` | `package.json`, `package-lock.json` |
 | PHP | `hello-grpc-php/` | `google/protobuf ^v4.30` | `grpc/grpc ^1.74.0` | Composer package is the project baseline; native PHP `grpc` extension may be absent locally | `composer.json`; no project lockfile |
 | Python | `hello-grpc-python/` | `protobuf 6.33.5` | gRPC Python packages pinned to `1.81.1` | `grpcio-tools 1.81.1`; `grpcio-health-checking 1.81.1`; `grpcio-reflection 1.81.1` | `requirements.txt` |
 | Rust | `hello-grpc-rust/` | Declared `prost 0.14.1`; resolved `prost 0.14.3` | `tonic 0.14.2` | `tonic-health` and `tonic-reflection` declared `0.14`, resolved `0.14.5`; `tonic-prost-build 0.14.2`; `tonic` `gzip` feature enabled | `Cargo.toml`, `Cargo.lock` |
 | Swift | `hello-grpc-swift/` | `swift-protobuf 1.33.3` | `grpc-swift 2.2.3` | `grpc-swift-protobuf 1.3.1`; `grpc-swift-nio-transport 1.2.3` | `Package.swift`, `Package.resolved` |
-| TypeScript | `hello-grpc-ts/` | `google-protobuf ^3.21.4`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; `grpc_tools_node_protoc_ts ^5.3.3`; health/reflection same as Node.js | `package.json`; no project lockfile |
+| TypeScript | `hello-grpc-ts/` | `google-protobuf ^3.21.4`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; `grpc_tools_node_protoc_ts ^5.3.3`; health/reflection same as Node.js | `package.json`, `package-lock.json` |
 
 Version rules:
 
 - Prefer exact pins for reproducible language projects. If a manifest uses a range such as `^`, keep this table explicit that it is a constraint, not a resolved lock.
+- Keep committed resolution files for C++ (`MODULE.bazel.lock`), Dart (`pubspec.lock`), Go (`go.sum`), Node.js/TypeScript (`package-lock.json`), Rust (`Cargo.lock`), Swift (`Package.resolved`), and the Tauri frontend (`package-lock.json`). Regenerate them with the owning package manager; do not hand-edit them.
 - Keep protobuf runtime, protobuf compiler/plugin, and generated sources compatible. Do not bump a codegen tool without regenerating and testing the affected language output.
 - For cross-language proto changes, regenerate only the affected language outputs and avoid hand-editing generated files.
 - Run `scripts/check-versions.sh` when validating local gRPC/protobuf tooling.
@@ -65,18 +66,18 @@ Use the native tool when it is clearer:
 
 | Language | Command |
 |---|---|
-| C++ | `cd hello-grpc-cpp; bazel build //:hello_client //:hello_server` |
+| C++ | `cd hello-grpc-cpp; bazel test //tests:hello_test` |
 | C# | `cd hello-grpc-csharp; dotnet test` |
 | Dart | `cd hello-grpc-dart; dart analyze; dart test` |
 | Go | `cd hello-grpc-go; go test ./...` |
 | Java | `cd hello-grpc-java; mvn test` |
-| Kotlin | `cd hello-grpc-kotlin; gradle test` |
+| Kotlin | `cd hello-grpc-kotlin; ./gradlew test` |
 | Node.js | `cd hello-grpc-nodejs; npm test` |
 | PHP | `cd hello-grpc-php; composer validate --strict; composer check-platform-reqs; vendor\bin\phpunit.bat` |
-| Python | `cd hello-grpc-python; python -m unittest discover` |
+| Python | `cd hello-grpc-python; python -m unittest discover -s tests` |
 | Rust | `cd hello-grpc-rust; cargo test` |
-| Swift | `cd hello-grpc-swift; swift build` |
-| TypeScript | `cd hello-grpc-ts; npm test` |
+| Swift | `cd hello-grpc-swift; swift test` |
+| TypeScript | `cd hello-grpc-ts; npm run build; npm test` |
 
 ## Windows Local Toolchain
 
@@ -92,24 +93,24 @@ Current Windows toolchain snapshot:
 
 | Language | Local toolchain | Verification command |
 |---|---|---|
-| C++ | Bazel `7.3.2`, CMake `4.3.3`, protoc `28.2` available locally; C++ build graph uses `protoc27.2.exe` for Bazel codegen | `cd hello-grpc-cpp; bazel build //:hello_client //:hello_server` |
+| C++ | Bazel `7.3.2`, CMake `4.3.3`, protoc `28.2` available locally; C++ build graph uses `protoc27.2.exe` for Bazel codegen | `cd hello-grpc-cpp; bazel test //tests:hello_test` |
 | Rust | `rustc 1.95.0`, `cargo 1.95.0` | `cd hello-grpc-rust; cargo test` |
 | Java | Temurin OpenJDK `25.0.3`, Maven `3.9.7` | `cd hello-grpc-java; mvn test` |
 | Go | Go `1.26.4 windows/amd64` | `cd hello-grpc-go; go test ./...` |
 | C# | .NET SDK `9.0.203` | `cd hello-grpc-csharp; dotnet test` |
-| Python | Python `3.14.3` | `cd hello-grpc-python; python -m unittest discover` |
+| Python | Python `3.14.3` | `cd hello-grpc-python; python -m unittest discover -s tests` |
 | Node.js | Node `22.23.0`, npm `11.15.0`, Yarn `1.22.22` | `cd hello-grpc-nodejs; npm test` |
-| TypeScript | Node `22.23.0`, npm `11.15.0`, Yarn `1.22.22` | `cd hello-grpc-ts; npm test` |
+| TypeScript | Node `22.23.0`, npm `11.15.0`, Yarn `1.22.22` | `cd hello-grpc-ts; npm run build; npm test` |
 | Dart | Dart SDK `3.9.2 stable` on `windows_x64` | `cd hello-grpc-dart; dart analyze; dart test` |
-| Kotlin | Gradle `9.3.1`, Kotlin `2.2.21`, JVM `25.0.3` | `cd hello-grpc-kotlin; gradle test` |
-| Swift | Swift `6.3.2` for `x86_64-unknown-windows-msvc` | `cd hello-grpc-swift; swift build` |
+| Kotlin | Gradle `9.3.1`, Kotlin `2.2.21`, JVM `25.0.3` | `cd hello-grpc-kotlin; ./gradlew test` |
+| Swift | Swift `6.3.2` for `x86_64-unknown-windows-msvc` | `cd hello-grpc-swift; swift test` |
 | PHP | PHP `8.5.7`, Composer `2.9.7` | `cd hello-grpc-php; composer validate --strict; composer check-platform-reqs; vendor\bin\phpunit.bat` |
 
 Windows-specific notes:
 
-- C++: `hello-grpc-cpp` uses Bazel with Bzlmod. `WORKSPACE` is intentionally renamed `WORKSPACE.bzlmod-off`. Native OpenTelemetry is disabled in the C++ build because the current BCR graph conflicts with the resolved gRPC/protobuf graph on Windows. `common/otel.cc` remains an env-gated no-op stub.
+- C++: `hello-grpc-cpp` uses Bazel `7.3.2` with Bzlmod. `WORKSPACE` is intentionally renamed `WORKSPACE.bzlmod-off`. `.bazelversion` pins Bazelisk, `single_version_override` keeps the documented dependency graph stable, and `MODULE.bazel.lock` records the resolution. Native OpenTelemetry is disabled in the C++ build because the current BCR graph conflicts with the resolved gRPC/protobuf graph on Windows. `common/otel.cc` remains an env-gated no-op stub.
 - C++: `rules_proto` is pinned to `6.0.2`; `protobuf` is pinned to `27.2`; `grpc` is pinned to `1.66.0`. `protos/BUILD.bazel` exposes `system_protoc` so Bazel can use `D:\zoo\bin\protoc27.2.exe`.
-- Java/Kotlin: the local JDK is newer than the repository compatibility baseline. Treat Java 21 compatibility as the source target unless a language project explicitly updates it.
+- Java/Kotlin: the local JDK is newer than the repository compatibility baseline. Treat Java 21 compatibility as the source target unless a language project explicitly updates it. Kotlin compilation explicitly targets JVM 21 and should run through the checked-in Gradle wrapper.
 - Python: `where.exe python` may list the WindowsApps execution alias before `Python314`. Use the full Python path or fix PATH order when an exact interpreter matters.
 - Node.js/TypeScript: prefer the package manager already used by the language directory. Do not mix npm and Yarn lockfile updates unless the project already does.
 - Swift: `grpc-swift 2.2.3` currently has an upstream Windows support blocker in `RetryDelaySequence.swift`; distinguish that source-level limitation from SwiftPM scanner or target-info failures.

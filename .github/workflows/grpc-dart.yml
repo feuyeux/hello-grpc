@@ -1,6 +1,7 @@
 name: gRPC Dart
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:

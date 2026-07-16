@@ -16,6 +16,8 @@
  */
 
 const grpc = require("@grpc/grpc-js")
+const protoLoader = require('@grpc/proto-loader');
+const { ReflectionService } = require('@grpc/reflection');
 const { otelEnabled, initOtel, getCounter } = require("../common/otel")
 const uuid = require('uuid');
 const { TalkResult, TalkResponse, ResultType } = require('../proto/landing_pb');
@@ -23,8 +25,6 @@ const services = require('../proto/landing_grpc_pb');
 const conn = require('../common/connection');
 const utils = require('../common/utils');
 const { isEtcdDiscovery, registerToEtcd } = require('../common/etcd_discovery');
-// C4 — gRPC Server Reflection
-const reflection = require('grpc-node-server-reflection').default;
 // B7 — gRPC Health Check
 // grpc-health-check v2.x changed the API: there is no `HealthCheckResponse`
 // enum and `ServingStatus` is now a string-union type, not an object. Pass
@@ -33,6 +33,7 @@ const reflection = require('grpc-node-server-reflection').default;
 const { HealthImplementation } = require('grpc-health-check');
 // C5 — Logging middleware
 const { withLogging } = require('../common/interceptor');
+const { parseDataIndex } = require('../common/validation');
 
 const fs = require('fs');
 const path = require('path');
@@ -139,21 +140,22 @@ async function main() {
     // Create new gRPC server
     const server = new grpc.Server();
 
-    // C4 — wrap with reflection BEFORE addService so all services are tracked
-    const serverWithReflection = reflection(server);
-
     // B7 — Health check
     const statusMap = { '': 'SERVING' };
     const healthImpl = new HealthImplementation(statusMap);
-    healthImpl.addToServer(serverWithReflection);
+    healthImpl.addToServer(server);
 
     // Add service implementation (C5 — wrap with logging middleware)
-    serverWithReflection.addService(services.LandingServiceService, withLogging({
+    server.addService(services.LandingServiceService, withLogging({
         talk: talk,
         talkOneAnswerMore: talkOneAnswerMore,
         talkMoreAnswerOne: talkMoreAnswerOne,
         talkBidirectional: talkBidirectional
     }));
+
+    // C4 — gRPC Server Reflection. The official implementation consumes the
+    // proto-loader package definition so it can expose file descriptors.
+    new ReflectionService(loadLandingPackageDefinition()).addToServer(server);
 
     // Set up signal handlers for graceful shutdown
     setupSignalHandlers(server);
@@ -165,6 +167,18 @@ async function main() {
     } else {
         startInsecureServer(server, address);
     }
+}
+
+function loadLandingPackageDefinition() {
+    const candidates = [
+        path.resolve(__dirname, '../../../proto/landing.proto'),
+        path.resolve(process.cwd(), 'proto/landing.proto')
+    ];
+    const protoPath = candidates.find(candidate => fs.existsSync(candidate));
+    if (!protoPath) {
+        throw new Error(`landing.proto not found; checked: ${candidates.join(', ')}`);
+    }
+    return protoLoader.loadSync(protoPath);
 }
 
 /**
@@ -349,7 +363,8 @@ function handleLocalTalk(request, callback) {
         );
     } catch (e) {
         logger.error("Error processing Talk request: %s", e.message);
-        response.setStatus(500);
+        callback(e, null);
+        return;
     }
 
     logger.info("Talk RESPONSE TIME: %s", new Date().toISOString());
@@ -443,10 +458,10 @@ function handleLocalTalkOneAnswerMore(request, call) {
         logger.info("TalkOneAnswerMore sent %d responses", responseCount);
         logger.info("TalkOneAnswerMore COMPLETION TIME: %s", new Date().toISOString());
         logger.info("============================");
+        call.end();
     } catch (e) {
         logger.error("Error processing TalkOneAnswerMore request: %s", e.message);
-    } finally {
-        call.end();
+        call.emit('error', e);
     }
 }
 
@@ -522,8 +537,17 @@ function talkMoreAnswerOne(call, callback) {
 function handleLocalTalkMoreAnswerOne(call, initialCount, callback) {
     const talkResults = [];
     let requestCount = initialCount;
+    let terminalError = null;
+    let completed = false;
+
+    function finish(error, response) {
+        if (completed) return;
+        completed = true;
+        callback(error, response);
+    }
 
     call.on('data', function (request) {
+        if (terminalError) return;
         requestCount++;
         logger.info("TalkMoreAnswerOne REQUEST #%d: data=%s, meta=%s",
             requestCount, request.getData(), request.getMeta());
@@ -543,10 +567,15 @@ function handleLocalTalkMoreAnswerOne(call, initialCount, callback) {
             );
         } catch (e) {
             logger.error("Error processing request #%d: %s", requestCount, e.message);
+            terminalError = e;
         }
     });
 
     call.on('end', function () {
+        if (terminalError) {
+            finish(terminalError, null);
+            return;
+        }
         const response = new TalkResponse();
         response.setStatus(200);
         response.setResultsList(talkResults);
@@ -577,16 +606,12 @@ function handleLocalTalkMoreAnswerOne(call, initialCount, callback) {
         logger.info("TalkMoreAnswerOne COMPLETION TIME: %s", new Date().toISOString());
         logger.info("============================");
 
-        callback(null, response);
+        finish(null, response);
     });
 
     call.on('error', function (e) {
         logger.error("TalkMoreAnswerOne CLIENT ERROR: %s", e.message);
-        // Return an empty response in case of error
-        const response = new TalkResponse();
-        response.setStatus(500);
-        response.setResultsList([]);
-        callback(null, response);
+        finish(e, null);
     });
 }
 
@@ -667,8 +692,10 @@ function talkBidirectional(call) {
 function handleLocalTalkBidirectional(call, initialCount) {
     let requestCount = initialCount;
     let responseCount = 0;
+    let failed = false;
 
     call.on('data', function (request) {
+        if (failed) return;
         requestCount++;
         logger.info("TalkBidirectional REQUEST #%d: data=%s, meta=%s",
             requestCount, request.getData(), request.getMeta());
@@ -697,6 +724,8 @@ function handleLocalTalkBidirectional(call, initialCount) {
             call.write(response);
         } catch (e) {
             logger.error("Error processing request #%d: %s", requestCount, e.message);
+            failed = true;
+            call.emit('error', e);
         }
     });
 
@@ -705,7 +734,7 @@ function handleLocalTalkBidirectional(call, initialCount) {
             requestCount, responseCount);
         logger.info("TalkBidirectional COMPLETION TIME: %s", new Date().toISOString());
         logger.info("============================");
-        call.end();
+        if (!failed) call.end();
     });
 
     call.on('error', function (error) {
@@ -739,18 +768,7 @@ function hasBackendClient() {
 function createResult(id) {
     const result = new TalkResult();
 
-    // Parse ID safely
-    let index;
-    try {
-        index = parseInt(id);
-
-        // Check for out-of-bounds index
-        if (isNaN(index) || index < 0 || index >= utils.hellos.length) {
-            index = 0;
-        }
-    } catch (e) {
-        index = 0;
-    }
+    const index = parseDataIndex(id, utils.hellos.length);
 
     const hello = utils.hellos[index];
 

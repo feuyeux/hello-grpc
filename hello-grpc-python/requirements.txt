@@ -2,6 +2,7 @@
 # 由 grpcio-tools 版本决定； 注意与 protoc --version兼容
 # https://pypi.org/project/grpcio-tools/
 grpcio-tools==1.81.1
+grpcio-testing==1.81.1
 # https://pypi.org/project/protobuf/
 # grpcio-tools 1.71.0 depends on protobuf<6.0dev and >=5.26.1
 protobuf==6.33.5
@@ -21,7 +22,7 @@ opentelemetry-exporter-otlp-proto-common==1.43.0
 opentelemetry-instrumentation-grpc==0.64b0
 # B7 — gRPC Health Check (bundled with grpcio; pinned to same version)
 # https://pypi.org/project/grpcio-health-checking/
-grpcio-health-checking==1.82.1
+grpcio-health-checking==1.81.1
 # C4 — gRPC Server Reflection
 # https://pypi.org/project/grpcio-reflection/
-grpcio-reflection==1.82.1
+grpcio-reflection==1.81.1

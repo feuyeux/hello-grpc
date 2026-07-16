@@ -36,7 +36,8 @@ def _post(path, payload):
     url = f"{get_endpoint()}{path}"
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"})
+        url, data=data, headers={"Content-Type": "application/json"}
+    )
     with urllib.request.urlopen(req, timeout=5) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -64,11 +65,14 @@ def register_to_etcd(host, port):
         raise RuntimeError(f"etcd lease grant failed: {resp}")
 
     # Put key with lease
-    _post("/v3/kv/put", {
-        "key": b64(ETCD_KEY),
-        "value": b64(address),
-        "lease": lease_id,
-    })
+    _post(
+        "/v3/kv/put",
+        {
+            "key": b64(ETCD_KEY),
+            "value": b64(address),
+            "lease": lease_id,
+        },
+    )
 
     # Start keepalive thread
     stop_event = threading.Event()

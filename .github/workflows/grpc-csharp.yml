@@ -1,6 +1,7 @@
 name: gRPC C#
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:

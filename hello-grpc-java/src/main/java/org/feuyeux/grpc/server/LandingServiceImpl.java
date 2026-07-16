@@ -3,6 +3,7 @@ package org.feuyeux.grpc.server;
 import static org.feuyeux.grpc.common.HelloUtils.getAnswerMap;
 import static org.feuyeux.grpc.common.HelloUtils.getHelloList;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -77,6 +78,10 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
     TalkResponse response;
     if (blockingStub == null) {
       // Process request locally
+      if (!isValidData(request.getData())) {
+        responseObserver.onError(invalidData(request.getData()));
+        return;
+      }
       response =
           TalkResponse.newBuilder()
               .setStatus(200)
@@ -110,6 +115,12 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
       // Process request locally
       String[] dataItems = request.getData().split(",");
       for (String dataItem : dataItems) {
+        if (!isValidData(dataItem)) {
+          responseObserver.onError(invalidData(dataItem));
+          return;
+        }
+      }
+      for (String dataItem : dataItems) {
         TalkResponse response =
             TalkResponse.newBuilder().setStatus(200).addResults(createResult(dataItem)).build();
         responseObserver.onNext(response);
@@ -140,13 +151,22 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
       // Process requests locally
       return new StreamObserver<>() {
         private final List<TalkResult> results = new ArrayList<>();
+        private boolean failed;
 
         @Override
         public void onNext(TalkRequest request) {
+          if (failed) {
+            return;
+          }
           logger.info(
               "Client streaming request - data: {}, meta: {}",
               request.getData(),
               request.getMeta());
+          if (!isValidData(request.getData())) {
+            failed = true;
+            responseObserver.onError(invalidData(request.getData()));
+            return;
+          }
           results.add(createResult(request.getData()));
         }
 
@@ -158,6 +178,9 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
 
         @Override
         public void onCompleted() {
+          if (failed) {
+            return;
+          }
           // Send combined response with all results
           TalkResponse response =
               TalkResponse.newBuilder().setStatus(200).addAllResults(results).build();
@@ -240,6 +263,8 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
     if (asyncStub == null) {
       // Process requests locally
       return new StreamObserver<>() {
+        private boolean failed;
+
         @Override
         public void onNext(TalkRequest request) {
           logger.info(
@@ -248,6 +273,11 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
               request.getMeta());
 
           // Send a response for each request
+          if (!isValidData(request.getData())) {
+            failed = true;
+            responseObserver.onError(invalidData(request.getData()));
+            return;
+          }
           TalkResponse response =
               TalkResponse.newBuilder()
                   .setStatus(200)
@@ -264,6 +294,9 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
 
         @Override
         public void onCompleted() {
+          if (failed) {
+            return;
+          }
           responseObserver.onCompleted();
         }
       };
@@ -306,15 +339,10 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
    */
   private TalkResult createResult(String id) {
     // Parse the ID to an integer index
-    int index;
-    try {
-      index = Integer.parseInt(id);
-    } catch (NumberFormatException e) {
-      index = 0;
-    }
+    int index = Integer.parseInt(id);
 
     // Get the greeting based on index
-    String greeting = (index > 5) ? "你好" : getHelloList().get(index);
+    String greeting = getHelloList().get(index);
     String answer = getAnswerMap().get(greeting);
 
     // Create key-value data
@@ -330,5 +358,20 @@ public class LandingServiceImpl extends LandingServiceGrpc.LandingServiceImplBas
         .setType(ResultType.OK)
         .putAllKv(kv)
         .build();
+  }
+
+  private boolean isValidData(String id) {
+    try {
+      int index = Integer.parseInt(id);
+      return index >= 0 && index < getHelloList().size();
+    } catch (NumberFormatException e) {
+      return false;
+    }
+  }
+
+  private RuntimeException invalidData(String id) {
+    return Status.INVALID_ARGUMENT
+        .withDescription("data must be an integer between 0 and " + (getHelloList().size() - 1))
+        .asRuntimeException();
   }
 }

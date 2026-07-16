@@ -8,17 +8,16 @@
 ///
 /// The implementation follows standardized patterns for error handling,
 /// logging, and graceful shutdown.
-
 use std::error::Error;
 use std::time::{Duration, Instant};
 
 use futures::stream;
 use log::{error, info};
 use tokio::time;
-use tonic::transport::Channel;
 use tonic::Request;
+use tonic::transport::Channel;
 
-use hello_grpc_rust::common::conn::{build_client, call_with_retry, CONFIG_PATH};
+use hello_grpc_rust::common::conn::{CONFIG_PATH, build_client, call_with_retry};
 use hello_grpc_rust::common::landing::landing_service_client::LandingServiceClient;
 use hello_grpc_rust::common::landing::{TalkRequest, TalkResponse};
 use hello_grpc_rust::common::utils::{build_link_requests, get_version, random_id};
@@ -43,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Initialize logging
     log4rs::init_file(CONFIG_PATH, Default::default())?;
-    
+
     info!("Starting gRPC client [version: {}]", get_version());
 
     // Retry logic for connection
@@ -85,7 +84,10 @@ async fn run_grpc_calls(
     iterations: u32,
 ) -> Result<bool, Box<dyn Error>> {
     for iteration in 1..=iterations {
-        info!("====== Starting iteration {}/{} ======", iteration, iterations);
+        info!(
+            "====== Starting iteration {}/{} ======",
+            iteration, iterations
+        );
 
         // 1. Unary RPC
         info!("----- Executing unary RPC -----");
@@ -119,7 +121,7 @@ async fn execute_unary_call(
     client: &mut LandingServiceClient<Channel>,
 ) -> Result<(), Box<dyn Error>> {
     let request_id = format!("unary-{}", uuid::Uuid::new_v4());
-    
+
     let message = TalkRequest {
         data: "0".to_string(),
         meta: "RUST".to_string(),
@@ -168,18 +170,25 @@ async fn execute_server_streaming_call(
     client: &mut LandingServiceClient<Channel>,
 ) -> Result<(), Box<dyn Error>> {
     let request_id = format!("server-stream-{}", uuid::Uuid::new_v4());
-    
+
     let message = TalkRequest {
         data: "0,1,2".to_string(),
         meta: "RUST".to_string(),
     };
 
-    info!("Starting server streaming with request: data={}, meta=RUST", message.data);
+    info!(
+        "Starting server streaming with request: data={}, meta=RUST",
+        message.data
+    );
     let start_time = Instant::now();
 
     let mut request = Request::new(message);
-    request.metadata_mut().insert("request-id", request_id.parse()?);
-    request.metadata_mut().insert("client", "rust-client".parse()?);
+    request
+        .metadata_mut()
+        .insert("request-id", request_id.parse()?);
+    request
+        .metadata_mut()
+        .insert("client", "rust-client".parse()?);
 
     match client.talk_one_answer_more(request).await {
         Ok(response) => {
@@ -212,7 +221,7 @@ async fn execute_client_streaming_call(
     client: &mut LandingServiceClient<Channel>,
 ) -> Result<TalkResponse, Box<dyn Error>> {
     let request_id = format!("client-stream-{}", uuid::Uuid::new_v4());
-    
+
     let requests = build_link_requests();
     let request_count = requests.len();
 
@@ -220,8 +229,12 @@ async fn execute_client_streaming_call(
     let start_time = Instant::now();
 
     let mut request = Request::new(stream::iter(requests));
-    request.metadata_mut().insert("request-id", request_id.parse()?);
-    request.metadata_mut().insert("client", "rust-client".parse()?);
+    request
+        .metadata_mut()
+        .insert("request-id", request_id.parse()?);
+    request
+        .metadata_mut()
+        .insert("client", "rust-client".parse()?);
 
     match client.talk_more_answer_one(request).await {
         Ok(response) => {
@@ -245,38 +258,45 @@ async fn execute_bidirectional_streaming_call(
     client: &mut LandingServiceClient<Channel>,
 ) -> Result<(), Box<dyn Error>> {
     let request_id = format!("bidirectional-{}", uuid::Uuid::new_v4());
-    
-    info!("Starting bidirectional streaming with {} requests", DEFAULT_BATCH_SIZE);
+
+    info!(
+        "Starting bidirectional streaming with {} requests",
+        DEFAULT_BATCH_SIZE
+    );
     let start_time = Instant::now();
 
     // Create an outbound stream of requests
     let mut interval = time::interval(Duration::from_millis(SEND_DELAY_MS));
     let mut remaining = DEFAULT_BATCH_SIZE;
-    
+
     let outbound = async_stream::stream! {
         let mut request_count = 0;
         while remaining > 0 {
             interval.tick().await;
-            
+
             request_count += 1;
             let request = TalkRequest {
                 data: random_id(5),
                 meta: "RUST".to_string(),
             };
-            
+
             info!(
                 "Sending bidirectional streaming request #{}: data={}, meta=RUST",
                 request_count, request.data
             );
-            
+
             yield request;
             remaining -= 1;
         }
     };
 
     let mut request = Request::new(outbound);
-    request.metadata_mut().insert("request-id", request_id.parse()?);
-    request.metadata_mut().insert("client", "rust-client".parse()?);
+    request
+        .metadata_mut()
+        .insert("request-id", request_id.parse()?);
+    request
+        .metadata_mut()
+        .insert("client", "rust-client".parse()?);
 
     match client.talk_bidirectional(request).await {
         Ok(response) => {
@@ -285,7 +305,10 @@ async fn execute_bidirectional_streaming_call(
 
             while let Some(response_item) = inbound.message().await? {
                 response_count += 1;
-                info!("Received bidirectional streaming response #{}:", response_count);
+                info!(
+                    "Received bidirectional streaming response #{}:",
+                    response_count
+                );
                 log_response(&response_item);
             }
 
@@ -313,12 +336,12 @@ fn log_response(response: &TalkResponse) {
 
     for (i, result) in response.results.iter().enumerate() {
         let result_map = &result.kv;
-        
+
         let meta = result_map.get("meta").map_or("", |v| v.as_str());
         let id = result_map.get("id").map_or("", |v| v.as_str());
         let idx = result_map.get("idx").map_or("", |v| v.as_str());
         let data = result_map.get("data").map_or("", |v| v.as_str());
-        
+
         info!(
             "  Result #{}: id={}, type={}, meta={}, id={}, idx={}, data={}",
             i + 1,

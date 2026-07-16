@@ -10,10 +10,11 @@ This module provides functions for:
 
 import logging
 import os
+import pathlib
+import platform
 import sys
 from logging.handlers import RotatingFileHandler
-import platform
-import pathlib
+
 import grpc
 
 
@@ -55,20 +56,22 @@ server_name = "hello.grpc.io"
 # HTTP/2 keepalive pings plus transparent retries per gRPC A6
 # (https://github.com/grpc/proposal/blob/master/A6-client-retries.md).
 CHANNEL_RESILIENCE_OPTIONS = (
-    ('grpc.keepalive_time_ms', 10000),
-    ('grpc.keepalive_timeout_ms', 1000),
-    ('grpc.keepalive_permit_without_calls', 1),
-    ('grpc.enable_retries', 1),
-    ('grpc.service_config',
-     '{"methodConfig": [{'
-     '"name": [{"service": "hello.LandingService"}],'
-     '"waitForReady": true,'
-     '"retryPolicy": {'
-     '"maxAttempts": 4,'
-     '"initialBackoff": "0.1s",'
-     '"maxBackoff": "1s",'
-     '"backoffMultiplier": 2.0,'
-     '"retryableStatusCodes": ["UNAVAILABLE"]}}]}'),
+    ("grpc.keepalive_time_ms", 10000),
+    ("grpc.keepalive_timeout_ms", 1000),
+    ("grpc.keepalive_permit_without_calls", 1),
+    ("grpc.enable_retries", 1),
+    (
+        "grpc.service_config",
+        '{"methodConfig": [{'
+        '"name": [{"service": "hello.LandingService"}],'
+        '"waitForReady": true,'
+        '"retryPolicy": {'
+        '"maxAttempts": 4,'
+        '"initialBackoff": "0.1s",'
+        '"maxBackoff": "1s",'
+        '"backoffMultiplier": 2.0,'
+        '"retryableStatusCodes": ["UNAVAILABLE"]}}]}',
+    ),
 )
 
 # Enables gzip compression of outgoing request messages. Passed as the
@@ -79,24 +82,26 @@ CHANNEL_COMPRESSION = grpc.Compression.Gzip
 os.makedirs("log", exist_ok=True)
 
 # Create logger
-logger = logging.getLogger('grpc-connection')
+logger = logging.getLogger("grpc-connection")
 logger.setLevel(logging.INFO)
 
 # Console handler
 console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.INFO)
 console_formatter = logging.Formatter(
-    '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S')
+    "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+)
 console.setFormatter(console_formatter)
 
 # File handler
 file_handler = RotatingFileHandler(
-    'log/hello-grpc.log', maxBytes=19500*1024, backupCount=5)
+    "log/hello-grpc.log", maxBytes=19500 * 1024, backupCount=5
+)
 file_handler.setLevel(logging.INFO)
 file_formatter = logging.Formatter(
-    '[%(asctime)s] [%(threadName)s] [%(levelname)s] [%(name)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S.%f')
+    "[%(asctime)s] [%(threadName)s] [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S.%f",
+)
 file_handler.setFormatter(file_formatter)
 
 # Add handlers
@@ -133,6 +138,7 @@ def build_channel():
     """
     # Check for etcd service discovery
     from conn.etcd_discovery import is_etcd_discovery, resolve_from_etcd
+
     if is_etcd_discovery():
         resolved = resolve_from_etcd()
         if resolved:
@@ -140,7 +146,8 @@ def build_channel():
             address = resolved
         else:
             raise RuntimeError(
-                "GRPC_HELLO_DISCOVERY=etcd but no service instance found")
+                "GRPC_HELLO_DISCOVERY=etcd but no service instance found"
+            )
     else:
         # Determine server address
         backend = os.getenv("GRPC_HELLO_BACKEND")
@@ -170,14 +177,14 @@ def build_channel():
         # Build secure channel with TLS
         try:
             # Read root certificate for server verification
-            with open(root_cert, 'rb') as f:
+            with open(root_cert, "rb") as f:
                 root_certificates = f.read()
 
             # Read client certificate and private key for mutual TLS
-            with open(cert, 'rb') as f:
+            with open(cert, "rb") as f:
                 certificate_chain = f.read()
 
-            with open(cert_key, 'rb') as f:
+            with open(cert_key, "rb") as f:
                 private_key = f.read()
 
             logger.info("Loaded root certificate from: %s", root_cert)
@@ -187,42 +194,60 @@ def build_channel():
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=root_certificates,
                 private_key=private_key,
-                certificate_chain=certificate_chain
+                certificate_chain=certificate_chain,
             )
 
             options = (
-                ('grpc.ssl_target_name_override', server_name),
-                ('grpc.default_authority', server_name)
+                ("grpc.ssl_target_name_override", server_name),
+                ("grpc.default_authority", server_name),
             ) + CHANNEL_RESILIENCE_OPTIONS
 
-            logger.info(
-                "TLS connection configured with server name: %s", server_name)
+            logger.info("TLS connection configured with server name: %s", server_name)
             logger.info(
                 "Using certificate paths: cert=%s, cert_key=%s, "
                 "cert_chain=%s, root_cert=%s",
-                cert, cert_key, cert_chain, root_cert)
-            logger.info("Connect with TLS to %s (Python %s.%s.%s)",
-                        address, python_version[0], python_version[1], python_version[2])
+                cert,
+                cert_key,
+                cert_chain,
+                root_cert,
+            )
+            logger.info(
+                "Connect with TLS to %s (Python %s.%s.%s)",
+                address,
+                python_version[0],
+                python_version[1],
+                python_version[2],
+            )
             return grpc.secure_channel(
-                address, credentials, options, compression=CHANNEL_COMPRESSION)
+                address, credentials, options, compression=CHANNEL_COMPRESSION
+            )
 
         except (FileNotFoundError, PermissionError) as e:
             logger.error("TLS certificate error: %s", e)
             if os.getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y":
                 logger.warning(
-                    "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection")
+                    "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure connection"
+                )
                 return grpc.insecure_channel(
-                    address, options=CHANNEL_RESILIENCE_OPTIONS,
-                    compression=CHANNEL_COMPRESSION)
+                    address,
+                    options=CHANNEL_RESILIENCE_OPTIONS,
+                    compression=CHANNEL_COMPRESSION,
+                )
             raise RuntimeError(
                 "GRPC_HELLO_SECURE=Y but TLS certificates could not be loaded: "
                 f"{e}. Set CERT_BASE_PATH to the certificate directory, or set "
                 "GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow an insecure "
-                "connection.") from e
+                "connection."
+            ) from e
     else:
         # Build insecure channel
-        logger.info("Connect with insecure (:%s) (Python %s.%s.%s)",
-                    port, python_version[0], python_version[1], python_version[2])
+        logger.info(
+            "Connect with insecure (:%s) (Python %s.%s.%s)",
+            port,
+            python_version[0],
+            python_version[1],
+            python_version[2],
+        )
         return grpc.insecure_channel(
-            address, options=CHANNEL_RESILIENCE_OPTIONS,
-            compression=CHANNEL_COMPRESSION)
+            address, options=CHANNEL_RESILIENCE_OPTIONS, compression=CHANNEL_COMPRESSION
+        )

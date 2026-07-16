@@ -22,10 +22,8 @@ import os
 try:
     from opentelemetry import trace
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import (
-        BatchSpanProcessor,
-        ConsoleSpanExporter,
-    )
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+
     _HAS_OTEL = True
 except ImportError:
     _HAS_OTEL = False
@@ -37,6 +35,7 @@ try:
         ConsoleMetricExporter,
         PeriodicExportingMetricReader,
     )
+
     _HAS_OTEL_METRICS = True
 except ImportError:
     _HAS_OTEL_METRICS = False
@@ -44,8 +43,11 @@ except ImportError:
 try:
     from opentelemetry.instrumentation.grpc import (
         client_interceptor as _otel_client_interceptor,
+    )
+    from opentelemetry.instrumentation.grpc import (
         server_interceptor as _otel_server_interceptor,
     )
+
     _HAS_OTEL_GRPC = True
 except ImportError:
     _HAS_OTEL_GRPC = False

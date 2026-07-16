@@ -90,6 +90,7 @@ jobs:
         id: determine_pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           # Source security validation functions
           source .github/scripts/security-validation.sh
@@ -97,7 +98,6 @@ jobs:
           # Determine which PR(s) to process based on trigger type
           if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             # Check if comment contains /rebase command
-            COMMENT_BODY="${{ github.event.comment.body }}"
             if echo "$COMMENT_BODY" | grep -q "^/rebase"; then
               # Verify that the issue is actually a PR
               if [[ "${{ github.event.issue.pull_request }}" == "" ]]; then
@@ -321,18 +321,19 @@ jobs:
                 eval ".github/scripts/notify-rebase.sh $NOTIFY_ARGS" || echo "⚠️  Failed to send failure notification"
               else
                 # Create fallback error result
-                FAILURE_RESULT=$(cat <<EOF
-{
-  "pr_number": $pr_number,
-  "success": false,
-  "error_type": "unknown",
-  "error_code": $EXIT_CODE,
-  "error_message": "Rebase failed with exit code $EXIT_CODE",
-  "user_message": "An unexpected error occurred. Check workflow logs for details.",
-  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-}
-EOF
-)
+                FAILURE_RESULT=$(jq -n \
+                  --argjson pr_number "$pr_number" \
+                  --argjson error_code "$EXIT_CODE" \
+                  --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                  '{
+                    pr_number: $pr_number,
+                    success: false,
+                    error_type: "unknown",
+                    error_code: $error_code,
+                    error_message: ("Rebase failed with exit code " + ($error_code | tostring)),
+                    user_message: "An unexpected error occurred. Check workflow logs for details.",
+                    timestamp: $timestamp
+                  }')
                 REBASE_RESULTS=$(echo "$REBASE_RESULTS" | jq --argjson result "$FAILURE_RESULT" '. + [$result]')
                 
                 # Send generic failure notification

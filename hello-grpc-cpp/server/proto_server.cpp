@@ -155,7 +155,11 @@ public:
       // Create response
       response->set_status(200);
       TalkResult *talkResult = response->add_results();
-      createResponse(id, talkResult);
+      const auto status = createResponse(id, talkResult);
+      if (!status.ok())
+      {
+        return status;
+      }
 
       return Status::OK;
     }
@@ -204,7 +208,11 @@ public:
         TalkResponse response;
         response.set_status(200);
         TalkResult *talkResult = response.add_results();
-        createResponse(id, talkResult);
+        const auto status = createResponse(id, talkResult);
+        if (!status.ok())
+        {
+          return status;
+        }
         writer->Write(response);
       }
     }
@@ -258,7 +266,11 @@ public:
                   << ", meta: " << request.meta();
 
         TalkResult *talkResult = response->add_results();
-        createResponse(id, talkResult);
+        const auto status = createResponse(id, talkResult);
+        if (!status.ok())
+        {
+          return status;
+        }
       }
 
       return Status::OK;
@@ -314,7 +326,11 @@ public:
         TalkResponse response;
         response.set_status(200);
         TalkResult *talkResult = response.add_results();
-        createResponse(id, talkResult);
+        const auto status = createResponse(id, talkResult);
+        if (!status.ok())
+        {
+          return status;
+        }
         stream->Write(response);
       }
 
@@ -328,13 +344,29 @@ public:
    * @param id The request ID (typically a language index)
    * @param talkResult Pointer to TalkResult to populate
    */
-  static void createResponse(const std::string &id, TalkResult *talkResult)
+  static Status createResponse(const std::string &id, TalkResult *talkResult)
   {
+    std::size_t parsed = 0;
+    int index = -1;
+    try
+    {
+      index = std::stoi(id, &parsed);
+    }
+    catch (const std::exception &)
+    {
+      return Status(grpc::StatusCode::INVALID_ARGUMENT,
+                    "data must be an integer between 0 and 5");
+    }
+    if (parsed != id.size() || index < 0 || index > 5)
+    {
+      return Status(grpc::StatusCode::INVALID_ARGUMENT,
+                    "data must be an integer between 0 and 5");
+    }
+
     talkResult->set_id(Utils::now());
     talkResult->set_type(ResultType::OK);
 
     auto *pMap = talkResult->mutable_kv();
-    int index = std::stoi(id);
     const auto &uuid = Utils::uuid();
 
     // Add response metadata
@@ -345,6 +377,7 @@ public:
     // Get greeting and response
     const auto &hello = Utils::hello(index);
     (*pMap)["data"] = hello + "," + Utils::thanks(hello);
+    return Status::OK;
   }
 
   /**

@@ -115,15 +115,16 @@ wait_for_parallel_jobs() {
     fi
     
     echo "等待所有构建任务完成..."
+    local failed=0
     for pid in "${PIDS[@]}"; do
         if ! wait "$pid"; then
             echo "错误: 进程 $pid 构建失败!"
-            # 可以选择在这里退出或继续
-            # exit 1
+            failed=1
         fi
     done
     # 清空PID数组
     PIDS=()
+    return "$failed"
 }
 
 # Implementation of the PHP base build

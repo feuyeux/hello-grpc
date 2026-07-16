@@ -381,9 +381,19 @@ fn log_metadata(method: &str, metadata: &MetadataMap) {
 }
 
 // Helper function to create response
-fn create_response(data: String) -> TalkResult {
-    // Try to parse the input data as an index into the HELLOS array
-    let index = data.parse::<usize>().unwrap_or(0) % HELLOS.len();
+fn create_response(data: String) -> Result<TalkResult, Status> {
+    let index = data.parse::<usize>().map_err(|_| {
+        Status::invalid_argument(format!(
+            "data must be an integer between 0 and {}",
+            HELLOS.len() - 1
+        ))
+    })?;
+    if index >= HELLOS.len() {
+        return Err(Status::invalid_argument(format!(
+            "data must be an integer between 0 and {}",
+            HELLOS.len() - 1
+        )));
+    }
     let hello = HELLOS[index];
 
     // Create a map for the key-value pairs in the result
@@ -393,18 +403,20 @@ fn create_response(data: String) -> TalkResult {
 
     // Build the data string with greeting and response
     let mut response_data = hello.to_string();
-    response_data.push_str(",");
+    response_data.push(',');
     response_data.push_str(thanks(hello));
 
     result_map.insert("data".to_string(), response_data);
     result_map.insert("meta".to_string(), "RUST".to_string());
 
-    TalkResult {
+    Ok(TalkResult {
         id: Utc::now().timestamp_millis(),
         r#type: ResultType::Ok as i32,
         kv: result_map,
-    }
+    })
 }
+
+type ClientPool = Arc<Mutex<Vec<Option<LandingServiceClient<Channel>>>>>;
 
 /// Implementation of the gRPC LandingService.
 /// Can operate either as a standalone server or as a proxy to a backend service.
@@ -412,7 +424,7 @@ pub struct ProtoServer {
     /// The address of the backend service, empty if operating in standalone mode
     backend: String,
     /// Pool of clients for communicating with the backend service
-    client_pool: Option<Arc<Mutex<Vec<Option<LandingServiceClient<Channel>>>>>>,
+    client_pool: Option<ClientPool>,
     /// Server metrics collector
     metrics: Arc<ServerMetrics>,
 }
@@ -424,11 +436,8 @@ impl ProtoServer {
             let mut pool_guard = pool.lock().await;
 
             // Find an available client in the pool
-            for client_opt in pool_guard.iter_mut() {
-                if let Some(client) = client_opt {
-                    // Clone the client for use
-                    return Some(client.clone());
-                }
+            if let Some(client) = pool_guard.iter_mut().flatten().next() {
+                return Some(client.clone());
             }
 
             // If no clients available, try to create a new one
@@ -496,7 +505,7 @@ impl LandingService for ProtoServer {
             }
         } else {
             // Process locally
-            let result = create_response(data.clone());
+            let result = create_response(data.clone())?;
             let response = TalkResponse {
                 status: 200,
                 results: vec![result],
@@ -557,7 +566,13 @@ impl LandingService for ProtoServer {
             // Spawn a task to send multiple responses
             tokio::spawn(async move {
                 for data_part in data.split(',') {
-                    let result = create_response(data_part.to_string());
+                    let result = match create_response(data_part.to_string()) {
+                        Ok(result) => result,
+                        Err(status) => {
+                            let _ = tx.send(Err(status)).await;
+                            return;
+                        }
+                    };
                     let response = TalkResponse {
                         status: 200,
                         results: vec![result],
@@ -629,7 +644,7 @@ impl LandingService for ProtoServer {
                             "Client stream item - data: {}, meta: {}",
                             request.data, request.meta
                         );
-                        results.push(create_response(request.data));
+                        results.push(create_response(request.data)?);
                     }
                     Err(status) => {
                         error!("Error receiving client stream: {}", status);
@@ -716,7 +731,7 @@ impl LandingService for ProtoServer {
                     match result {
                         Ok(request) => {
                             info!("Bidirectional stream item - data: {}, meta: {}", request.data, request.meta);
-                            let result = create_response(request.data);
+                            let result = create_response(request.data)?;
                             yield TalkResponse {
                                 status: 200,
                                 results: vec![result],
@@ -728,6 +743,19 @@ impl LandingService for ProtoServer {
             };
 
             Ok(Response::new(Box::pin(output)))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_response_rejects_invalid_data() {
+        for invalid in ["", "not-a-number", "-1", "99"] {
+            let error = create_response(invalid.to_string()).unwrap_err();
+            assert_eq!(error.code(), tonic::Code::InvalidArgument);
         }
     }
 }

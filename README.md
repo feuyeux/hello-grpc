@@ -2,7 +2,7 @@
 
 # Hello gRPC 
 
-**Comprehensive gRPC examples and tutorials across 12+ programming languages**
+**Comprehensive gRPC examples and tutorials across 12 programming languages**
 
 *Learn gRPC with comprehensive tutorials, examples, and best practices for Java, Go, Python, Node.js, Rust, C++, C#, Kotlin, Swift, Dart, PHP, and TypeScript*
 
@@ -16,13 +16,13 @@
 [![GitHub license](https://img.shields.io/github/license/feuyeux/hello-grpc)](https://github.com/feuyeux/hello-grpc/blob/main/LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/feuyeux/grpc_server_java)](https://hub.docker.com/u/feuyeux)
 
-This repository demonstrates gRPC implementations across 12+ programming languages, featuring production-ready examples with Docker containers, Kubernetes deployment configurations, and service mesh integration patterns.
+This repository demonstrates comparable gRPC implementations across 12 programming languages, with Docker, Kubernetes, gateway, service mesh, TLS, and observability examples. It is a learning and interoperability repository rather than a drop-in production platform.
 
 
 
 ## Supported Programming Languages & Frameworks
 
-**Complete gRPC implementations** with identical functionality across all major programming languages:
+Each implementation covers the same four RPC shapes and shared protobuf contract. Ecosystem-specific capabilities and verification status can differ; see the [feature parity matrix](doc/parity-matrix.md) for the audited details.
 
 | No. | Language                     | gRPC Library                                                    | Recommended IDE  |
 |:----|:-----------------------------|:----------------------------------------------------------------|:-----------------|
@@ -67,7 +67,7 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 | Java       | ✅      | ✅ mTLS  | ✅    | ✅          | [Maven][1]               | [JUnit 5][2]            | [Log4j2][3]     |
 | Go         | ✅      | ✅ mTLS  | ✅    | ✅          | [Go Modules][40]         | [Go Testing][41]        | [Logrus][5]     |
 | Node.js    | ✅      | ✅ TLS   | ✅    | ✅          | [npm][7]                 | [Mocha][8]              | [Winston][9]    |
-| TypeScript | ✅      | ✅ TLS   | ✅    | ✅          | [Yarn][28] & [TSC][29]   | [Jest][42]              | [Winston][9]    |
+| TypeScript | ✅      | ✅ TLS   | ✅    | ✅          | [npm][7] & [TSC][29]     | [Mocha / ts-mocha][42]  | [Winston][9]    |
 | Python     | ✅      | ✅ mTLS  | ✅    | ✅          | [pip][11]                | [unittest][43]          | [logging][44]   |
 | Rust       | ✅      | ✅ mTLS  | ✅    | ✅          | [Cargo][13]              | [Rust Test][45]         | [log4rs][14]    |
 | C++        | ✅      | ✅ mTLS  | ✅    | ✅          | [Bazel][37]/[CMake][16]  | [Catch2][24]            | [glog][17]      |
@@ -75,7 +75,9 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 | Kotlin     | ✅      | ✅ mTLS  | ✅    | ✅          | [Gradle][21]             | [JUnit 5][2]            | [Log4j2][3]     |
 | Swift      | ✅      | ✅ TLS   | ✅    | ✅          | [SPM][22]                | [Swift Testing][38]     | [swift-log][23] |
 | Dart       | ✅      | ✅ TLS   | ✅    | ✅          | [Pub][25]                | [Test][27]              | [Logger][26]    |
-| PHP        | ✅      | ✅ mTLS  | ✅    | ✅          | [Composer][34]      | [PHPUnit][35]           | [Monolog][36]   |
+| PHP        | ✅      | ✅ mTLS  | ✅    | ✅          | [Composer][34]            | [PHPUnit][35]           | [Monolog][36]   |
+
+The matrix above describes repository implementation paths. Runtime support still depends on the host toolchain and upstream libraries; the parity matrix records the latest commands and known platform blockers.
 
 ## Project Statistics
 
@@ -122,7 +124,7 @@ This repository demonstrates gRPC implementations across 12+ programming languag
 [39]: <https://www.docker.com/>
 [40]: <https://github.com/golang/go/wiki/Modules>
 [41]: <https://golang.org/pkg/testing/>
-[42]: <https://jestjs.io/>
+[42]: <https://www.npmjs.com/package/ts-mocha>
 [43]: <https://docs.python.org/3/library/unittest.html>
 [44]: <https://docs.python.org/3/library/logging.html>
 [45]: <https://doc.rust-lang.org/book/ch11-00-testing.html>

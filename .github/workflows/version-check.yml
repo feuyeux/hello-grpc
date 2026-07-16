@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -49,7 +49,7 @@ jobs:
 
       - name: Check Flutter dependencies
         id: flutter-deps
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: |
           flutter pub get
           flutter pub outdated --json > outdated.json || true
@@ -65,7 +65,7 @@ jobs:
 
       - name: Check Tauri CLI version
         id: tauri-cli
-        working-directory: hello-grpc-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri
         run: |
           # Get current Tauri CLI version from package.json
           CURRENT_VERSION=$(node -p "require('./package.json').devDependencies['@tauri-apps/cli']" | tr -d '^~')
@@ -83,7 +83,7 @@ jobs:
 
       - name: Check Tauri npm dependencies
         id: tauri-npm
-        working-directory: hello-grpc-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri
         run: |
           npm outdated --json > outdated.json || true
           
@@ -98,10 +98,10 @@ jobs:
 
       - name: Check Tauri Cargo dependencies
         id: tauri-cargo
-        working-directory: hello-grpc-tauri/src-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri/src-tauri
         run: |
           # Install cargo-outdated if not present
-          cargo install cargo-outdated --quiet || true
+          cargo install cargo-outdated --locked --quiet
           
           # Check for outdated dependencies
           cargo outdated --format json > outdated.json || echo "{}" > outdated.json

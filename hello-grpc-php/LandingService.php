@@ -410,22 +410,20 @@ class LandingService extends LandingServiceStub
         // Standard greetings to choose from
         $greetings = [
             'Hello',
-            'Hi',
-            'Hey',
-            'Greetings',
-            'Welcome',
             'Bonjour',
-            'Hola'
+            'Hola',
+            'こんにちは',
+            'Ciao',
+            '안녕하세요'
         ];
         
         foreach ($indices as $idx => $index) {
-            // Parse index safely
-            $greetingIndex = is_numeric($index) ? (int)$index : 0;
-            
-            // Ensure index is within bounds
-            if ($greetingIndex < 0 || $greetingIndex >= count($greetings)) {
-                $greetingIndex = 0;
+            if (!$this->isValidData((string)$index, count($greetings))) {
+                throw new \InvalidArgumentException(
+                    'data must be an integer between 0 and ' . (count($greetings) - 1)
+                );
             }
+            $greetingIndex = (int)$index;
             
             // Generate result data
             $results[] = [
@@ -438,6 +436,25 @@ class LandingService extends LandingServiceStub
         }
         
         return $this->createResponse($status, $results);
+    }
+
+    private function isValidData(string $data, int $size = 6): bool
+    {
+        return preg_match('/^\d+$/', $data) === 1
+            && (int)$data >= 0
+            && (int)$data < $size;
+    }
+
+    private function rejectInvalidData(ServerContext $context, string $data, int $size = 6): bool
+    {
+        if ($this->isValidData($data, $size)) {
+            return false;
+        }
+        $context->setStatus(\Grpc\Status::status(
+            \Grpc\STATUS_INVALID_ARGUMENT,
+            'data must be an integer between 0 and ' . ($size - 1)
+        ));
+        return true;
     }
     
     /**
@@ -479,6 +496,9 @@ class LandingService extends LandingServiceStub
 
             // Process locally
             try {
+                if ($this->rejectInvalidData($context, $request->getData())) {
+                    return null;
+                }
                 $response = $this->processLocally($request, $metadata);
                 $this->logSuccess('Talk', $response);
                 return $response;
@@ -539,6 +559,13 @@ class LandingService extends LandingServiceStub
                 // Parse data parameter (comma-separated indices)
                 $dataParam = $request->getData();
                 $indices = explode(',', $dataParam);
+
+                foreach ($indices as $index) {
+                    if ($this->rejectInvalidData($context, (string)$index)) {
+                        $writer->finish();
+                        return;
+                    }
+                }
 
                 // For each index, create a separate response
                 foreach ($indices as $idx => $index) {
@@ -641,6 +668,9 @@ class LandingService extends LandingServiceStub
 
                         // Process each request
                         $data = $requestObj->getData();
+                        if ($this->rejectInvalidData($context, $data)) {
+                            return null;
+                        }
                         $allResults[] = [
                             'id' => $requestCount,
                             'idx' => $data,
@@ -757,6 +787,10 @@ class LandingService extends LandingServiceStub
                     $requestCount++;
 
                     if ($request instanceof TalkRequest) {
+                        if ($this->rejectInvalidData($context, $request->getData())) {
+                            $writer->finish();
+                            return;
+                        }
                         // Create and send response
                         $results = [[
                             'id' => $requestIndex,

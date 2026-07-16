@@ -313,6 +313,18 @@ func authUnaryInterceptor(expectedToken string) grpc.UnaryServerInterceptor {
 	}
 }
 
+// authStreamInterceptor applies the same bearer-token validation to all
+// server-, client-, and bidirectional-streaming calls.
+func authStreamInterceptor(expectedToken string) grpc.StreamServerInterceptor {
+	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if err := common.ValidateAuthToken(stream.Context(), expectedToken); err != nil {
+			log.Warnf("Auth failed for %s: %v", info.FullMethod, err)
+			return err
+		}
+		return handler(srv, stream)
+	}
+}
+
 // getCommonServerOptions returns common gRPC server options used by both secure and insecure servers
 func getCommonServerOptions() []grpc.ServerOption {
 	var opts []grpc.ServerOption
@@ -336,16 +348,23 @@ func getCommonServerOptions() []grpc.ServerOption {
 
 	// Add logging interceptor
 	loggingInterceptor := common.UnaryLoggingInterceptor()
+	streamLoggingInterceptor := common.StreamLoggingInterceptor()
 
 	// Add rate limiting
 	rateLimiter := common.NewLimiter(maxRequestsPerSecond)
 	rateInterceptor := common.UnaryServerInterceptor(rateLimiter)
+	streamRateInterceptor := common.StreamServerInterceptor(rateLimiter)
 
 	// Combine unary interceptors. OTel is wired separately below as a
 	// grpc.StatsHandler (otelgrpc v0.69 API) — keeping it out of the
 	// interceptor chain avoids a double-publish of every span and lets
 	// grpc-ecosystem-style chain semantics stay clean.
-	chained := []grpc.UnaryServerInterceptor{loggingInterceptor, rateInterceptor}
+	chained := []grpc.UnaryServerInterceptor{
+		common.UnaryRecoveryInterceptor(), loggingInterceptor, rateInterceptor,
+	}
+	streamChained := []grpc.StreamServerInterceptor{
+		common.StreamRecoveryInterceptor(), streamLoggingInterceptor, streamRateInterceptor,
+	}
 
 	// Prepend auth interceptor when GRPC_HELLO_AUTH_TOKEN is set, so
 	// unauthenticated requests are rejected before logging or rate
@@ -353,8 +372,10 @@ func getCommonServerOptions() []grpc.ServerOption {
 	if token := os.Getenv(common.AuthTokenEnvVar); token != "" {
 		log.Info("Per-call bearer token auth enabled (GRPC_HELLO_AUTH_TOKEN)")
 		chained = append([]grpc.UnaryServerInterceptor{authUnaryInterceptor(token)}, chained...)
+		streamChained = append([]grpc.StreamServerInterceptor{authStreamInterceptor(token)}, streamChained...)
 	}
 	opts = append(opts, grpc.UnaryInterceptor(common.ChainUnaryInterceptors(chained...)))
+	opts = append(opts, grpc.StreamInterceptor(common.ChainStreamInterceptors(streamChained...)))
 
 	// OpenTelemetry stats handler: traces both unary and stream RPCs in
 	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL

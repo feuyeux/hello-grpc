@@ -94,14 +94,19 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
                 let channel = with_keepalive(endpoint)
                     .connect()
                     .await
-                    .unwrap_or_else(|error| panic!("Failed to connect to etcd-resolved address: {:?}", error));
+                    .unwrap_or_else(|error| {
+                        panic!("Failed to connect to etcd-resolved address: {:?}", error)
+                    });
                 return LandingServiceClient::new(channel)
                     .send_compressed(CompressionEncoding::Gzip)
                     .accept_compressed(CompressionEncoding::Gzip);
             }
             Err(e) => {
                 error!("etcd discovery enabled but resolution failed: {}", e);
-                panic!("GRPC_HELLO_DISCOVERY=etcd but no service instance found: {}", e);
+                panic!(
+                    "GRPC_HELLO_DISCOVERY=etcd but no service instance found: {}",
+                    e
+                );
             }
         }
     }

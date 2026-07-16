@@ -182,7 +182,7 @@ class Client {
         // responses from servers that support them, matching other
         // language clients in this repo.
         codecRegistry: CodecRegistry(
-          codecs: [IdentityCodec(), GzipCodec()],
+          codecs: [const IdentityCodec(), const GzipCodec()],
         ),
       ),
     );
@@ -200,18 +200,16 @@ class Client {
       try {
         // 1. Unary RPC
         _logger.info('----- Executing unary RPC -----');
-        final unaryRequest =
-            TalkRequest()
-              ..data = '0'
-              ..meta = 'DART';
+        final unaryRequest = TalkRequest()
+          ..data = '0'
+          ..meta = 'DART';
         await executeUnaryCall(unaryRequest);
 
         // 2. Server streaming RPC
         _logger.info('----- Executing server streaming RPC -----');
-        final serverStreamRequest =
-            TalkRequest()
-              ..data = '0,1,2'
-              ..meta = 'DART';
+        final serverStreamRequest = TalkRequest()
+          ..data = '0,1,2'
+          ..meta = 'DART';
         await executeServerStreamingCall(serverStreamRequest);
 
         // 3. Client streaming RPC
@@ -262,10 +260,7 @@ class Client {
       // other language clients (the Dart grpc package has no built-in
       // service-config support).
       final response = await Retry.run('Talk', () {
-        return _stub!.talk(
-          request,
-          options: CallOptions(metadata: metadata),
-        );
+        return _stub!.talk(request, options: CallOptions(metadata: metadata));
       });
       final duration = DateTime.now().difference(startTime);
       _logger.info('Unary call successful in ${duration.inMilliseconds}ms');
@@ -422,10 +417,9 @@ class Client {
   List<TalkRequest> _buildLinkRequests() {
     return List.generate(
       defaultBatchSize,
-      (index) =>
-          TalkRequest()
-            ..data = Utils.randomId(5)
-            ..meta = 'DART',
+      (index) => TalkRequest()
+        ..data = Utils.randomId(5)
+        ..meta = 'DART',
     );
   }
 

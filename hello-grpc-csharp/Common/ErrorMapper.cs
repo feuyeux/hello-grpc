@@ -89,9 +89,9 @@ namespace Common
 
             return rpcException.StatusCode switch
             {
-                StatusCode.Unavailable or 
-                StatusCode.DeadlineExceeded or 
-                StatusCode.ResourceExhausted or 
+                StatusCode.Unavailable or
+                StatusCode.DeadlineExceeded or
+                StatusCode.ResourceExhausted or
                 StatusCode.Internal => true,
                 _ => false
             };
@@ -120,7 +120,7 @@ namespace Common
         /// <param name="exception">The exception that occurred</param>
         /// <param name="operation">The operation name</param>
         /// <param name="context">Additional context information</param>
-        public static void HandleRpcError(Exception exception, string operation, Dictionary<string, object> context = null)
+        public static void HandleRpcError(Exception exception, string operation, Dictionary<string, object>? context = null)
         {
             if (exception == null)
             {

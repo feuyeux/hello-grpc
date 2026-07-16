@@ -6,10 +6,13 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // Mock gRPC server stream implementation for server streaming tests
@@ -322,13 +325,22 @@ func TestCreateContextWithTracing(t *testing.T) {
 	assert.Equal(t, []string{"0"}, outgoingMd.Get("x-b3-flags"))
 	assert.Equal(t, []string{"test-span-context"}, outgoingMd.Get("x-ot-span-context"))
 
+	deadline, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	outgoingCtx = createContextWithTracing(deadline)
+	actualDeadline, ok := outgoingCtx.Deadline()
+	assert.True(t, ok)
+	expectedDeadline, _ := deadline.Deadline()
+	assert.Equal(t, expectedDeadline, actualDeadline)
+
 	// Test with context without tracing metadata
 	ctx = context.Background()
 	outgoingCtx = createContextWithTracing(ctx)
 
-	// Should return a blank context
+	// The original context must be returned so cancellation and deadlines survive.
 	_, ok = metadata.FromOutgoingContext(outgoingCtx)
 	assert.False(t, ok)
+	assert.Equal(t, ctx, outgoingCtx)
 }
 
 // TestBuildResult tests the result building function
@@ -337,10 +349,11 @@ func TestBuildResult(t *testing.T) {
 	server := &ProtoServer{}
 
 	// Test result building with valid index
-	result := server.buildResult("1")
+	result, err := server.buildResult("1")
 
 	// Validate the result
 	assert.NotNil(t, result)
+	assert.NoError(t, err)
 	assert.NotZero(t, result.Id)
 	assert.Equal(t, pb.ResultType_OK, result.Type)
 	assert.Contains(t, result.GetKv(), "id")
@@ -349,9 +362,20 @@ func TestBuildResult(t *testing.T) {
 	assert.Contains(t, result.GetKv(), "data")
 	assert.Equal(t, "GOLANG", result.GetKv()["meta"])
 
-	// Test with non-numeric ID (should default to index 0)
-	result = server.buildResult("non-numeric")
-	assert.Equal(t, "non-numeric", result.GetKv()["idx"])
+	for _, invalid := range []string{"non-numeric", "-1", "99", ""} {
+		result, err = server.buildResult(invalid)
+		assert.Nil(t, result)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	}
+}
+
+func TestTalkRejectsInvalidData(t *testing.T) {
+	server := &ProtoServer{}
+	for _, invalid := range []string{"-1", "99", "not-a-number", ""} {
+		response, err := server.Talk(context.Background(), &pb.TalkRequest{Data: invalid})
+		assert.Nil(t, response)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	}
 }
 
 // TestProxyingBehavior tests the proxying behavior when a backend client is configured

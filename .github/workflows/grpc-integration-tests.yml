@@ -2,7 +2,7 @@ name: gRPC Integration Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - 'hello-grpc-*/**'
       - 'integration-tests/**'
@@ -10,7 +10,7 @@ on:
       - 'docker/**'
       - '.github/workflows/grpc-integration-tests.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -18,144 +18,31 @@ permissions:
   checks: write
 
 jobs:
-  integration-tests:
-    name: Multi-Language Integration Tests
+  smoke-and-interop:
+    name: Same-language and cross-language RPC smoke tests
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 180
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker images
+      - name: Build all server and client images
         working-directory: docker
-        run: |
-          echo "Building Docker images for all languages..."
-          ./build_image.sh
+        run: ./build_image.sh --all --parallel
 
-      - name: Start integration test environment
-        working-directory: integration-tests
-        run: |
-          docker-compose up -d
-          sleep 30  # Wait for services to be ready
+      - name: Run same-language and interop tests
+        working-directory: docker
+        run: ./smoke_test_all.sh --interop
 
-      - name: Run RPC modes tests
-        working-directory: integration-tests
-        run: |
-          chmod +x test-rpc-modes.sh
-          ./test-rpc-modes.sh
-
-      - name: Run TLS tests
-        working-directory: integration-tests
-        run: |
-          chmod +x test-tls.sh
-          ./test-tls.sh
-
-      - name: Run metadata propagation tests
-        working-directory: integration-tests
-        run: |
-          chmod +x test-metadata.sh
-          ./test-metadata.sh
-
-      - name: Validate logs
-        working-directory: integration-tests
-        run: |
-          python3 validate-logs.py
-
-      - name: Collect service logs
-        if: always()
-        working-directory: integration-tests
-        run: |
-          mkdir -p logs
-          docker-compose logs > logs/all-services.log
-          docker-compose logs java-server > logs/java-server.log || true
-          docker-compose logs go-server > logs/go-server.log || true
-          docker-compose logs python-server > logs/python-server.log || true
-          docker-compose logs node-server > logs/node-server.log || true
-          docker-compose logs rust-server > logs/rust-server.log || true
-          docker-compose logs go-server-tls > logs/go-server-tls.log || true
-          docker-compose logs java-server-tls > logs/java-server-tls.log || true
-          docker-compose logs python-server-tls > logs/python-server-tls.log || true
-          docker-compose logs node-server-tls > logs/node-server-tls.log || true
-          docker-compose logs rust-server-tls > logs/rust-server-tls.log || true
-
-      - name: Upload integration test logs
+      - name: Upload logs and interop matrix
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-logs
-          path: integration-tests/logs/
-          retention-days: 7
-
-      - name: Cleanup
-        if: always()
-        working-directory: integration-tests
-        run: docker-compose down -v
-
-  interop-tests:
-    name: Cross-Language Interop Tests
-    runs-on: ubuntu-latest
-    needs: [integration-tests]
-    if: always()
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker images
-        working-directory: docker
-        run: |
-          echo "Building Docker images for interop tests..."
-          ./build_image.sh
-
-      - name: Run cross-language interop matrix
-        working-directory: integration-tests
-        run: |
-          chmod +x test-interop.sh
-          ./test-interop.sh -s go,java,python,node,rust -c go,java,python,node,rust -o interop-results.json || true
-
-      - name: Display interop results
-        if: always()
-        working-directory: integration-tests
-        run: |
-          echo "## Cross-Language Interop Matrix" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f interop-results.json ]; then
-            cat interop-results.json
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo '```json' >> $GITHUB_STEP_SUMMARY
-            cat interop-results.json >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No interop results file found." >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Upload interop results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: interop-test-results
-          path: integration-tests/interop-results.json
+          name: grpc-integration-results
+          path: docker/smoke_logs/
+          if-no-files-found: error
           retention-days: 14
 
-  test-summary:
-    name: Test Summary
-    runs-on: ubuntu-latest
-    needs: [integration-tests, interop-tests]
-    if: always()
-    
-    steps:
-      - name: Generate test summary
-        run: |
-          echo "# Integration Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Status" >> $GITHUB_STEP_SUMMARY
-          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Interop Tests: ${{ needs.interop-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY
+      - name: Cleanup containers
+        if: always()
+        run: docker ps -aq --filter 'name=grpc_' | xargs -r docker rm -f

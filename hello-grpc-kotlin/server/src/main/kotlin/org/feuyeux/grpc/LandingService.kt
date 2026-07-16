@@ -91,16 +91,11 @@ class LandingService(openTelemetry: OpenTelemetry = OpenTelemetry.noop()) :
     }
 
     fun buildResult(id: String): TalkResult {
-        val index = try {
-            id.toInt()
-        } catch (ignored: NumberFormatException) {
-            0
+        val index = id.toIntOrNull()
+        require(index != null && index in Utils.helloList.indices) {
+            "data must be an integer between 0 and ${Utils.helloList.lastIndex}"
         }
-        val hello: String = if (index > 5) {
-            "你好"
-        } else {
-            Utils.helloList[index]
-        }
+        val hello: String = Utils.helloList[index]
         val kv: MutableMap<String, String> = HashMap()
         kv["id"] = UUID.randomUUID().toString()
         kv["idx"] = id

@@ -57,9 +57,6 @@ const List<String> tracingHeaders = [
 /// This server always returns SERVING (1) for every service name, which is
 /// the correct behaviour for a healthy, running server.
 class HealthCheckService extends grpc_api.Service {
-  @override
-  String get $name => 'grpc.health.v1.Health';
-
   HealthCheckService() {
     $addMethod(
       grpc_api.ServiceMethod<List<int>, List<int>>(
@@ -82,6 +79,8 @@ class HealthCheckService extends grpc_api.Service {
       ),
     );
   }
+  @override
+  String get $name => 'grpc.health.v1.Health';
 
   /// Encode a HealthCheckResponse with status=SERVING (1).
   ///
@@ -116,19 +115,6 @@ class HealthCheckService extends grpc_api.Service {
 /// this implementation handles the small v1alpha reflection wire format
 /// directly and serves the embedded FileDescriptorProto for landing.proto.
 class ReflectionService extends grpc_api.Service {
-  @override
-  String get $name => 'grpc.reflection.v1alpha.ServerReflection';
-
-  static final List<int> _landingFileDescriptorProto = base64Decode(
-    'Cg1sYW5kaW5nLnByb3RvEgVoZWxsbyI1CgtUYWxrUmVxdWVzdBISCgRkYXRhGAEgASgJUgRkYXRhEhIKBG1ldGEYAiABKAlSBG1ldGEiUwoMVGFsa1Jlc3BvbnNlEhYKBnN0YXR1cxgBIAEoBVIGc3RhdHVzEisKB3Jlc3VsdHMYAiADKAsyES5oZWxsby5UYWxrUmVzdWx0UgdyZXN1bHRzIqUBCgpUYWxrUmVzdWx0Eg4KAmlkGAEgASgDUgJpZBIlCgR0eXBlGAIgASgOMhEuaGVsbG8uUmVzdWx0VHlwZVIEdHlwZRIpCgJrdhgDIAMoCzIZLmhlbGxvLlRhbGtSZXN1bHQuS3ZFbnRyeVICa3YaNQoHS3ZFbnRyeRIQCgNrZXkYASABKAlSA2tleRIUCgV2YWx1ZRgCIAEoCVIFdmFsdWU6AjgBKh4KClJlc3VsdFR5cGUSBgoCT0sQABIICgRGQUlMEAEyiwIKDkxhbmRpbmdTZXJ2aWNlEjEKBFRhbGsSEi5oZWxsby5UYWxrUmVxdWVzdBoTLmhlbGxvLlRhbGtSZXNwb25zZSIAEkAKEVRhbGtPbmVBbnN3ZXJNb3JlEhIuaGVsbG8uVGFsa1JlcXVlc3QaEy5oZWxsby5UYWxrUmVzcG9uc2UiADABEkAKEVRhbGtNb3JlQW5zd2VyT25lEhIuaGVsbG8uVGFsa1JlcXVlc3QaEy5oZWxsby5UYWxrUmVzcG9uc2UiACgBEkIKEVRhbGtCaWRpcmVjdGlvbmFsEhIuaGVsbG8uVGFsa1JlcXVlc3QaEy5oZWxsby5UYWxrUmVzcG9uc2UiACgBMAFCLgoWb3JnLmZldXlldXguZ3JwYy5wcm90b0IHTGFuZGluZ1ABWgljb21tb24vcGJiBnByb3RvMw==',
-  );
-
-  static const List<String> _serviceNames = [
-    'hello.LandingService',
-    'grpc.health.v1.Health',
-    'grpc.reflection.v1alpha.ServerReflection',
-  ];
-
   ReflectionService() {
     $addMethod(
       grpc_api.ServiceMethod<List<int>, List<int>>(
@@ -141,6 +127,18 @@ class ReflectionService extends grpc_api.Service {
       ),
     );
   }
+  @override
+  String get $name => 'grpc.reflection.v1alpha.ServerReflection';
+
+  static final List<int> _landingFileDescriptorProto = base64Decode(
+    'Cg1sYW5kaW5nLnByb3RvEgVoZWxsbyI1CgtUYWxrUmVxdWVzdBISCgRkYXRhGAEgASgJUgRkYXRhEhIKBG1ldGEYAiABKAlSBG1ldGEiUwoMVGFsa1Jlc3BvbnNlEhYKBnN0YXR1cxgBIAEoBVIGc3RhdHVzEisKB3Jlc3VsdHMYAiADKAsyES5oZWxsby5UYWxrUmVzdWx0UgdyZXN1bHRzIqUBCgpUYWxrUmVzdWx0Eg4KAmlkGAEgASgDUgJpZBIlCgR0eXBlGAIgASgOMhEuaGVsbG8uUmVzdWx0VHlwZVIEdHlwZRIpCgJrdhgDIAMoCzIZLmhlbGxvLlRhbGtSZXN1bHQuS3ZFbnRyeVICa3YaNQoHS3ZFbnRyeRIQCgNrZXkYASABKAlSA2tleRIUCgV2YWx1ZRgCIAEoCVIFdmFsdWU6AjgBKh4KClJlc3VsdFR5cGUSBgoCT0sQABIICgRGQUlMEAEyiwIKDkxhbmRpbmdTZXJ2aWNlEjEKBFRhbGsSEi5oZWxsby5UYWxrUmVxdWVzdBoTLmhlbGxvLlRhbGtSZXNwb25zZSIAEkAKEVRhbGtPbmVBbnN3ZXJNb3JlEhIuaGVsbG8uVGFsa1JlcXVlc3QaEy5oZWxsby5UYWxrUmVzcG9uc2UiADABEkAKEVRhbGtNb3JlQW5zd2VyT25lEhIuaGVsbG8uVGFsa1JlcXVlc3QaEy5oZWxsby5UYWxrUmVzcG9uc2UiACgBEkIKEVRhbGtCaWRpcmVjdGlvbmFsEhIuaGVsbG8uVGFsa1JlcXVlc3QaEy5oZWxsby5UYWxrUmVzcG9uc2UiACgBMAFCLgoWb3JnLmZldXlldXguZ3JwYy5wcm90b0IHTGFuZGluZ1ABWgljb21tb24vcGJiBnByb3RvMw==',
+  );
+
+  static const List<String> _serviceNames = [
+    'hello.LandingService',
+    'grpc.health.v1.Health',
+    'grpc.reflection.v1alpha.ServerReflection',
+  ];
 
   Stream<List<int>> _serverReflectionInfo(
     grpc.ServiceCall call,
@@ -176,7 +174,9 @@ class ReflectionService extends grpc_api.Service {
   }
 
   static bool _matchesLandingSymbol(String? symbol) {
-    if (symbol == null || symbol.isEmpty) return false;
+    if (symbol == null || symbol.isEmpty) {
+      return false;
+    }
     return symbol == 'hello' ||
         symbol == 'hello.LandingService' ||
         symbol.startsWith('hello.LandingService.') ||
@@ -226,11 +226,7 @@ class _ReflectionRequest {
     required this.listServices,
   });
 
-  final String? fileByFilename;
-  final String? fileContainingSymbol;
-  final String? listServices;
-
-  static _ReflectionRequest decode(List<int> data) {
+  factory _ReflectionRequest.decode(List<int> data) {
     var pos = 0;
     String? fileByFilename;
     String? fileContainingSymbol;
@@ -267,6 +263,10 @@ class _ReflectionRequest {
       listServices: listServices,
     );
   }
+
+  final String? fileByFilename;
+  final String? fileContainingSymbol;
+  final String? listServices;
 }
 
 class _VarintResult {
@@ -287,7 +287,7 @@ _VarintResult _readVarint(List<int> data, int pos) {
     }
     shift += 7;
   }
-  throw grpc.GrpcError.invalidArgument('Malformed reflection request');
+  throw const grpc.GrpcError.invalidArgument('Malformed reflection request');
 }
 
 int _skipField(List<int> data, int pos, int wireType) {
@@ -372,8 +372,9 @@ class Server {
         final backendHost = Conn.backendHost!;
         final backendPortStr =
             io.Platform.environment['GRPC_HELLO_BACKEND_PORT'];
-        final backendPort =
-            backendPortStr != null ? int.parse(backendPortStr) : 9996;
+        final backendPort = backendPortStr != null
+            ? int.parse(backendPortStr)
+            : 9996;
 
         _logger.info('Connecting to backend at $backendHost:$backendPort');
 
@@ -381,12 +382,11 @@ class Server {
           backendHost,
           port: backendPort,
           options: grpc.ChannelOptions(
-            credentials:
-                Conn.isSecure
-                    ? grpc.ChannelCredentials.secure(
-                      certificates: await File(Conn.rootCertPath).readAsBytes(),
-                    )
-                    : const grpc.ChannelCredentials.insecure(),
+            credentials: Conn.isSecure
+                ? grpc.ChannelCredentials.secure(
+                    certificates: await File(Conn.rootCertPath).readAsBytes(),
+                  )
+                : const grpc.ChannelCredentials.insecure(),
             // Client-side HTTP/2 keepalive for the proxy backend channel.
             keepAlive: const grpc.ClientKeepAliveOptions(
               pingInterval: Duration(seconds: 10),
@@ -396,7 +396,7 @@ class Server {
             // Advertise gzip + identity so the backend can accept
             // compressed responses when it supports them.
             codecRegistry: grpc.CodecRegistry(
-              codecs: [grpc.IdentityCodec(), grpc.GzipCodec()],
+              codecs: [const grpc.IdentityCodec(), const grpc.GzipCodec()],
             ),
           ),
         );
@@ -418,7 +418,7 @@ class Server {
         // Enable gzip decompression so cross-language clients (e.g. Java)
         // that send grpc-encoding: gzip are handled transparently.
         codecRegistry: grpc.CodecRegistry(
-          codecs: [grpc.IdentityCodec(), grpc.GzipCodec()],
+          codecs: [const grpc.IdentityCodec(), const grpc.GzipCodec()],
         ),
       );
 
@@ -526,18 +526,11 @@ class LandingService extends LandingServiceBase {
   ///
   /// [id] The request ID (typically a language index)
   TalkResult createResponse(String id) {
-    // Parse the ID as an integer
-    int index;
-    try {
-      index = int.parse(id);
-
-      // Check for index out of bounds
-      if (index < 0 || index >= greetings.length) {
-        index = 0;
-      }
-    } on Exception {
-      // Default to first greeting on parsing error
-      index = 0;
+    final index = int.tryParse(id);
+    if (index == null || index < 0 || index >= greetings.length) {
+      throw grpc.GrpcError.invalidArgument(
+        'data must be an integer between 0 and ${greetings.length - 1}',
+      );
     }
 
     // Get the greeting for this index
@@ -552,10 +545,9 @@ class LandingService extends LandingServiceBase {
     };
 
     // Create result
-    final result =
-        TalkResult()
-          ..id = Utils.timestamp()
-          ..type = ResultType.OK;
+    final result = TalkResult()
+      ..id = Utils.timestamp()
+      ..type = ResultType.OK;
 
     result.kv.addAll(kv);
     return result;

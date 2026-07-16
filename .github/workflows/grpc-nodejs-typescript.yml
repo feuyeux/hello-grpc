@@ -1,6 +1,7 @@
 name: gRPC Node.js & TypeScript
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:
@@ -26,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18', '20']
+        node-version: ['20', '22']
     
     steps:
       - name: Checkout repository
@@ -36,16 +37,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-        # cache: 'npm' removed: hello-grpc-{nodejs,ts}/package-lock.json
-        # files are .gitignore'd (see '*.lock' rule) and not present on
-        # fresh CI runners. The older config failed setup-node with
-        # 'Some specified paths were not resolved, unable to cache
-        # dependencies.' and silently aborted the rest of the job.
-        # npm ci installs cold each run.
+          cache: 'npm'
+          cache-dependency-path: hello-grpc-nodejs/package-lock.json
 
       - name: Install Node.js dependencies
         working-directory: hello-grpc-nodejs
         run: npm ci
+
+      - name: Verify Node.js protobuf stubs
+        working-directory: hello-grpc-nodejs
+        run: |
+          npm run generate-proto
+          git diff --exit-code -- src/proto
 
       - name: Run Node.js tests
         working-directory: hello-grpc-nodejs
@@ -64,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18', '20']
+        node-version: ['20', '22']
     
     steps:
       - name: Checkout repository
@@ -74,25 +77,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-        # cache: 'npm' removed: see nodejs-build-test step above.
+          cache: 'npm'
+          cache-dependency-path: hello-grpc-ts/package-lock.json
 
       - name: Install TypeScript dependencies
         working-directory: hello-grpc-ts
         run: npm ci
 
-      # Regenerate the grpc-js protobuf .d.ts stubs from proto/.
-      # Replaces the legacy 'import grpc from "grpc"' d.ts that was
-      # checked in by an earlier commit (5e86fd0) with the @grpc/grpc-js
-      # form that matches the runtime import in hello_server.ts.
-      # Idempotent: produces no diff when the source proto is unchanged
-      # and the existing d.ts already matches the generator output.
-      - name: Regenerate TypeScript protobuf stubs
-        working-directory: hello-grpc-ts
-        run: npm run generate-proto
-
       - name: Build TypeScript project
         working-directory: hello-grpc-ts
-        run: npm run build
+        run: |
+          npm run build
+          git diff --exit-code -- src/proto
 
       - name: Run TypeScript tests
         working-directory: hello-grpc-ts

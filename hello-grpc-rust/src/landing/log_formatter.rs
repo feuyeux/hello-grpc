@@ -1,21 +1,23 @@
-use log::{info, error};
+use log::{error, info};
 use std::time::Instant;
-use tonic::{Request, metadata::MetadataMap, Status};
+use tonic::{Request, Status, metadata::MetadataMap};
 
 const SERVICE_NAME: &str = "rust";
 
 /// Extract request ID from metadata
 pub fn extract_request_id(metadata: &MetadataMap) -> String {
     // Try multiple request ID header variants
-    if let Some(value) = metadata.get("x-request-id") {
-        if let Ok(s) = value.to_str() {
-            return s.to_string();
-        }
+    if let Some(s) = metadata
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+    {
+        return s.to_string();
     }
-    if let Some(value) = metadata.get("request-id") {
-        if let Ok(s) = value.to_str() {
-            return s.to_string();
-        }
+    if let Some(s) = metadata
+        .get("request-id")
+        .and_then(|value| value.to_str().ok())
+    {
+        return s.to_string();
     }
     "unknown".to_string()
 }
@@ -72,9 +74,17 @@ pub fn log_request_error(
     let duration_ms = start_time.elapsed().as_millis();
     let error_code = format!("{:?}", status.code());
     let message = status.message();
-    
+
     error!(
         "service={} request_id={} method={} peer={} secure={} duration_ms={} status={} error_code={} message={}",
-        SERVICE_NAME, request_id, method, peer, secure, duration_ms, error_code, error_code, message
+        SERVICE_NAME,
+        request_id,
+        method,
+        peer,
+        secure,
+        duration_ms,
+        error_code,
+        error_code,
+        message
     );
 }

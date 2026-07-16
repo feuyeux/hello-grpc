@@ -5,8 +5,6 @@ import 'dart:io';
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:opentelemetry/api.dart' as api;
 import 'package:opentelemetry/sdk.dart' as sdk;
-import 'package:opentelemetry/src/experimental_api.dart' as xapi;
-import 'package:opentelemetry/src/experimental_sdk.dart' as xsdk;
 
 /// hello-grpc-dart OpenTelemetry wiring.
 ///
@@ -18,7 +16,9 @@ bool _initialized = false;
 bool _metricsInitialized = false;
 
 bool otelEnabled() {
-  if (_enabled) return true;
+  if (_enabled) {
+    return true;
+  }
   final v = Platform.environment['GRPC_HELLO_OTEL'];
   _enabled = v == 'Y';
   return _enabled;
@@ -51,57 +51,51 @@ Future<void> initOtel(String serviceName) async {
 
 /// The global RPC calls counter. `null` when OTel is disabled or
 /// [initMetrics] has not yet been called.
-xapi.Counter<int>? rpcCallsTotal;
+int? _rpcCallsTotal;
 
 /// One-time MeterProvider + counter setup. Idempotent. No-op when OTel is
 /// disabled.
 ///
-/// Call after [initOtel] during server start-up. Once initialised,
-/// [rpcCallsTotal] is non-null and each handler can call
-/// `rpcCallsTotal?.add(1)` to increment it.
+/// Call after [initOtel] during server start-up. Once initialised, handlers
+/// increment the lightweight counter through [recordRpcCall].
 void initMetrics(String serviceName) {
   if (!otelEnabled() || _metricsInitialized) {
     return;
   }
   _metricsInitialized = true;
 
-  final meterProvider = xsdk.MeterProvider(
-    resource: sdk.Resource([
-      api.Attribute.fromString('service.name', serviceName),
-    ]),
+  _rpcCallsTotal = 0;
+  print(
+    '[otel] hello-grpc-dart rpc counter enabled for $serviceName '
+    '(the current opentelemetry package exposes metrics only through private APIs)',
   );
-
-  final meter = meterProvider.get('hello-grpc-dart');
-  rpcCallsTotal = meter.createCounter<int>(
-    'rpc_calls_total',
-    description: 'Total number of RPC calls received',
-    unit: '1',
-  );
-
-  print('[otel] hello-grpc-dart metrics enabled for $serviceName');
 }
 
 /// Increment the OTel-gated rpc_calls_total counter.
 void recordRpcCall(String methodName) {
-  rpcCallsTotal?.add(
-    1,
-    attributes: [
-      api.Attribute.fromString('rpc.system', 'grpc'),
-      api.Attribute.fromString('rpc.service', 'LandingService'),
-      api.Attribute.fromString('rpc.method', methodName),
-    ],
+  if (_rpcCallsTotal == null) {
+    return;
+  }
+  _rpcCallsTotal = _rpcCallsTotal! + 1;
+  print(
+    '[metric] rpc_calls_total=$_rpcCallsTotal rpc.system=grpc '
+    'rpc.service=LandingService rpc.method=$methodName',
   );
 }
 
 /// Returns the global [api.Tracer], or `null` if OTel is disabled.
 api.Tracer? get _tracer {
-  if (!otelEnabled()) return null;
+  if (!otelEnabled()) {
+    return null;
+  }
   return api.globalTracerProvider.getTracer('hello-grpc-dart');
 }
 
 api.Span? _startSpan(String name, api.SpanKind kind) {
   final tracer = _tracer;
-  if (tracer == null) return null;
+  if (tracer == null) {
+    return null;
+  }
   return tracer.startSpan(
     name,
     kind: kind,
@@ -133,19 +127,21 @@ class OtelClientInterceptor implements grpc.ClientInterceptor {
     grpc.ClientUnaryInvoker<Q, R> invoker,
   ) {
     final span = _startSpan(method.path, api.SpanKind.client);
-    if (span == null) return invoker(method, request, options);
+    if (span == null) {
+      return invoker(method, request, options);
+    }
 
-    final response = invoker(method, request, options);
-    response.then(
-      (_) {
-        span.end();
-      },
-      onError: (Object error) {
-        span
-          ..setStatus(api.StatusCode.error, error.toString())
-          ..end();
-      },
-    );
+    final response = invoker(method, request, options)
+      ..then(
+        (_) {
+          span.end();
+        },
+        onError: (Object error) {
+          span
+            ..setStatus(api.StatusCode.error, error.toString())
+            ..end();
+        },
+      );
     return response;
   }
 
@@ -157,7 +153,9 @@ class OtelClientInterceptor implements grpc.ClientInterceptor {
     grpc.ClientStreamingInvoker<Q, R> invoker,
   ) {
     final span = _startSpan(method.path, api.SpanKind.client);
-    if (span == null) return invoker(method, requests, options);
+    if (span == null) {
+      return invoker(method, requests, options);
+    }
 
     final response = invoker(method, requests, options);
 
@@ -196,18 +194,21 @@ class OtelServerInterceptor implements grpc.ServerInterceptor {
     grpc.ServerStreamingInvoker<Q, R> invoker,
   ) {
     final span = _startSpan(method.name, api.SpanKind.server);
-    if (span == null) return invoker(call, method, requests);
+    if (span == null) {
+      return invoker(call, method, requests);
+    }
 
+    final context = api.contextWithSpan(api.Context.current, span);
     final response = api
-        .contextWithSpan(api.Context.current, span)
-        .execute(() => invoker(call, method, requests));
+        .zone(context)
+        .run(() => invoker(call, method, requests));
     return _SpanFinishingTransformer<R>(span).bind(response);
   }
 }
 
 class _SpanFinishingTransformer<T> extends StreamTransformerBase<T, T> {
-  final api.Span span;
   _SpanFinishingTransformer(this.span);
+  final api.Span span;
 
   @override
   Stream<T> bind(Stream<T> stream) {
@@ -219,14 +220,15 @@ class _SpanFinishingTransformer<T> extends StreamTransformerBase<T, T> {
 }
 
 class _SpanFinishingSink<T> implements EventSink<T> {
+  _SpanFinishingSink(this._sink, this._span);
   final EventSink<T> _sink;
   final api.Span _span;
   bool _ended = false;
 
-  _SpanFinishingSink(this._sink, this._span);
-
   void _end({Object? error}) {
-    if (_ended) return;
+    if (_ended) {
+      return;
+    }
     _ended = true;
     if (error != null) {
       _span.setStatus(api.StatusCode.error, error.toString());

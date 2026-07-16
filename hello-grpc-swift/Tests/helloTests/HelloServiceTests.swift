@@ -33,7 +33,10 @@ struct HelloServiceTests {
         )
 
         // Call the service method
-        let response = try await helloService.talk(request: testRequest, context: mockContext)
+        let response = try await helloService.talk(
+            request: .init(metadata: [:], message: testRequest),
+            context: mockContext
+        )
 
         // Verify the request was passed through correctly to the backend
         let requestData = await mockBackend.getLastRequestData()
@@ -42,12 +45,38 @@ struct HelloServiceTests {
         #expect(requestMeta == testRequest.meta)
 
         // Verify the response from the backend was returned without modification
-        #expect(response.status == 200)
-        #expect(response.results.count == 1)
-        #expect(response.results[0].id == 12345)
-        #expect(response.results[0].type == Hello_ResultType.ok)
-        #expect(response.results[0].kv["id"] == "test-id")
-        #expect(response.results[0].kv["data"] == "test-data")
+        let message = try response.message
+        #expect(message.status == 200)
+        #expect(message.results.count == 1)
+        #expect(message.results[0].id == 12345)
+        #expect(message.results[0].type == Hello_ResultType.ok)
+        #expect(message.results[0].kv["id"] == "test-id")
+        #expect(message.results[0].kv["data"] == "test-data")
+    }
+
+    @Test("HelloService.talk should reject invalid data in local mode")
+    func testTalkRejectsInvalidData() async throws {
+        let helloService = HelloService(backendConfig: nil, certBasePath: "")
+        let descriptor = MethodDescriptor(
+            service: GRPCCore.ServiceDescriptor(fullyQualifiedService: "hello.LandingService"),
+            method: "Talk"
+        )
+        let context = GRPCCore.ServerContext(
+            descriptor: descriptor,
+            remotePeer: "test-peer",
+            localPeer: "local-peer",
+            cancellation: GRPCCore.ServerContext.RPCCancellationHandle()
+        )
+
+        do {
+            _ = try await helloService.talk(
+                request: .init(metadata: [:], message: .with { $0.data = "99" }),
+                context: context
+            )
+            Issue.record("Expected INVALID_ARGUMENT")
+        } catch let error as RPCError {
+            #expect(error.code == .invalidArgument)
+        }
     }
 }
 

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -158,12 +160,13 @@ public class LandingServiceImplTest {
   }
 
   @Test
-  @DisplayName("Unary RPC with non-numeric data falls back to index 0")
+  @DisplayName("Unary RPC rejects invalid data")
   public void testTalkWithInvalidData() {
-    TalkRequest request = TalkRequest.newBuilder().setMeta("JAVA").setData("not-a-number").build();
-    TalkResponse response = blockingStub.talk(request);
-
-    assertEquals(200, response.getStatus());
-    assertEquals(1, response.getResultsCount());
+    for (String invalid : List.of("", "not-a-number", "-1", "99")) {
+      TalkRequest request = TalkRequest.newBuilder().setMeta("JAVA").setData(invalid).build();
+      StatusRuntimeException error =
+          assertThrows(StatusRuntimeException.class, () -> blockingStub.talk(request));
+      assertEquals(Status.Code.INVALID_ARGUMENT, error.getStatus().getCode());
+    }
   }
 }

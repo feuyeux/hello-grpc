@@ -42,20 +42,18 @@ jobs:
 
       - name: Test Flutter changes
         if: contains(github.head_ref, 'flutter') || contains(steps.metadata.outputs.directory, 'flutter')
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: |
           flutter pub get
           flutter analyze
           flutter test
-        continue-on-error: true
 
       - name: Test Tauri changes
         if: contains(github.head_ref, 'tauri') || contains(steps.metadata.outputs.directory, 'tauri')
-        working-directory: hello-grpc-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri
         run: |
           npm install
           npm run tauri build --debug
-        continue-on-error: true
 
       - name: Auto-approve minor and patch updates
         if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch' }}
@@ -106,7 +104,6 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
           allowed-conclusions: success,neutral,skipped
-        continue-on-error: true
 
       - name: Auto-approve automated PRs
         run: gh pr review --approve "$PR_URL"

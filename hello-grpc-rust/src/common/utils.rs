@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 
 use crate::common::landing::TalkRequest;
 
-pub static HELLOS: [&'static str; 6] = [
+pub static HELLOS: [&str; 6] = [
     "Hello",
     "Bonjour",
     "Hola",
@@ -60,7 +60,7 @@ pub fn get_version() -> String {
     let Ok(content) = fs::read_to_string(cargo_path) else {
         // If file reading fails, use hardcoded versions from Cargo.toml
         // These should be updated when dependencies change
-        return format!("tonic.version=0.9.2 (prost.version=0.11.9)");
+        return "tonic.version=0.14.2 (prost.version=0.14.1)".to_string();
     };
 
     let tonic_version =

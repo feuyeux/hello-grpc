@@ -27,7 +27,10 @@ fn get_endpoint() -> String {
     }
 }
 
-async fn post(path: &str, payload: serde_json::Value) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
+async fn post(
+    path: &str,
+    payload: serde_json::Value,
+) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}{}", get_endpoint(), path);
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(5))
@@ -59,17 +62,20 @@ pub fn is_etcd_discovery() -> bool {
 
 pub async fn resolve_from_etcd() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let resp = post("/v3/kv/range", json!({ "key": b64(ETCD_KEY) })).await?;
-    if let Some(kvs) = resp["kvs"].as_array() {
-        if !kvs.is_empty() {
-            if let Some(val) = kvs[0]["value"].as_str() {
-                return Ok(b64_decode(val));
-            }
-        }
+    if let Some(val) = resp["kvs"]
+        .as_array()
+        .and_then(|kvs| kvs.first())
+        .and_then(|kv| kv["value"].as_str())
+    {
+        return Ok(b64_decode(val));
     }
     Err("no service instance found in etcd".into())
 }
 
-pub async fn register_to_etcd(host: &str, port: u16) -> Result<oneshot::Sender<()>, Box<dyn std::error::Error + Send + Sync>> {
+pub async fn register_to_etcd(
+    host: &str,
+    port: u16,
+) -> Result<oneshot::Sender<()>, Box<dyn std::error::Error + Send + Sync>> {
     let address = format!("{}:{}", host, port);
     // Grant lease
     let lease_resp = post("/v3/lease/grant", json!({ "TTL": DEFAULT_TTL })).await?;
@@ -82,11 +88,15 @@ pub async fn register_to_etcd(host: &str, port: u16) -> Result<oneshot::Sender<(
         return Err(format!("etcd lease grant failed: {:?}", lease_resp).into());
     }
     // Put key with lease
-    post("/v3/kv/put", json!({
-        "key": b64(ETCD_KEY),
-        "value": b64(&address),
-        "lease": lease_id.to_string(),
-    })).await?;
+    post(
+        "/v3/kv/put",
+        json!({
+            "key": b64(ETCD_KEY),
+            "value": b64(&address),
+            "lease": lease_id.to_string(),
+        }),
+    )
+    .await?;
     info!("Registered with etcd: {} (lease={})", address, lease_id);
 
     // Start keepalive task

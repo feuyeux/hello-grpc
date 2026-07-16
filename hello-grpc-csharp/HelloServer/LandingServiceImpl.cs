@@ -40,7 +40,7 @@ namespace HelloServer
         {
             _log.Info($"Talk REQUEST: data={request.Data}, meta={request.Meta}");
             _rpcCallsCounter.Add(1);
-            
+
             if (_protoClient == null)
             {
                 // Direct mode: handle request locally
@@ -140,7 +140,7 @@ namespace HelloServer
                 var headers = CreateProxyHeaders(context.RequestHeaders);
                 using var call = _protoClient.TalkMoreAnswerOne(headers);
                 var stopwatch = Stopwatch.StartNew();
-                
+
                 while (await requestStream.MoveNext())
                 {
                     var request = requestStream.Current;
@@ -150,7 +150,7 @@ namespace HelloServer
 
                 await call.RequestStream.CompleteAsync();
                 var talkResponse = await call.ResponseAsync;
-                
+
                 stopwatch.Stop();
                 _log.Info($"Client streaming completed in {stopwatch.ElapsedMilliseconds}ms");
                 return talkResponse;
@@ -192,7 +192,7 @@ namespace HelloServer
                 // Proxy mode: forward bidirectional stream to backend
                 var headers = CreateProxyHeaders(context.RequestHeaders);
                 using var call = _protoClient.TalkBidirectional(headers);
-                
+
                 // Start receiving responses in a separate task
                 var responseReaderTask = Task.Run(async () =>
                 {
@@ -223,7 +223,14 @@ namespace HelloServer
         /// <returns>A TalkResult with generated data</returns>
         private TalkResult BuildResult(string id)
         {
-            var hello = Utils.HelloList[int.Parse(id)];
+            if (!int.TryParse(id, out var index) || index < 0 || index >= Utils.HelloList.Count)
+            {
+                throw new RpcException(new Status(
+                    StatusCode.InvalidArgument,
+                    $"data must be an integer between 0 and {Utils.HelloList.Count - 1}"));
+            }
+
+            var hello = Utils.HelloList[index];
             return new TalkResult
             {
                 Id = DateTimeOffset.Now.ToUnixTimeSeconds(),
@@ -271,7 +278,7 @@ namespace HelloServer
             // Add proxy identification headers
             headers.Add("x-proxy-by", "csharp-proxy");
             headers.Add("x-proxy-timestamp", DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString());
-            
+
             // Log the headers we're sending
             _log.Info("Proxying request with headers:");
             foreach (var header in headers)

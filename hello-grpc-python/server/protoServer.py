@@ -19,23 +19,24 @@ This server follows the standardized structure:
 6. Cleanup and shutdown
 """
 
-from conn import otel
-from conn.log_formatter import LoggingInterceptor
-from conn import connection, utils, landing_pb2, landing_pb2_grpc, error_mapper
-import os
-import sys
 import logging
-from logging.handlers import RotatingFileHandler
-import time
-import uuid
+import os
 import platform
 import signal
+import sys
 import threading
+import time
+import uuid
 from concurrent import futures
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
+
+from conn import connection, error_mapper, landing_pb2, landing_pb2_grpc, otel, utils
+from conn.log_formatter import LoggingInterceptor
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -53,22 +54,25 @@ SHUTDOWN_GRACE_PERIOD_SECONDS = 30
 # captures the whole client<->server conversation. Pattern mirrors
 # conn/connection.py (client side).
 os.makedirs("log", exist_ok=True)
-logger = logging.getLogger('grpc-server')
+logger = logging.getLogger("grpc-server")
 logger.setLevel(logging.INFO)
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 console_formatter = logging.Formatter(
-    '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S.%f')
+    "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S.%f",
+)
 console.setFormatter(console_formatter)
 
 file_handler = RotatingFileHandler(
-    'log/hello-grpc.log', maxBytes=19500 * 1024, backupCount=5)
+    "log/hello-grpc.log", maxBytes=19500 * 1024, backupCount=5
+)
 file_handler.setLevel(logging.INFO)
 file_formatter = logging.Formatter(
-    '[%(asctime)s] [%(threadName)s] [%(levelname)s] [%(name)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S.%f')
+    "[%(asctime)s] [%(threadName)s] [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S.%f",
+)
 file_handler.setFormatter(file_formatter)
 
 logger.addHandler(console)
@@ -87,7 +91,7 @@ TRACING_HEADERS = [
     "x-b3-parentspanid",
     "x-b3-sampled",
     "x-b3-flags",
-    "x-ot-span-context"
+    "x-ot-span-context",
 ]
 
 
@@ -133,11 +137,11 @@ def get_certificate_paths():
         base_path / "cert.pem",
         base_path / "private.key",
         base_path / "full_chain.pem",
-        base_path / "myssl_root.cer"
+        base_path / "myssl_root.cer",
     )
 
 
-def create_response(data):
+def create_response(data, context=None):
     """
     Create a TalkResult object with response data.
 
@@ -147,7 +151,16 @@ def create_response(data):
     Returns:
         landing_pb2.TalkResult: A result object with timestamp, type and key-value data
     """
-    index = int(data)
+    try:
+        index = int(data)
+    except (TypeError, ValueError):
+        index = -1
+
+    if index < 0 or index >= len(utils.hellos):
+        message = f"data must be an integer between 0 and {len(utils.hellos) - 1}"
+        if context is not None:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, message)
+        raise ValueError(message)
     hello = utils.hellos[index]
     answer = utils.ans.get(hello)
 
@@ -156,12 +169,14 @@ def create_response(data):
     result.type = landing_pb2.OK
 
     # Add metadata to the response
-    result.kv.update({
-        "id": str(uuid.uuid4()),
-        "idx": data,
-        "data": f"{hello},{answer}",
-        "meta": "PYTHON"
-    })
+    result.kv.update(
+        {
+            "id": str(uuid.uuid4()),
+            "idx": data,
+            "data": f"{hello},{answer}",
+            "meta": "PYTHON",
+        }
+    )
 
     return result
 
@@ -181,10 +196,11 @@ def extract_tracing_headers(method_name, context):
     tracing_data = {}
 
     for item in metadata:
-        if item.key in TRACING_HEADERS:
-            logger.info("%s - Tracing header: %s:%s",
-                        method_name, item.key, item.value)
-            tracing_data[item.key] = item.value
+        key = item.key if hasattr(item, "key") else item[0]
+        value = item.value if hasattr(item, "value") else item[1]
+        if key in TRACING_HEADERS:
+            logger.info("%s - Tracing header: %s:%s", method_name, key, value)
+            tracing_data[key] = value
 
     return list(tracing_data.items())
 
@@ -199,18 +215,23 @@ def log_request_headers(method_name, context):
     """
     metadata = context.invocation_metadata()
     for item in metadata:
-        logger.info("%s - Header: %s:%s", method_name, item.key, item.value)
+        key = item.key if hasattr(item, "key") else item[0]
+        value = item.value if hasattr(item, "value") else item[1]
+        logger.info("%s - Header: %s:%s", method_name, key, value)
 
 
 def record_rpc_call(method_name):
     """Increment the OTel-gated rpc_calls_total counter when enabled."""
     if rpc_calls_counter is None:
         return
-    rpc_calls_counter.add(1, {
-        "rpc.system": "grpc",
-        "rpc.service": "LandingService",
-        "rpc.method": method_name,
-    })
+    rpc_calls_counter.add(
+        1,
+        {
+            "rpc.system": "grpc",
+            "rpc.service": "LandingService",
+            "rpc.method": method_name,
+        },
+    )
 
 
 class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
@@ -229,7 +250,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         Initialize the LandingServiceServer.
 
         Args:
-            backend_service: The next service in the chain (for proxying requests), 
+            backend_service: The next service in the chain (for proxying requests),
                            or None if this is the final server in the chain
         """
         self.backend_service = backend_service
@@ -247,8 +268,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         """
         record_rpc_call("Talk")
         request_id = f"unary-{time.time_ns()}"
-        logger.info("Unary call - data: %s, meta: %s",
-                    request.data, request.meta)
+        logger.info("Unary call - data: %s, meta: %s", request.data, request.meta)
 
         if self.backend_service:
             # Forward request to backend service
@@ -264,7 +284,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             log_request_headers("Talk", context)
             response = landing_pb2.TalkResponse()
             response.status = 200
-            response.results.append(create_response(request.data))
+            response.results.append(create_response(request.data, context))
             return response
 
     def TalkOneAnswerMore(self, request, context):
@@ -280,15 +300,17 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
         """
         record_rpc_call("TalkOneAnswerMore")
         request_id = f"server-stream-{time.time_ns()}"
-        logger.info("Server streaming call - data: %s, meta: %s",
-                    request.data, request.meta)
+        logger.info(
+            "Server streaming call - data: %s, meta: %s", request.data, request.meta
+        )
 
         if self.backend_service:
             # Forward request to backend service
             headers = extract_tracing_headers("TalkOneAnswerMore", context)
             try:
                 responses = self.backend_service.TalkOneAnswerMore(
-                    request=request, metadata=headers)
+                    request=request, metadata=headers
+                )
                 for response in responses:
                     yield response
             except Exception as e:
@@ -302,7 +324,7 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             for item in data_items:
                 response = landing_pb2.TalkResponse()
                 response.status = 200
-                response.results.append(create_response(item))
+                response.results.append(create_response(item, context))
                 yield response
 
     def TalkMoreAnswerOne(self, request_iterator, context):
@@ -324,7 +346,8 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             headers = extract_tracing_headers("TalkMoreAnswerOne", context)
             try:
                 return self.backend_service.TalkMoreAnswerOne(
-                    request_iterator=request_iterator, metadata=headers)
+                    request_iterator=request_iterator, metadata=headers
+                )
             except Exception as e:
                 logger.error("Error in client streaming: %s", e)
                 error_mapper.abort_with_error(context, e, request_id)
@@ -336,9 +359,12 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             response.status = 200
 
             for request in request_iterator:
-                logger.info("Client streaming request - data: %s, meta: %s",
-                            request.data, request.meta)
-                response.results.append(create_response(request.data))
+                logger.info(
+                    "Client streaming request - data: %s, meta: %s",
+                    request.data,
+                    request.meta,
+                )
+                response.results.append(create_response(request.data, context))
 
             return response
 
@@ -361,7 +387,8 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             headers = extract_tracing_headers("TalkBidirectional", context)
             try:
                 responses = self.backend_service.TalkBidirectional(
-                    request_iterator=request_iterator, metadata=headers)
+                    request_iterator=request_iterator, metadata=headers
+                )
                 for response in responses:
                     yield response
             except Exception as e:
@@ -372,12 +399,15 @@ class LandingServiceServer(landing_pb2_grpc.LandingServiceServicer):
             log_request_headers("TalkBidirectional", context)
 
             for request in request_iterator:
-                logger.info("Bidirectional streaming request - data: %s, meta: %s",
-                            request.data, request.meta)
+                logger.info(
+                    "Bidirectional streaming request - data: %s, meta: %s",
+                    request.data,
+                    request.meta,
+                )
 
                 response = landing_pb2.TalkResponse()
                 response.status = 200
-                response.results.append(create_response(request.data))
+                response.results.append(create_response(request.data, context))
                 yield response
 
 
@@ -438,10 +468,10 @@ def serve():
         interceptors=tuple(chain),
         options=(
             # Server-side HTTP/2 keepalive, mirroring the Go server settings.
-            ('grpc.keepalive_time_ms', 30000),
-            ('grpc.keepalive_timeout_ms', 5000),
-            ('grpc.http2.min_recv_ping_interval_without_data_ms', 5000),
-            ('grpc.keepalive_permit_without_calls', 1),
+            ("grpc.keepalive_time_ms", 30000),
+            ("grpc.keepalive_timeout_ms", 5000),
+            ("grpc.http2.min_recv_ping_interval_without_data_ms", 5000),
+            ("grpc.keepalive_permit_without_calls", 1),
         ),
     )
     landing_pb2_grpc.add_LandingServiceServicer_to_server(server_impl, server)
@@ -449,11 +479,11 @@ def serve():
     # B7 — gRPC Health Check
     health_servicer = health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
-    health_servicer.set('', health_pb2.HealthCheckResponse.SERVING)
+    health_servicer.set("", health_pb2.HealthCheckResponse.SERVING)
 
     # C4 — gRPC Server Reflection
     SERVICE_NAMES = (
-        landing_pb2.DESCRIPTOR.services_by_name['LandingService'].full_name,
+        landing_pb2.DESCRIPTOR.services_by_name["LandingService"].full_name,
         reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(SERVICE_NAMES, server)
@@ -467,22 +497,21 @@ def serve():
         # Set up TLS
         try:
             cert_path, key_path, chain_path, root_path = get_certificate_paths()
-            logger.info("Using TLS with certificates from: %s",
-                        cert_path.parent)
+            logger.info("Using TLS with certificates from: %s", cert_path.parent)
 
-            with open(cert_path, 'rb') as f:
+            with open(cert_path, "rb") as f:
                 certificate = f.read()
-            with open(key_path, 'rb') as f:
+            with open(key_path, "rb") as f:
                 private_key = f.read()
-            with open(chain_path, 'rb') as f:
+            with open(chain_path, "rb") as f:
                 certificate_chain = f.read()
-            with open(root_path, 'rb') as f:
+            with open(root_path, "rb") as f:
                 root_certificates = f.read()
 
             server_credentials = grpc.ssl_server_credentials(
                 [(private_key, certificate_chain)],
                 root_certificates,
-                require_client_auth=False
+                require_client_auth=False,
             )
             server.add_secure_port(address, server_credentials)
             logger.info("Starting secure gRPC server on port %s", port)
@@ -490,7 +519,8 @@ def serve():
             logger.error("TLS certificate error: %s", e)
             if os.getenv("GRPC_HELLO_INSECURE_FALLBACK") == "Y":
                 logger.warning(
-                    "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure mode")
+                    "GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure mode"
+                )
                 server.add_insecure_port(address)
                 logger.info("Starting insecure gRPC server on port %s", port)
             else:
@@ -498,13 +528,15 @@ def serve():
                     "GRPC_HELLO_SECURE=Y but TLS certificates could not be loaded: "
                     f"{e}. Set CERT_BASE_PATH to the certificate directory, or set "
                     "GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow insecure "
-                    "mode.") from e
+                    "mode."
+                ) from e
     else:
         server.add_insecure_port(address)
         logger.info("Starting insecure gRPC server on port %s", port)
 
     # Register with etcd if discovery is enabled
     from conn.etcd_discovery import is_etcd_discovery, register_to_etcd
+
     etcd_stop = None
     if is_etcd_discovery():
         server_host = os.getenv("GRPC_SERVER", "localhost")
@@ -512,9 +544,14 @@ def serve():
         logger.info("Registered with etcd: %s:%s", server_host, port)
 
     # Start server
-    python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    python_version = (
+        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
     logger.info(
-        "Python gRPC server [version: %s] (Python %s)", utils.get_version(), python_version)
+        "Python gRPC server [version: %s] (Python %s)",
+        utils.get_version(),
+        python_version,
+    )
     server.start()
 
     try:
@@ -529,8 +566,10 @@ def serve():
             logger.info("Stopped etcd keepalive")
 
         # Graceful shutdown
-        logger.info("Initiating graceful shutdown (grace period: %ds)...",
-                    SHUTDOWN_GRACE_PERIOD_SECONDS)
+        logger.info(
+            "Initiating graceful shutdown (grace period: %ds)...",
+            SHUTDOWN_GRACE_PERIOD_SECONDS,
+        )
         stopped_event = server.stop(SHUTDOWN_GRACE_PERIOD_SECONDS)
         stopped_event.wait()
 
@@ -541,5 +580,5 @@ def serve():
         logger.info("Server shutdown complete")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     serve()

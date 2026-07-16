@@ -55,3 +55,11 @@ bazel_dep(name = "abseil-cpp", version = "20240116.0", repo_name = "com_google_a
 bazel_dep(name = "catch2", version = "3.8.0")
 
 bazel_dep(name = "googletest", version = "1.16.0")
+
+# Bzlmod normally upgrades direct dependencies to the highest transitive
+# version. These overrides make the versions documented in AGENTS.md the
+# versions actually used for code generation and runtime linkage.
+single_version_override(module_name = "rules_proto", version = "6.0.2")
+single_version_override(module_name = "protobuf", version = "27.2")
+single_version_override(module_name = "abseil-cpp", version = "20240116.0")
+single_version_override(module_name = "grpc", version = "1.66.0")

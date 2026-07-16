@@ -1,6 +1,7 @@
 name: gRPC Go
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:
@@ -30,7 +31,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25.x'
           cache-dependency-path: hello-grpc-go/go.sum
 
       - name: Get Go dependencies

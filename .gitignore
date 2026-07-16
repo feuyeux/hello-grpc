@@ -57,6 +57,21 @@ go.sum
 gradlew*
 Package.resolved
 
+# Application lock files and build wrappers are committed for reproducible CI.
+!hello-grpc-nodejs/package-lock.json
+!hello-grpc-ts/package-lock.json
+!hello-grpc-app/hello-grpc-tauri/package-lock.json
+!hello-grpc-go/go.sum
+!hello-grpc-rust/Cargo.lock
+!hello-grpc-dart/pubspec.lock
+!hello-grpc-swift/Package.resolved
+!hello-grpc-cpp/MODULE.bazel.lock
+!hello-grpc-kotlin/gradlew
+!hello-grpc-kotlin/gradlew.bat
+!hello-grpc-kotlin/gradle/
+!hello-grpc-kotlin/gradle/wrapper/
+!hello-grpc-kotlin/gradle/wrapper/gradle-wrapper.properties
+
 # Language-specific files
 ## Java/Kotlin
 *.class
@@ -130,6 +145,9 @@ sync.sh
 .next/
 hello-grpc-ts/dist
 *.exe
+
+# These exceptions must remain after language-wide *.jar/*.lock rules.
+!hello-grpc-kotlin/gradle/wrapper/gradle-wrapper.jar
 
 # Generated app icons (can be regenerated with respective generate_app_icons.sh scripts)
 ## Flutter icons

@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'hello-grpc-flutter/**'
-      - 'hello-grpc-tauri/**'
+      - 'hello-grpc-app/hello-grpc-flutter/**'
+      - 'hello-grpc-app/hello-grpc-tauri/**'
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'hello-grpc-flutter/**'
-      - 'hello-grpc-tauri/**'
+      - 'hello-grpc-app/hello-grpc-flutter/**'
+      - 'hello-grpc-app/hello-grpc-tauri/**'
   workflow_dispatch:
 
 permissions:
@@ -38,23 +38,23 @@ jobs:
           cache: true
 
       - name: Get Flutter dependencies
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: flutter pub get
 
       - name: Verify Flutter installation
         run: flutter doctor -v
 
       - name: Analyze Flutter code
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: flutter analyze
 
       - name: Run Flutter tests
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: flutter test --coverage
 
       - name: Build Flutter app (Linux)
         if: matrix.os == 'ubuntu-latest'
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
@@ -63,26 +63,26 @@ jobs:
 
       - name: Build Flutter app (Windows)
         if: matrix.os == 'windows-latest'
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: |
           flutter config --enable-windows-desktop
           flutter build windows --release
 
       - name: Build Flutter app (macOS)
         if: matrix.os == 'macos-latest'
-        working-directory: hello-grpc-flutter
+        working-directory: hello-grpc-app/hello-grpc-flutter
         run: |
           flutter config --enable-macos-desktop
           flutter build macos --release
 
       - name: Upload Flutter build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: flutter-build-${{ matrix.os }}
           path: |
-            hello-grpc-flutter/build/linux/x64/release/bundle/
-            hello-grpc-flutter/build/windows/runner/Release/
-            hello-grpc-flutter/build/macos/Build/Products/Release/
+            hello-grpc-app/hello-grpc-flutter/build/linux/x64/release/bundle/
+            hello-grpc-app/hello-grpc-flutter/build/windows/runner/Release/
+            hello-grpc-app/hello-grpc-flutter/build/macos/Build/Products/Release/
           if-no-files-found: ignore
 
   tauri-build-test:
@@ -100,26 +100,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-        # cache: 'npm' removed: hello-grpc-tauri/package-lock.json is
-        # .gitignore'd (see '*.lock' rule) and not present on fresh CI
-        # runners. The older config failed with 'Some specified paths
-        # were not resolved, unable to cache dependencies.' and silently
-        # aborted the rest of the job. npm ci installs cold each run.
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: hello-grpc-app/hello-grpc-tauri/package-lock.json
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            hello-grpc-tauri/src-tauri/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('hello-grpc-tauri/src-tauri/Cargo.lock') }}
+            hello-grpc-app/hello-grpc-tauri/src-tauri/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('hello-grpc-app/hello-grpc-tauri/src-tauri/Cargo.lock') }}
 
       - name: Install system dependencies (Linux)
         if: matrix.os == 'ubuntu-latest'
@@ -128,72 +125,51 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend dependencies
-        working-directory: hello-grpc-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri
         run: npm ci
 
       - name: Check Rust code formatting
-        working-directory: hello-grpc-tauri/src-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri/src-tauri
         run: cargo fmt --all -- --check
 
       - name: Run Rust linting
-        working-directory: hello-grpc-tauri/src-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri/src-tauri
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Run Rust tests
-        working-directory: hello-grpc-tauri/src-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri/src-tauri
         run: cargo test
 
       - name: Build Tauri app (Debug)
-        working-directory: hello-grpc-tauri
+        working-directory: hello-grpc-app/hello-grpc-tauri
         run: npm run tauri build -- --debug
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Upload Tauri build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tauri-build-${{ matrix.os }}
           path: |
-            hello-grpc-tauri/src-tauri/target/debug/bundle/
-            hello-grpc-tauri/src-tauri/target/release/bundle/
+            hello-grpc-app/hello-grpc-tauri/src-tauri/target/debug/bundle/
+            hello-grpc-app/hello-grpc-tauri/src-tauri/target/release/bundle/
           if-no-files-found: ignore
 
-  integration-test:
-    name: Integration Tests
+  build-summary:
+    name: Build Summary
     runs-on: ubuntu-latest
     needs: [flutter-build-test, tauri-build-test]
-    if: always() && (needs.flutter-build-test.result == 'success' || needs.tauri-build-test.result == 'success')
+    if: always()
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup test environment
+      - name: Report build results
         run: |
-          echo "Setting up integration test environment..."
-          # Add any integration test setup here
+          echo "# Application Build Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Flutter: ${{ needs.flutter-build-test.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tauri: ${{ needs.tauri-build-test.result }}" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run integration tests
-        run: |
-          echo "Running integration tests..."
-          # Add integration test commands here
-          echo "✅ Integration tests would run here"
-
-      - name: Generate test report
-        run: |
-          echo "# Test Results Summary" > test-report.md
-          echo "" >> test-report.md
-          echo "## Flutter Tests" >> test-report.md
-          echo "- Status: ${{ needs.flutter-build-test.result }}" >> test-report.md
-          echo "" >> test-report.md
-          echo "## Tauri Tests" >> test-report.md
-          echo "- Status: ${{ needs.tauri-build-test.result }}" >> test-report.md
-          echo "" >> test-report.md
-          echo "Generated on: $(date)" >> test-report.md
-
-      - name: Upload test report
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-report
-          path: test-report.md
+          if [ "${{ needs.flutter-build-test.result }}" != "success" ] || \
+             [ "${{ needs.tauri-build-test.result }}" != "success" ]; then
+            exit 1
+          fi

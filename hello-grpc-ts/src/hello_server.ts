@@ -1,4 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
+import * as protoLoader from '@grpc/proto-loader'
+import { ReflectionService } from '@grpc/reflection'
 import { sendUnaryData } from '@grpc/grpc-js/build/src/server-call'
 import { ILandingServiceServer, LandingServiceService } from "./proto/landing_grpc_pb"
 import { ResultType, TalkRequest, TalkResponse, TalkResult } from "./proto/landing_pb"
@@ -9,10 +11,9 @@ import { isEtcdDiscovery, registerToEtcd } from "./lib/etcd_discovery"
 import { createServerCredentials, testTlsCertificates } from "./lib/tls"
 import { otelEnabled, initOtel, getCounter } from "./lib/otel"
 import { withLogging } from "./lib/interceptor"
+import { parseDataIndex } from "./lib/validation"
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { HealthImplementation } = require('grpc-health-check')
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const reflection = require('grpc-node-server-reflection').default
 const HEALTH_STATUS_SERVING = 1
 
 // Initialize OpenTelemetry when GRPC_HELLO_OTEL=Y. The instrumentation
@@ -85,6 +86,18 @@ function getCertBasePath(): string {
     }
 }
 
+function loadLandingPackageDefinition(): protoLoader.PackageDefinition {
+    const candidates = [
+        path.resolve(__dirname, '../../proto/landing.proto'),
+        path.resolve(process.cwd(), 'proto/landing.proto')
+    ]
+    const protoPath = candidates.find(candidate => fs.existsSync(candidate))
+    if (!protoPath) {
+        throw new Error(`landing.proto not found; checked: ${candidates.join(', ')}`)
+    }
+    return protoLoader.loadSync(protoPath)
+}
+
 // Certificate paths
 const certBasePath = getCertBasePath()
 const certPath = path.join(certBasePath, "cert.pem")
@@ -101,13 +114,7 @@ const rootCertPath = path.join(certBasePath, "myssl_root.cer")
 function createResponse(data: string): TalkResult {
     const result = new TalkResult()
 
-    // Parse the input as an index
-    const index = parseInt(data, 10)
-
-    // Handle potential non-numeric or out-of-bounds indices
-    const safeIndex = isNaN(index) || index < 0 || index >= hellos.length
-        ? 0
-        : index
+    const safeIndex = parseDataIndex(data, hellos.length)
 
     const hello = hellos[safeIndex]
     const answer = ans.get(hello)
@@ -303,14 +310,10 @@ class HelloServer implements ILandingServiceServer {
             logger.error("Error processing Talk request: %s",
                 error instanceof Error ? error.message : String(error))
 
-            const response = new TalkResponse()
-            response.setStatus(500)
-            response.setResultsList([])
-
             logger.info("Talk ERROR RESPONSE TIME: %s", new Date().toISOString())
             logger.info("============================")
 
-            callback(null, response)
+            callback(error as grpc.ServiceError, null)
         }
     }
 
@@ -393,8 +396,20 @@ class HelloServer implements ILandingServiceServer {
     ): void {
         const talkResults: TalkResult[] = []
         let requestCount = initialCount
+        let terminalError: grpc.ServiceError | null = null
+        let completed = false
+
+        const finish = (
+            error: grpc.ServiceError | null,
+            response: TalkResponse | null
+        ): void => {
+            if (completed) return
+            completed = true
+            callback(error, response)
+        }
 
         call.on('data', (request: TalkRequest) => {
+            if (terminalError) return
             requestCount++
             logger.info("TalkMoreAnswerOne REQUEST #%d: data=%s, meta=%s",
                 requestCount, request.getData(), request.getMeta())
@@ -415,10 +430,15 @@ class HelloServer implements ILandingServiceServer {
             } catch (error) {
                 logger.error("Error processing request #%d: %s", requestCount,
                     error instanceof Error ? error.message : String(error))
+                terminalError = error as grpc.ServiceError
             }
         })
 
         call.on('end', () => {
+            if (terminalError) {
+                finish(terminalError, null)
+                return
+            }
             const response = new TalkResponse()
             response.setStatus(200)
             response.setResultsList(talkResults)
@@ -449,16 +469,12 @@ class HelloServer implements ILandingServiceServer {
             logger.info("TalkMoreAnswerOne COMPLETION TIME: %s", new Date().toISOString())
             logger.info("============================")
 
-            callback(null, response)
+            finish(null, response)
         })
 
         call.on('error', (e: Error) => {
             logger.error("TalkMoreAnswerOne CLIENT ERROR: %s", e.message)
-            // Return an empty response in case of error
-            const response = new TalkResponse()
-            response.setStatus(500)
-            response.setResultsList([])
-            callback(null, response)
+            finish(e as grpc.ServiceError, null)
         })
     }
 
@@ -555,11 +571,11 @@ class HelloServer implements ILandingServiceServer {
             logger.info("TalkOneAnswerMore sent %d responses", responseCount)
             logger.info("TalkOneAnswerMore COMPLETION TIME: %s", new Date().toISOString())
             logger.info("============================")
+            call.end()
         } catch (error) {
             logger.error("Error processing TalkOneAnswerMore request: %s",
                 error instanceof Error ? error.message : String(error))
-        } finally {
-            call.end()
+            call.emit('error', error as Error)
         }
     }
 
@@ -647,8 +663,10 @@ class HelloServer implements ILandingServiceServer {
     ): void {
         let requestCount = initialCount
         let responseCount = 0
+        let failed = false
 
         call.on('data', (request: TalkRequest) => {
+            if (failed) return
             requestCount++
             logger.info("TalkBidirectional REQUEST #%d: data=%s, meta=%s",
                 requestCount, request.getData(), request.getMeta())
@@ -676,6 +694,8 @@ class HelloServer implements ILandingServiceServer {
             } catch (error) {
                 logger.error("Error processing request #%d: %s", requestCount,
                     error instanceof Error ? error.message : String(error))
+                failed = true
+                call.emit('error', error as Error)
             }
         })
 
@@ -684,7 +704,7 @@ class HelloServer implements ILandingServiceServer {
                 requestCount, responseCount)
             logger.info("TalkBidirectional COMPLETION TIME: %s", new Date().toISOString())
             logger.info("============================")
-            call.end()
+            if (!failed) call.end()
         })
 
         call.on('error', (error: Error) => {
@@ -710,10 +730,9 @@ async function startServer(): Promise<void> {
         }
 
         const server = new grpc.Server()
-        const serverWithReflection = reflection(server)
 
         // C5 — Middleware/Interceptor: wrap service impl with logging middleware
-        serverWithReflection.addService(
+        server.addService(
             LandingServiceService as unknown as grpc.ServiceDefinition<grpc.UntypedServiceImplementation>,
             withLogging(new HelloServer())
         )
@@ -723,7 +742,10 @@ async function startServer(): Promise<void> {
             '': HEALTH_STATUS_SERVING
         }
         const healthImpl = new HealthImplementation(statusMap)
-        healthImpl.addToServer(serverWithReflection)
+        healthImpl.addToServer(server)
+
+        // C4 — gRPC Server Reflection
+        new ReflectionService(loadLandingPackageDefinition()).addToServer(server)
 
         // Get the port for the server
         const serverPort = getServerPort();

@@ -23,7 +23,6 @@ interface ILandingServiceService_ITalk extends grpc.MethodDefinition<landing_pb.
     responseSerialize: grpc.serialize<landing_pb.TalkResponse>;
     responseDeserialize: grpc.deserialize<landing_pb.TalkResponse>;
 }
-
 interface ILandingServiceService_ITalkOneAnswerMore extends grpc.MethodDefinition<landing_pb.TalkRequest, landing_pb.TalkResponse> {
     path: "/hello.LandingService/TalkOneAnswerMore";
     requestStream: false;
@@ -33,7 +32,6 @@ interface ILandingServiceService_ITalkOneAnswerMore extends grpc.MethodDefinitio
     responseSerialize: grpc.serialize<landing_pb.TalkResponse>;
     responseDeserialize: grpc.deserialize<landing_pb.TalkResponse>;
 }
-
 interface ILandingServiceService_ITalkMoreAnswerOne extends grpc.MethodDefinition<landing_pb.TalkRequest, landing_pb.TalkResponse> {
     path: "/hello.LandingService/TalkMoreAnswerOne";
     requestStream: true;
@@ -43,7 +41,6 @@ interface ILandingServiceService_ITalkMoreAnswerOne extends grpc.MethodDefinitio
     responseSerialize: grpc.serialize<landing_pb.TalkResponse>;
     responseDeserialize: grpc.deserialize<landing_pb.TalkResponse>;
 }
-
 interface ILandingServiceService_ITalkBidirectional extends grpc.MethodDefinition<landing_pb.TalkRequest, landing_pb.TalkResponse> {
     path: "/hello.LandingService/TalkBidirectional";
     requestStream: true;

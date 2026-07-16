@@ -1,6 +1,7 @@
 name: gRPC Python
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:
@@ -24,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.12', '3.14']
     
     steps:
       - name: Checkout repository
@@ -47,6 +48,8 @@ jobs:
       - name: Run Python tests
         working-directory: hello-grpc-python
         run: |
+          python -m grpc_tools.protoc -I../proto --python_out=conn --pyi_out=conn --grpc_python_out=conn ../proto/landing.proto
+          sed -i 's/^import landing_pb2 as landing__pb2$/import conn.landing_pb2 as landing__pb2/' conn/landing_pb2_grpc.py
           pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
 
       - name: Upload coverage report

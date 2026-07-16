@@ -26,7 +26,7 @@ namespace HelloClient
     public class ProtoClient
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(ProtoClient));
-        
+
         // Configuration constants
         private const int RetryAttempts = 3;
         private const int RetryDelayMs = 2000;
@@ -34,7 +34,7 @@ namespace HelloClient
         private const int RequestDelayMs = 200;
         private const int SendDelayMs = 2;
         private const int RequestTimeoutSeconds = 5;
-        
+
         private readonly LandingService.LandingServiceClient _client;
 
         private ProtoClient(LandingService.LandingServiceClient client)
@@ -46,7 +46,7 @@ namespace HelloClient
         {
             // Configure log4net
             ConfigureLogging();
-            
+
             Log.Info($"Starting gRPC client [version: {Utils.GetVersion()}]");
 
             ProtoClient? protoClient = null;
@@ -65,7 +65,7 @@ namespace HelloClient
                     // Run all the gRPC patterns
                     RunGrpcCalls(protoClient, RequestDelayMs, IterationCount).Wait();
                     success = true;
-                    
+
                     // Cleanup
                     channel.ShutdownAsync().Wait();
                     break; // Success, no retry needed
@@ -101,12 +101,12 @@ namespace HelloClient
         {
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string configPath = Path.Combine(baseDirectory, "log4net.config");
-            
+
             if (!File.Exists(configPath))
             {
                 string currentDirectory = Directory.GetCurrentDirectory();
                 string projectDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-                
+
                 if (File.Exists("log4net.config"))
                     configPath = "log4net.config";
                 else if (File.Exists(Path.Combine(currentDirectory, "log4net.config")))
@@ -114,10 +114,10 @@ namespace HelloClient
                 else if (File.Exists(Path.Combine(projectDir, "log4net.config")))
                     configPath = Path.Combine(projectDir, "log4net.config");
             }
-            
+
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly()!);
             XmlConfigurator.Configure(logRepository, new FileInfo(configPath));
-            
+
             // Ensure console output uses auto-flush
             Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
         }
@@ -206,7 +206,7 @@ namespace HelloClient
             {
                 using var call = _client.TalkOneAnswerMore(request, BuildHeaders());
                 var responseStream = call.ResponseStream;
-                
+
                 while (await responseStream.MoveNext())
                 {
                     responseCount++;
@@ -241,7 +241,7 @@ namespace HelloClient
             try
             {
                 using var call = _client.TalkMoreAnswerOne(BuildHeaders());
-                
+
                 foreach (var request in requests)
                 {
                     requestCount++;
@@ -249,13 +249,13 @@ namespace HelloClient
                     await call.RequestStream.WriteAsync(request);
                     await Task.Delay(SendDelayMs);
                 }
-                
+
                 await call.RequestStream.CompleteAsync();
                 var response = await call.ResponseAsync;
-                
+
                 stopwatch.Stop();
                 Log.Info($"Client streaming completed: sent {requestCount} requests in {stopwatch.ElapsedMilliseconds}ms");
-                
+
                 return response;
             }
             catch (RpcException e)
@@ -281,7 +281,7 @@ namespace HelloClient
             try
             {
                 using var call = _client.TalkBidirectional(BuildHeaders());
-                
+
                 // Start receiving responses in a separate task
                 var responseReaderTask = Task.Run(async () =>
                 {
@@ -293,7 +293,7 @@ namespace HelloClient
                         LogResponse(response);
                     }
                 });
-                
+
                 // Send all requests
                 foreach (var request in requests)
                 {
@@ -302,14 +302,14 @@ namespace HelloClient
                     await call.RequestStream.WriteAsync(request);
                     await Task.Delay(SendDelayMs);
                 }
-                
+
                 // Close sending side
                 Log.Info("Closing send side of bidirectional stream");
                 await call.RequestStream.CompleteAsync();
-                
+
                 // Wait for receiving side to complete
                 await responseReaderTask;
-                
+
                 stopwatch.Stop();
                 Log.Info($"Bidirectional streaming completed in {stopwatch.ElapsedMilliseconds}ms");
             }

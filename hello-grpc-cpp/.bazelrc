@@ -1,65 +1,24 @@
-# Bazel configuration for hello-grpc-cpp
+common --enable_platform_specific_config
 
-# Download configuration with retries
-fetch --experimental_repository_downloader_retries=5
-build --experimental_repository_downloader_retries=5
-
-# Use C++17 standard
-build --cxxopt="-std=c++17"
-build --host_cxxopt="-std=c++17"
-build --enable_platform_specific_config
+# Keep generated code and all native targets on the repository's C++ baseline.
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
 build:windows --cxxopt=/std:c++17
 build:windows --host_cxxopt=/std:c++17
 build:windows --define=grpc_no_xds=true
 
-# Windows: the protobuf host protoc built by Bazel can segfault
-# (Exit -1073741819 / 0xC0000005), deadlocking well-known proto codegen
-# (api_proto [for tool]). Use the system protoc 27.2 (//protos:system_protoc
-# -> D:\zoo\bin\protoc27.2.exe), matched to the resolved protobuf@27.2, for
-# the default proto compiler + the C++ proto toolchain.
-# On macOS/Linux the default Bazel-built protoc is used.
+# The Bazel-built protobuf host compiler is unstable on the supported Windows
+# toolchain. Use the pinned protoc 27.2 targets declared in protos/BUILD.bazel.
 build:windows --proto_compiler=//protos:system_protoc
 build:windows --proto_toolchain_for_cc=//protos:system_cc_toolchain
 
-# Disable strict layering check to work around module dependency issues
-build --features=-layering_check
+# Abseil 20240116.0 uses a Clang builtin spelling deprecated by current macOS
+# toolchains. Keep the project baseline reproducible without turning unrelated
+# warnings into non-errors.
+build:macos --copt=-Wno-error=deprecated-builtins
+build:macos --host_copt=-Wno-error=deprecated-builtins
 
-# Disable hermetic sandbox for macOS compatibility
-build --noincompatible_sandbox_hermetic_tmp
-
-# Enable CC toolchain resolution
-# Disabled due to macOS ARM64 compatibility issues
-# build --incompatible_enable_cc_toolchain_resolution
-
-# Optimize for local development
-build --spawn_strategy=standalone
-build --strategy=CppCompile=standalone
-build --genrule_strategy=standalone
-
-# Disable sandboxing to avoid macOS issues
-build --noexperimental_check_output_files
-
-# Suppress verbose output
-build --output_filter=DONT_MATCH_ANYTHING
-
-# macOS specific settings
-build:macos --cxxopt=-Wno-deprecated-declarations
-build:macos --host_cxxopt=-Wno-deprecated-declarations
-
-# Use local resources efficiently
-build --jobs=auto
-
-# Disable unused plugins
-build --define=grpc_build_grpc_csharp_plugin=false
-build --define=grpc_build_grpc_node_plugin=false
-build --define=grpc_build_grpc_objective_c_plugin=false
-build --define=grpc_build_grpc_php_plugin=false
-build --define=grpc_build_grpc_python_plugin=false
-build --define=grpc_build_grpc_ruby_plugin=false
-
-# Test configuration
 test --test_output=errors
 test --test_summary=detailed
 
-# Try to import user-specific configuration
 try-import %workspace%/.bazelrc.user

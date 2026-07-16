@@ -1,6 +1,7 @@
 name: gRPC Rust
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:
@@ -54,6 +55,12 @@ jobs:
         working-directory: hello-grpc-rust
         run: cargo build --release
 
+      - name: Run Rust formatting and lints
+        working-directory: hello-grpc-rust
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets --all-features -- -D warnings
+
       - name: Run Rust tests
         working-directory: hello-grpc-rust
         run: cargo test --all-features
@@ -63,6 +70,6 @@ jobs:
         with:
           name: rust-artifacts
           path: |
-            hello-grpc-rust/target/release/hello_client
-            hello-grpc-rust/target/release/hello_server
+            hello-grpc-rust/target/release/proto-client
+            hello-grpc-rust/target/release/proto-server
           retention-days: 7

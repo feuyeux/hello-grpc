@@ -1,6 +1,7 @@
 name: gRPC Swift
 
 on:
+  workflow_call:
   push:
     branches: [ main, develop ]
     paths:
@@ -30,7 +31,7 @@ jobs:
       - name: Setup Swift
         uses: swift-actions/setup-swift@v2
         with:
-          swift-version: '5.9'
+          swift-version: '6.1'
 
       - name: Resolve Swift dependencies
         working-directory: hello-grpc-swift
@@ -49,7 +50,7 @@ jobs:
         run: |
           xcrun llvm-cov export -format="lcov" \
             .build/debug/hello-grpc-swiftPackageTests.xctest/Contents/MacOS/hello-grpc-swiftPackageTests \
-            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov || true
+            -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
 
       - name: Upload Swift build artifacts
         uses: actions/upload-artifact@v4

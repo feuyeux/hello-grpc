@@ -13,7 +13,9 @@ import (
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // ProtoServer implements the LandingServiceServer interface.
@@ -37,7 +39,10 @@ func (s *ProtoServer) Talk(ctx context.Context, request *pb.TalkRequest) (*pb.Ta
 
 	if s.BackendClient == nil {
 		// Process request locally
-		result := s.buildResult(request.Data)
+		result, err := s.buildResult(request.Data)
+		if err != nil {
+			return nil, err
+		}
 		return &pb.TalkResponse{
 			Status:  200,
 			Results: []*pb.TalkResult{result},
@@ -66,7 +71,10 @@ func (s *ProtoServer) TalkOneAnswerMore(request *pb.TalkRequest, stream pb.Landi
 		// Process request locally
 		dataItems := strings.Split(request.Data, ",")
 		for _, item := range dataItems {
-			result := s.buildResult(item)
+			result, err := s.buildResult(item)
+			if err != nil {
+				return err
+			}
 			if err := stream.Send(&pb.TalkResponse{
 				Status:  200,
 				Results: []*pb.TalkResult{result},
@@ -129,7 +137,10 @@ func (s *ProtoServer) TalkMoreAnswerOne(stream pb.LandingService_TalkMoreAnswerO
 				return common.ToGrpcError(err, requestID)
 			}
 			log.Infof("TalkMoreAnswerOne REQUEST: data=%s, meta=%s", request.Data, request.Meta)
-			result := s.buildResult(request.Data)
+			result, err := s.buildResult(request.Data)
+			if err != nil {
+				return err
+			}
 			results = append(results, result)
 		}
 	}
@@ -187,7 +198,10 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 			log.Infof("TalkBidirectional REQUEST: data=%s, meta=%s", request.Data, request.Meta)
 
 			// Send response for each request
-			result := s.buildResult(request.Data)
+			result, err := s.buildResult(request.Data)
+			if err != nil {
+				return err
+			}
 			response := &pb.TalkResponse{
 				Status:  200,
 				Results: []*pb.TalkResult{result},
@@ -264,12 +278,16 @@ func (s *ProtoServer) TalkBidirectional(stream pb.LandingService_TalkBidirection
 }
 
 // buildResult creates a TalkResult object with the given ID.
-func (s *ProtoServer) buildResult(id string) *pb.TalkResult {
-	index, _ := strconv.Atoi(id)
+func (s *ProtoServer) buildResult(id string) (*pb.TalkResult, error) {
+	index, err := strconv.Atoi(id)
+	hellos := common.GetHelloList()
+	if err != nil || index < 0 || index >= len(hellos) {
+		return nil, status.Errorf(codes.InvalidArgument, "data must be an integer between 0 and %d", len(hellos)-1)
+	}
 	kv := make(map[string]string)
 	kv["id"] = uuid.New().String()
 	kv["idx"] = id
-	hello := common.GetHelloList()[index]
+	hello := hellos[index]
 	kv["data"] = hello + "," + common.GetAnswerMap()[hello]
 	kv["meta"] = "GOLANG"
 
@@ -277,16 +295,16 @@ func (s *ProtoServer) buildResult(id string) *pb.TalkResult {
 		Id:   time.Now().UnixNano(),
 		Type: pb.ResultType_OK,
 		Kv:   kv,
-	}
+	}, nil
 }
 
 // createContextWithTracing creates a context with tracing metadata.
 func createContextWithTracing(ctx context.Context) context.Context {
 	headerTracing := extractTracing(ctx)
 	if headerTracing != nil {
-		return metadata.AppendToOutgoingContext(context.Background(), headerTracing.Kv()...)
+		return metadata.AppendToOutgoingContext(ctx, headerTracing.Kv()...)
 	}
-	return context.Background()
+	return ctx
 }
 
 // extractTracing extracts tracing information from the context.
@@ -311,12 +329,19 @@ func extractTracing(ctx context.Context) *tracing.HelloTracing {
 	log.Infof("TRACING HEADERS: x_request_id=%v, x_b3_traceid=%v, x_b3_spanid=%v",
 		xRequestId, xB3TraceId, xB3SpanId)
 
+	first := func(values []string) string {
+		if len(values) == 0 {
+			return ""
+		}
+		return values[0]
+	}
+
 	t := &tracing.HelloTracing{
-		RequestId:      xRequestId[0],
-		B3TraceId:      xB3TraceId[0],
-		B3SpanId:       xB3SpanId[0],
-		B3ParentSpanId: xB3ParentSpanId[0],
-		B3Sampled:      xB3Sampled[0],
+		RequestId:      first(xRequestId),
+		B3TraceId:      first(xB3TraceId),
+		B3SpanId:       first(xB3SpanId),
+		B3ParentSpanId: first(xB3ParentSpanId),
+		B3Sampled:      first(xB3Sampled),
 	}
 
 	if len(xB3Flags) > 0 {

@@ -23,7 +23,7 @@ Example:
 
         # Build test requests
         requests = build_link_requests()
-        
+
         # Get gRPC version
         version = get_version()
         print(version)  # Output: "grpc.version=1.50.0"
@@ -41,8 +41,9 @@ Version:
     1.0
 """
 
-from collections import deque
 import random
+from collections import deque
+
 import grpc
 
 from conn.landing_pb2 import TalkRequest
@@ -59,21 +60,21 @@ ans = {
     "Hola": "Muchas Gracias",
     "こんにちは": "どうも ありがとう ございます",
     "Ciao": "Mille Grazie",
-    "안녕하세요": "대단히 감사합니다"
+    "안녕하세요": "대단히 감사합니다",
 }
 
 
 def get_hello_list():
     """
     Get the list of greeting messages in different languages.
-    
+
     These greetings are used for testing unary and streaming RPC calls across
     different language implementations.
-    
+
     Returns:
         list: A list containing greetings in English, French, Spanish, Japanese,
               Italian, and Korean.
-    
+
     Example:
         >>> greetings = get_hello_list()
         >>> print(greetings[0])
@@ -87,15 +88,15 @@ def get_hello_list():
 def get_answer_map():
     """
     Get the map of greetings to their corresponding thank you messages.
-    
+
     This map is used by the server to respond with appropriate thank you messages
     based on the greeting received from the client. It supports multiple languages
     to demonstrate internationalization in gRPC services.
-    
+
     Returns:
         dict: A dictionary where keys are greeting strings and values are
               corresponding thank you messages in the same language.
-    
+
     Example:
         >>> answers = get_answer_map()
         >>> print(answers["Hello"])
@@ -109,18 +110,18 @@ def get_answer_map():
 def build_link_requests():
     """
     Create a deque of TalkRequest objects for testing streaming RPCs.
-    
+
     This function generates a collection of TalkRequest protocol buffer messages
     with random IDs and Python metadata. The requests are stored in a deque for
     efficient addition and removal from both ends.
-    
+
     Each request contains:
         - data: A random ID string (0-4)
         - meta: The string "PYTHON" identifying the implementation
-    
+
     Returns:
         deque: A deque containing 3 TalkRequest objects with random IDs.
-    
+
     Example:
         >>> requests = build_link_requests()
         >>> len(requests)
@@ -128,7 +129,7 @@ def build_link_requests():
         >>> first_request = requests[0]
         >>> print(first_request.meta)
         'PYTHON'
-    
+
     See Also:
         random_ids: Function used to generate random ID strings
         TalkRequest: Protocol buffer message type
@@ -144,11 +145,11 @@ def build_link_requests():
 def random_ids(end, n):
     """
     Generate a list of unique random ID strings.
-    
+
     Args:
         end: Maximum value for random IDs (exclusive)
         n: Number of unique IDs to generate
-        
+
     Returns:
         list: List of unique random ID strings
     """
@@ -163,10 +164,10 @@ def random_ids(end, n):
 def random_id(end):
     """
     Generate a random ID string between 0 and end-1.
-    
+
     Args:
         end: Maximum value (exclusive)
-        
+
     Returns:
         str: Random ID as a string
     """
@@ -176,7 +177,7 @@ def random_id(end):
 def get_version():
     """
     Get the gRPC version string.
-    
+
     Returns:
         str: Version string in format "grpc.version=X.Y.Z"
     """

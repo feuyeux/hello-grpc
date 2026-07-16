@@ -10,14 +10,16 @@
 //! the call sites in server.rs / client.rs.
 
 use opentelemetry::trace::TracerProvider as _;
-use opentelemetry_sdk::trace::{Sampler, TracerProvider};
 use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::trace::{Sampler, TracerProvider};
 use opentelemetry_semantic_conventions::resource::SERVICE_NAME;
-use tracing_subscriber::{prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, prelude::*};
 
 /// Returns true iff `GRPC_HELLO_OTEL=Y`.
 pub fn otel_enabled() -> bool {
-    std::env::var("GRPC_HELLO_OTEL").map(|v| v == "Y").unwrap_or(false)
+    std::env::var("GRPC_HELLO_OTEL")
+        .map(|v| v == "Y")
+        .unwrap_or(false)
 }
 
 /// Creates a `tracing::Span` carrying the gRPC semantic-convention
@@ -51,7 +53,10 @@ pub fn init_otel(service_name: &'static str) {
     INIT.call_once(|| {
         let exporter = opentelemetry_stdout::SpanExporter::default();
         let provider = TracerProvider::builder()
-            .with_resource(Resource::new([opentelemetry::KeyValue::new(SERVICE_NAME, service_name)]))
+            .with_resource(Resource::new([opentelemetry::KeyValue::new(
+                SERVICE_NAME,
+                service_name,
+            )]))
             .with_sampler(Sampler::AlwaysOn)
             .with_simple_exporter(exporter)
             .build();
