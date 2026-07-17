@@ -17,18 +17,28 @@ RUN composer install --no-interaction --no-progress --no-scripts --ignore-platfo
 FROM feuyeux/grpc_php_base:slim AS runtime-base
 
 FROM runtime-base AS server
+RUN if ! id app >/dev/null 2>&1; then \
+      (addgroup -S app 2>/dev/null && adduser -S -G app app) \
+      || useradd --system --create-home --shell /usr/sbin/nologin app; \
+    fi
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-php /app
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-php /app
 RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
 
+USER app
 ENTRYPOINT ["php", "hello_server.php"]
 
 FROM runtime-base AS client
+RUN if ! id app >/dev/null 2>&1; then \
+      (addgroup -S app 2>/dev/null && adduser -S -G app app) \
+      || useradd --system --create-home --shell /usr/sbin/nologin app; \
+    fi
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-php /app
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-php /app
 RUN mkdir -p /var/hello_grpc/client_certs
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
 
+USER app
 ENTRYPOINT ["php", "hello_client.php"]

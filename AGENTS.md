@@ -1,164 +1,66 @@
-# Repository Guidelines
+# Hello gRPC Contributor Guide
 
-## Project Structure
+## Scope
 
-This repository contains matching gRPC examples across multiple languages. Shared protobuf definitions live in `proto/`.
+`hello-grpc` is a cross-language gRPC interoperability and learning repository. It provides comparable clients and servers in C++, C#, Dart, Go, Java, Kotlin, Node.js, PHP, Python, Rust, Swift, and TypeScript, plus Docker, TLS, proxy, Kubernetes, gateway, mesh, tracing, and application examples.
 
-`proto-gateway/landing2.proto` is a separate gateway-oriented contract variant with `google.api` HTTP annotations for gRPC-JSON gateway experiments only. It is not a variant of `proto/landing.proto` for the language implementations and must not be used by them.
+Each language implementation is isolated in a `hello-grpc-<language>/` directory. There is no repository-wide language build; use the toolchain and scripts owned by the implementation you change.
 
-Each implementation is isolated in a `hello-grpc-*` directory:
+## Shared Contracts
 
-| Language | Directory |
-|---|---|
-| C++ | `hello-grpc-cpp/` |
-| C# | `hello-grpc-csharp/` |
-| Dart | `hello-grpc-dart/` |
-| Go | `hello-grpc-go/` |
-| Java | `hello-grpc-java/` |
-| Kotlin | `hello-grpc-kotlin/` |
-| Node.js | `hello-grpc-nodejs/` |
-| PHP | `hello-grpc-php/` |
-| Python | `hello-grpc-python/` |
-| Rust | `hello-grpc-rust/` |
-| Swift | `hello-grpc-swift/` |
-| TypeScript | `hello-grpc-ts/` |
+[`proto/landing.proto`](proto/landing.proto) is the canonical contract for language implementations. It defines `LandingService` and four RPC styles:
 
-Docker assets are in `docker/`. Kubernetes, proxy, TLS, mesh, and tracing examples are under `scripts/`. Diagrams and background notes are in `doc/`.
+1. `Talk` — unary request/response.
+2. `TalkOneAnswerMore` — server streaming.
+3. `TalkMoreAnswerOne` — client streaming.
+4. `TalkBidirectional` — bidirectional streaming.
 
-## gRPC And Protobuf Versions
+`TalkRequest` contains `data` and `meta`; `TalkResponse` contains `status` and repeated `TalkResult` entries. Preserve streaming semantics, field numbers, package options, and error behavior across language implementations.
 
-Treat this table as the project version baseline. When changing a protobuf or gRPC version, update the language manifest and this section in the same change.
+[`proto-gateway/landing2.proto`](proto-gateway/landing2.proto) is a separate contract for gRPC-JSON gateway experiments. It includes HTTP annotations and must not replace or be used as a variant of `proto/landing.proto` in language implementations.
 
-| Language | Directory | Protobuf version | gRPC version | Codegen / related packages | Version source |
-|---|---|---|---|---|---|
-| C++ | `hello-grpc-cpp/` | `protobuf 27.2` | `grpc 1.66.0` | `rules_proto 6.0.2`; `//protos:system_protoc` copies `D:\zoo\bin\protoc27.2.exe` | `.bazelversion`, `MODULE.bazel`, `MODULE.bazel.lock`, `protos/BUILD.bazel` |
-| C# | `hello-grpc-csharp/` | `Google.Protobuf 3.35.1` | `Grpc.* 2.80.0` | `Grpc.Tools 2.80.0`; server health/reflection packages also `2.80.0` | `Common/Common.csproj`, `HelloServer/HelloServer.csproj`, `HelloClient/HelloClient.csproj` |
-| Dart | `hello-grpc-dart/` | Declared `protobuf ^5.1.0`; resolved `5.1.0` | Declared `grpc ^4.0.1`; resolved `4.3.1` | Generated Dart protobuf files are committed under `lib/common/` | `pubspec.yaml`, `pubspec.lock` |
-| Go | `hello-grpc-go/` | `google.golang.org/protobuf v1.36.11` | `google.golang.org/grpc v1.81.1` | Code generation tools are not pinned in `go.mod`; do not infer tool versions from runtime modules | `go.mod`, `go.sum` |
-| Java | `hello-grpc-java/` | `com.google.protobuf:protoc 3.24.3`; runtime protobuf is pulled through `grpc-protobuf` unless explicitly overridden | `io.grpc:* 1.82.1` | `protobuf-maven-plugin 0.6.1`; `protoc-gen-grpc-java 1.82.1` | `pom.xml` |
-| Kotlin | `hello-grpc-kotlin/` | `protobufVersion 4.28.2`; `protobuf-java-util 4.28.2` | `grpc-java 1.82.1`; `grpc-kotlin 1.4.1` | Gradle protobuf plugin `0.10.0`; `protoc-gen-grpc-java 1.82.1`; `protoc-gen-grpc-kotlin 1.4.1`; Gradle wrapper `9.3.1` | `build.gradle.kts`, `stub/build.gradle.kts`, `gradle/wrapper/gradle-wrapper.properties` |
-| Node.js | `hello-grpc-nodejs/` | `google-protobuf ^3.21.2`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; health `grpc-health-check ^2.0.1`; reflection `@grpc/reflection ^1.0.4` | `package.json`, `package-lock.json` |
-| PHP | `hello-grpc-php/` | `google/protobuf ^v4.30` | `grpc/grpc ^1.74.0` | Composer package is the project baseline; native PHP `grpc` extension may be absent locally | `composer.json`; no project lockfile |
-| Python | `hello-grpc-python/` | `protobuf 6.33.5` | gRPC Python packages pinned to `1.81.1` | `grpcio-tools 1.81.1`; `grpcio-health-checking 1.81.1`; `grpcio-reflection 1.81.1` | `requirements.txt` |
-| Rust | `hello-grpc-rust/` | Declared `prost 0.14.1`; resolved `prost 0.14.3` | `tonic 0.14.2` | `tonic-health` and `tonic-reflection` declared `0.14`, resolved `0.14.5`; `tonic-prost-build 0.14.2`; `tonic` `gzip` feature enabled | `Cargo.toml`, `Cargo.lock` |
-| Swift | `hello-grpc-swift/` | `swift-protobuf 1.33.3` | `grpc-swift 2.2.3` | `grpc-swift-protobuf 1.3.1`; `grpc-swift-nio-transport 1.2.3` | `Package.swift`, `Package.resolved` |
-| TypeScript | `hello-grpc-ts/` | `google-protobuf ^3.21.4`; `@grpc/proto-loader ^0.7.15` | `@grpc/grpc-js ^1.14.0` | `grpc-tools ^1.12.4`; `grpc_tools_node_protoc_ts ^5.3.3`; health/reflection same as Node.js | `package.json`, `package-lock.json` |
+### Changing a Proto Contract
 
-Version rules:
+1. Change `proto/landing.proto` first.
+2. Regenerate code only in affected language directories using their established generators or build scripts.
+3. Never hand-edit generated protobuf/gRPC output (`*_pb*`, `.pb.go`, `.pb.swift`, `.pbgrpc.dart`, and equivalents).
+4. Update each affected implementation, test its corresponding RPC shape, and document any compatibility impact.
 
-- Prefer exact pins for reproducible language projects. If a manifest uses a range such as `^`, keep this table explicit that it is a constraint, not a resolved lock.
-- Keep committed resolution files for C++ (`MODULE.bazel.lock`), Dart (`pubspec.lock`), Go (`go.sum`), Node.js/TypeScript (`package-lock.json`), Rust (`Cargo.lock`), Swift (`Package.resolved`), and the Tauri frontend (`package-lock.json`). Regenerate them with the owning package manager; do not hand-edit them.
-- Keep protobuf runtime, protobuf compiler/plugin, and generated sources compatible. Do not bump a codegen tool without regenerating and testing the affected language output.
-- For cross-language proto changes, regenerate only the affected language outputs and avoid hand-editing generated files.
-- Run `scripts/check-versions.sh` when validating local gRPC/protobuf tooling.
+## Layout
 
-## Build And Test Commands
+- `proto/` — shared language contract.
+- `proto-gateway/` — gateway-only annotated contract.
+- `hello-grpc-*/` — self-contained implementations, dependencies, generated outputs, source, and tests.
+- `docker/` — multi-language container build, run, TLS, and smoke-test tooling.
+- `scripts/` — shared version checks and TLS, proxy, benchmark, Kubernetes, mesh, and tracing scenarios.
+- `integration-tests/` — cross-implementation checks.
+- `doc/` — feature-parity and supporting documentation.
+- `hello-grpc-app/` — gateway and desktop/mobile application experiments.
 
-Most language projects expose the same script pattern:
+## Development and Validation
+
+Inspect and use the selected implementation's native manifest and scripts. Representative commands are:
 
 ```sh
-cd hello-grpc-python && ./scripts/build.sh
-cd hello-grpc-go && ./scripts/server_start.sh
-cd hello-grpc-ts && npm test
+cd hello-grpc-go && go test ./...
+cd hello-grpc-java && mvn test
+cd hello-grpc-python && python -m unittest discover -s tests
+cd hello-grpc-nodejs && npm test
+cd hello-grpc-rust && cargo test
 ```
 
-Use the native tool when it is clearer:
+Most implementations also provide `scripts/build.sh`, `scripts/server_start.sh`, `scripts/client_start.sh`, and `scripts/stop_server.sh`. Build scripts can generate code or manage local dependencies, so review their behavior before running them. Use `scripts/check-versions.sh` to inspect local protobuf and gRPC tooling when a toolchain mismatch is suspected.
 
-| Language | Command |
-|---|---|
-| C++ | `cd hello-grpc-cpp; bazel test //tests:hello_test` |
-| C# | `cd hello-grpc-csharp; dotnet test` |
-| Dart | `cd hello-grpc-dart; dart analyze; dart test` |
-| Go | `cd hello-grpc-go; go test ./...` |
-| Java | `cd hello-grpc-java; mvn test` |
-| Kotlin | `cd hello-grpc-kotlin; ./gradlew test` |
-| Node.js | `cd hello-grpc-nodejs; npm test` |
-| PHP | `cd hello-grpc-php; composer validate --strict; composer check-platform-reqs; vendor\bin\phpunit.bat` |
-| Python | `cd hello-grpc-python; python -m unittest discover -s tests` |
-| Rust | `cd hello-grpc-rust; cargo test` |
-| Swift | `cd hello-grpc-swift; swift test` |
-| TypeScript | `cd hello-grpc-ts; npm run build; npm test` |
+For a behavior change, test the language implementation changed. For a contract change, test every regenerated or modified implementation and, where relevant, an interoperability path. Docker, TLS, proxy, discovery, Kubernetes, mesh, and observability validation are scenario-specific; run only the scenario affected by the change.
 
-## Windows Local Toolchain
+## Code Standards
 
-The primary local development environment for this workspace is Windows 11 (`windows/amd64`). Prefer PowerShell commands.
+- Follow each language's existing style, formatter, package manager, and lockfile conventions.
+- Preserve cross-language naming where it already exists: `ProtoServer`, `ProtoClient`, `HelloService`, `Connection`, `ErrorMapper`, and logging/interceptor equivalents.
+- Keep business behavior equivalent across languages: validate input, retain response shape, propagate relevant headers/tracing data, and map gRPC errors consistently.
+- Add tests in the implementation's standard test location (`src/test`, `tests`, `test`, or `Tests`) and name them after observable behavior.
+- Do not commit generated build directories, local virtual environments, credentials, private keys, or local TLS material beyond the repository's existing demo certificates.
 
-In this Codex runtime, prefix shell commands with `rtk`. For PowerShell cmdlets, use:
+## Runtime Configuration and Security
 
-```sh
-rtk proxy powershell -NoProfile -Command '<command>'
-```
-
-Current Windows toolchain snapshot:
-
-| Language | Local toolchain | Verification command |
-|---|---|---|
-| C++ | Bazel `7.3.2`, CMake `4.3.3`, protoc `28.2` available locally; C++ build graph uses `protoc27.2.exe` for Bazel codegen | `cd hello-grpc-cpp; bazel test //tests:hello_test` |
-| Rust | `rustc 1.95.0`, `cargo 1.95.0` | `cd hello-grpc-rust; cargo test` |
-| Java | Temurin OpenJDK `25.0.3`, Maven `3.9.7` | `cd hello-grpc-java; mvn test` |
-| Go | Go `1.26.4 windows/amd64` | `cd hello-grpc-go; go test ./...` |
-| C# | .NET SDK `9.0.203` | `cd hello-grpc-csharp; dotnet test` |
-| Python | Python `3.14.3` | `cd hello-grpc-python; python -m unittest discover -s tests` |
-| Node.js | Node `22.23.0`, npm `11.15.0`, Yarn `1.22.22` | `cd hello-grpc-nodejs; npm test` |
-| TypeScript | Node `22.23.0`, npm `11.15.0`, Yarn `1.22.22` | `cd hello-grpc-ts; npm run build; npm test` |
-| Dart | Dart SDK `3.9.2 stable` on `windows_x64` | `cd hello-grpc-dart; dart analyze; dart test` |
-| Kotlin | Gradle `9.3.1`, Kotlin `2.2.21`, JVM `25.0.3` | `cd hello-grpc-kotlin; ./gradlew test` |
-| Swift | Swift `6.3.2` for `x86_64-unknown-windows-msvc` | `cd hello-grpc-swift; swift test` |
-| PHP | PHP `8.5.7`, Composer `2.9.7` | `cd hello-grpc-php; composer validate --strict; composer check-platform-reqs; vendor\bin\phpunit.bat` |
-
-Windows-specific notes:
-
-- C++: `hello-grpc-cpp` uses Bazel `7.3.2` with Bzlmod. `WORKSPACE` is intentionally renamed `WORKSPACE.bzlmod-off`. `.bazelversion` pins Bazelisk, `single_version_override` keeps the documented dependency graph stable, and `MODULE.bazel.lock` records the resolution. Native OpenTelemetry is disabled in the C++ build because the current BCR graph conflicts with the resolved gRPC/protobuf graph on Windows. `common/otel.cc` remains an env-gated no-op stub.
-- C++: `rules_proto` is pinned to `6.0.2`; `protobuf` is pinned to `27.2`; `grpc` is pinned to `1.66.0`. `protos/BUILD.bazel` exposes `system_protoc` so Bazel can use `D:\zoo\bin\protoc27.2.exe`.
-- Java/Kotlin: the local JDK is newer than the repository compatibility baseline. Treat Java 21 compatibility as the source target unless a language project explicitly updates it. Kotlin compilation explicitly targets JVM 21 and should run through the checked-in Gradle wrapper.
-- Python: `where.exe python` may list the WindowsApps execution alias before `Python314`. Use the full Python path or fix PATH order when an exact interpreter matters.
-- Node.js/TypeScript: prefer the package manager already used by the language directory. Do not mix npm and Yarn lockfile updates unless the project already does.
-- Swift: `grpc-swift 2.2.3` currently has an upstream Windows support blocker in `RetryDelaySequence.swift`; distinguish that source-level limitation from SwiftPM scanner or target-info failures.
-- PHP: confirm `where.exe php` before running PHP tests. Current PATH snapshots may contain stale PHP directories. Composer/PHPUnit may pass even when the native `grpc` extension is absent because this project uses the Composer `grpc/grpc` package.
-
-## Coding Style
-
-Follow each language ecosystem and the existing file style.
-
-- Java uses Maven and `fmt-maven-plugin`.
-- TypeScript uses strict `tsconfig.json`.
-- Dart uses `analysis_options.yaml`.
-- Swift follows Swift Package Manager layout.
-- C++ uses Bazel.
-
-Keep generated protobuf outputs in the owning language project and avoid hand-editing generated files such as `*_pb*`, `.pb.go`, `.pb.swift`, `.pbgrpc.dart`, or similar.
-
-Preserve existing cross-language naming: `ProtoServer`, `ProtoClient`, `HelloService`, `Connection`, `ErrorMapper`, `LoggingConfig`, and their language equivalents.
-
-## Testing
-
-Add tests beside the implementation in the language's standard test directory: `src/test`, `tests`, `test`, or `Tests`.
-
-Name tests after behavior, such as `HelloServiceTests`, `VersionTests`, `utils.test.ts`, or `proto_service_test.go`.
-
-For cross-language behavior changes, update at least the affected implementation and run its local test command. For protobuf contract changes, run generation and tests for every touched language.
-
-## Commits And Pull Requests
-
-Recent commits use Conventional Commits with scopes, for example:
-
-```text
-feat(swift): complete OTel per-RPC span wiring
-fix(go): map grpc errors consistently
-```
-
-Pull requests should describe affected language(s), commands run, generated proto updates, and any Docker or Kubernetes impact. Link issues when applicable and include logs or screenshots only for user-visible behavior.
-
-## Security And Runtime Configuration
-
-Do not commit private keys outside existing demo TLS material.
-
-Tracing is opt-in via `GRPC_HELLO_OTEL=Y`; keep default runtime behavior unchanged unless the change explicitly targets observability.
-
-TLS configuration is consistent across languages:
-
-- `GRPC_HELLO_SECURE=Y` enables TLS.
-- `CERT_BASE_PATH` overrides the certificate directory.
-- Certificate directories contain files such as `full_chain.pem`, `private.key`, and `myssl_root.cer`.
-- Missing or invalid certificates fail fast.
-- `GRPC_HELLO_INSECURE_FALLBACK=Y` explicitly permits falling back to an insecure connection when TLS setup fails; never enable it by default.
+TLS is controlled consistently with `GRPC_HELLO_SECURE=Y`; `CERT_BASE_PATH` can override the certificate directory. Missing or invalid certificate material must fail fast. `GRPC_HELLO_INSECURE_FALLBACK=Y` is an explicit opt-in and must never become the default. OpenTelemetry behavior is opt-in through `GRPC_HELLO_OTEL=Y`; preserve default runtime behavior unless observability is the task.

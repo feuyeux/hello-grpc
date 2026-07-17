@@ -25,6 +25,7 @@ const services = require('../proto/landing_grpc_pb');
 const conn = require('../common/connection');
 const utils = require('../common/utils');
 const { isEtcdDiscovery, registerToEtcd } = require('../common/etcd_discovery');
+const { toGrpcError } = require('../common/error_mapper');
 // B7 — gRPC Health Check
 // grpc-health-check v2.x changed the API: there is no `HealthCheckResponse`
 // enum and `ServingStatus` is now a string-union type, not an object. Pass
@@ -73,13 +74,6 @@ function recordRpcCall(methodName) {
         "rpc.method": methodName
     });
 }
-
-// B2 — Metrics: obtain the rpc_calls_total counter created inside
-// initOtel (returns null when otel is disabled or the SDK is absent).
-const rpcCallsCounter = getCounter(
-    "rpc_calls_total",
-    "Total number of inbound RPC calls handled by the server"
-);
 
 // Backend client instance
 let backendClient = null;
@@ -271,18 +265,38 @@ function startSecureServer(server, address) {
 
         server.bindAsync(address, credentials, (err, port) => {
             if (err) {
-                logger.error("Failed to bind TLS server:", err);
-                logger.info("Falling back to insecure server");
-                startInsecureServer(server, address);
+                handleSecureServerFailure(server, address, err, "Failed to bind TLS server");
             } else {
                 logger.info("Start GRPC TLS Server on port %s [%s]", port, utils.getVersion());
             }
         });
     } catch (err) {
-        logger.error("Failed to start TLS server:", err);
-        logger.info("Falling back to insecure server");
-        startInsecureServer(server, address);
+        handleSecureServerFailure(server, address, err, "Failed to start TLS server");
     }
+}
+
+/**
+ * Handle a TLS setup/bind failure. Fails fast by default (exits the process)
+ * so a broken certificate configuration never results in an unnoticed
+ * plaintext listener. Only falls back to an insecure server when the
+ * operator has explicitly opted in via GRPC_HELLO_INSECURE_FALLBACK=Y,
+ * matching the Go/Python/Java implementations' behavior.
+ * @param {grpc.Server} server The gRPC server instance
+ * @param {string} address The server address to bind to
+ * @param {Error} err The error that triggered the failure
+ * @param {string} context A short description of what failed, for logging
+ */
+function handleSecureServerFailure(server, address, err, context) {
+    logger.error("%s: %s", context, err && err.message ? err.message : err);
+    if (process.env.GRPC_HELLO_INSECURE_FALLBACK === "Y") {
+        logger.warn("GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure server");
+        startInsecureServer(server, address);
+        return;
+    }
+    logger.error("TLS was requested but could not be configured. Set CERT_BASE_PATH to the " +
+        "certificate directory, or set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow " +
+        "an insecure server.");
+    process.exit(1);
 }
 
 /**
@@ -310,7 +324,6 @@ function startInsecureServer(server, address) {
 function talk(call, callback) {
     recordRpcCall("Talk");
     const request = call.request;
-    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "Talk" });
     logger.info("======== [Unary RPC] ========");
     logger.info("Talk REQUEST: data=%s, meta=%s", request.getData(), request.getMeta());
     logger.info("Talk REQUEST TIME: %s", new Date().toISOString());
@@ -325,8 +338,9 @@ function talk(call, callback) {
         backendClient.talk(request, metadata, function (err, response) {
             if (err) {
                 logger.error("Talk ERROR from backend: %s", err.message);
-                // Fall back to local processing
-                handleLocalTalk(request, callback);
+                // Propagate the backend's real gRPC status to the caller instead
+                // of masking the failure with a fabricated local 200 response.
+                callback(toGrpcError(err, ""), null);
             } else {
                 logger.info("Talk RESPONSE from backend received");
                 callback(null, response);
@@ -380,7 +394,6 @@ function handleLocalTalk(request, callback) {
 function talkOneAnswerMore(call) {
     recordRpcCall("TalkOneAnswerMore");
     const request = call.request;
-    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "TalkOneAnswerMore" });
     logger.info("======== [Server Streaming RPC] ========");
     logger.info("TalkOneAnswerMore REQUEST: data=%s, meta=%s", request.getData(), request.getMeta());
     logger.info("TalkOneAnswerMore REQUEST TIME: %s", new Date().toISOString());
@@ -408,13 +421,13 @@ function talkOneAnswerMore(call) {
 
             nextCall.on('error', function (error) {
                 logger.error("TalkOneAnswerMore ERROR from next service: %s", error.message);
-                // Fall back to local processing
-                handleLocalTalkOneAnswerMore(request, call);
+                // Propagate the backend's real gRPC status instead of masking
+                // the failure with fabricated local responses.
+                call.emit('error', toGrpcError(error, ""));
             });
         } catch (e) {
             logger.error("Failed to create backend call: %s", e.message);
-            // Fall back to local processing
-            handleLocalTalkOneAnswerMore(request, call);
+            call.emit('error', toGrpcError(e, ""));
         }
     } else {
         // Process locally
@@ -473,7 +486,6 @@ function handleLocalTalkOneAnswerMore(request, call) {
 function talkMoreAnswerOne(call, callback) {
     recordRpcCall("TalkMoreAnswerOne");
     logger.info("======== [Client Streaming RPC] ========");
-    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "TalkMoreAnswerOne" });
     logger.info("TalkMoreAnswerOne STARTED at: %s", new Date().toISOString());
 
     // Extract and log headers
@@ -488,8 +500,9 @@ function talkMoreAnswerOne(call, callback) {
             const nextCall = backendClient.talkMoreAnswerOne(metadata, function (err, response) {
                 if (err) {
                     logger.error("TalkMoreAnswerOne ERROR from backend: %s", err.message);
-                    // Fall back to local processing
-                    handleLocalTalkMoreAnswerOne(call, requestCount, callback);
+                    // Propagate the backend's real gRPC status instead of masking
+                    // the failure with a fabricated local aggregate response.
+                    callback(toGrpcError(err, ""), null);
                 } else {
                     logger.info("TalkMoreAnswerOne RESPONSE from next service: status=%d, resultsCount=%d",
                         response.getStatus(),
@@ -519,8 +532,7 @@ function talkMoreAnswerOne(call, callback) {
             });
         } catch (e) {
             logger.error("Failed to create backend call: %s", e.message);
-            // Fall back to local processing
-            handleLocalTalkMoreAnswerOne(call, 0, callback);
+            callback(toGrpcError(e, ""), null);
         }
     } else {
         // Process locally
@@ -622,7 +634,6 @@ function handleLocalTalkMoreAnswerOne(call, initialCount, callback) {
 function talkBidirectional(call) {
     recordRpcCall("TalkBidirectional");
     logger.info("======== [Bidirectional Streaming RPC] ========");
-    if (rpcCallsCounter) rpcCallsCounter.add(1, { "rpc.method": "TalkBidirectional" });
     logger.info("TalkBidirectional STARTED at: %s", new Date().toISOString());
 
     // Extract and log headers
@@ -653,8 +664,9 @@ function talkBidirectional(call) {
 
             nextCall.on('error', function (error) {
                 logger.error("TalkBidirectional ERROR from next service: %s", error.message);
-                // Fall back to local processing
-                handleLocalTalkBidirectional(call, requestCount);
+                // Propagate the backend's real gRPC status instead of masking
+                // the failure with fabricated local responses.
+                call.emit('error', toGrpcError(error, ""));
             });
 
             call.on('data', function (request) {
@@ -675,8 +687,7 @@ function talkBidirectional(call) {
             });
         } catch (e) {
             logger.error("Failed to create backend call: %s", e.message);
-            // Fall back to local processing
-            handleLocalTalkBidirectional(call, 0);
+            call.emit('error', toGrpcError(e, ""));
         }
     } else {
         // Process locally

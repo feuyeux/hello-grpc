@@ -105,33 +105,16 @@ func init() {
 	}
 }
 
+// Connect establishes a connection to the gRPC server using a background
+// context, terminating the process via log.Fatalf on failure. This is a
+// thin wrapper around ConnectWithContext for callers that don't need
+// cancellation/timeout control or custom error handling.
 func Connect() *pb.LandingServiceClient {
-	var address string
-	var port string
-	if HasBackend() {
-		backend := getBackend()
-		backPort := os.Getenv("GRPC_HELLO_BACKEND_PORT")
-		if len(backPort) > 0 {
-			port = backPort
-		} else {
-			port = GrpcServerPort()
-		}
-		address = fmt.Sprintf("%s:%s", backend, port)
-	} else {
-		host := GrpcServerHost()
-		port = GrpcServerPort()
-		if len(host) == 0 {
-			host = "localhost"
-		}
-		address = fmt.Sprintf("%s:%s", host, port)
+	conn, err := ConnectWithContext(context.Background())
+	if err != nil {
+		log.Fatalf("failed to connect: %v", err)
 	}
-	discovery := os.Getenv("GRPC_HELLO_DISCOVERY")
-	var client pb.LandingServiceClient
-	if discovery == "etcd" {
-		client = pb.NewLandingServiceClient(buildConnByDisc())
-	} else {
-		client = pb.NewLandingServiceClient(buildConn(address))
-	}
+	client := pb.NewLandingServiceClient(conn)
 	return &client
 }
 
@@ -161,57 +144,6 @@ func ConnectWithContext(ctx context.Context) (*grpc.ClientConn, error) {
 		return buildConnByDiscWithContext(ctx)
 	} else {
 		return buildConnWithContext(ctx, address)
-	}
-}
-
-func buildConnByDisc() *grpc.ClientConn {
-	etcdResolverBuilder := discover.NewEtcdResolverBuilder()
-	resolver.Register(etcdResolverBuilder)
-	const grpcServiceConfig = `{"loadBalancingPolicy":"round_robin"}`
-	secure := os.Getenv("GRPC_HELLO_SECURE")
-	if secure == "Y" {
-		log.Infof("Connect With TLS through discovery")
-		cert, err := tls.LoadX509KeyPair(certChain, certKey)
-		if err != nil {
-			log.Fatalf("failed to load client key pair (%s, %s): %v", certChain, certKey, err)
-		}
-		pool, err := GetCertPool(rootCert)
-		if err != nil {
-			log.Fatalf("failed to load root cert %s: %v", rootCert, err)
-		}
-		c := &tls.Config{
-			ServerName:   serverName,
-			Certificates: []tls.Certificate{cert},
-			RootCAs:      pool,
-		}
-		tlsOpts := []grpc.DialOption{
-			grpc.WithStatsHandler(&StatsHandler{}),
-			grpc.WithTransportCredentials(credentials.NewTLS(c)),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig),
-		}
-		if opt := authDialOption(); opt != nil {
-			tlsOpts = append(tlsOpts, opt)
-		}
-		conn, err := grpc.NewClient("etcd:///", tlsOpts...)
-		if err != nil {
-			log.Fatalf("failed to create gRPC client: %v", err)
-		}
-		return conn
-	} else {
-		log.Infof("Connect With InSecure through discovery")
-		insecOpts := []grpc.DialOption{
-			grpc.WithStatsHandler(&StatsHandler{}),
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithDefaultServiceConfig(grpcServiceConfig),
-		}
-		if opt := authDialOption(); opt != nil {
-			insecOpts = append(insecOpts, opt)
-		}
-		conn, err := grpc.NewClient("etcd:///", insecOpts...)
-		if err != nil {
-			log.Fatalf("failed to create gRPC client: %v", err)
-		}
-		return conn
 	}
 }
 
@@ -258,23 +190,6 @@ func buildConnByDiscWithContext(ctx context.Context) (*grpc.ClientConn, error) {
 	}
 }
 
-func buildConn(address string) *grpc.ClientConn {
-	var conn *grpc.ClientConn
-	var err error
-	secure := os.Getenv("GRPC_HELLO_SECURE")
-	if secure == "Y" {
-		log.Infof("Connect With TLS(%s)", address)
-		conn, err = transportCredentials(address)
-	} else {
-		log.Infof("Connect With InSecure(%s)", address)
-		conn, err = transportInsecure(address)
-	}
-	if err != nil {
-		log.Fatalf("failed to build connection to %s: %v", address, err)
-	}
-	return conn
-}
-
 func buildConnWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
 	secure := os.Getenv("GRPC_HELLO_SECURE")
 	if secure == "Y" {
@@ -284,35 +199,6 @@ func buildConnWithContext(ctx context.Context, address string) (*grpc.ClientConn
 		log.Infof("Connect With InSecure(%s)", address)
 		return transportInsecureWithContext(ctx, address)
 	}
-}
-
-func transportInsecure(address string) (*grpc.ClientConn, error) {
-	retryConfig := grpc.WithDefaultServiceConfig(defaultRetryServiceConfig)
-	// rate limiting (+ OpenTelemetry unary client interceptor when
-	// GRPC_HELLO_OTEL=Y). grpc.WithUnaryInterceptor only accepts a
-	// single interceptor, so the chain helper composes rate-limit and
-	// otelgrpc.ClientUnary together; both are nil-safe (chain returns
-	// nil when both halves are nil so the option is omitted).
-	count := 10
-	rateLimitConfig := grpc.WithChainUnaryInterceptor(clientInterceptorChain(count)...)
-	keepaliveConfig := grpc.WithKeepaliveParams(defaultKeepaliveParams)
-	dialOpts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		keepaliveConfig,
-		retryConfig,
-		rateLimitConfig,
-		defaultCompressionCallOption,
-	}
-	// OpenTelemetry stats handler: traces both unary and stream RPCs in
-	// a single grpc.StatsHandler. The handler is a no-op when GRPC_HELLO_OTEL
-	// is not "Y".
-	if _, otelClient := common.OtelInterceptors(); otelClient != nil {
-		dialOpts = append(dialOpts, grpc.WithStatsHandler(otelClient))
-	}
-	if opt := authDialOption(); opt != nil {
-		dialOpts = append(dialOpts, opt)
-	}
-	return grpc.NewClient(address, dialOpts...)
 }
 
 func transportInsecureWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {
@@ -351,31 +237,6 @@ func clientInterceptorChain(rateBudget int) []grpc.UnaryClientInterceptor {
 	// OTel is wired via grpc.WithStatsHandler at the call site, not as a
 	// unary interceptor in this chain — see transportInsecure etc.
 	return chain
-}
-
-func transportCredentials(address string) (*grpc.ClientConn, error) {
-	cert, err := tls.LoadX509KeyPair(certChain, certKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load key pair: %w", err)
-	}
-	pool, err := GetCertPool(rootCert)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load root cert: %w", err)
-	}
-	dialOpts := []grpc.DialOption{
-		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-			ServerName:   serverName,
-			Certificates: []tls.Certificate{cert},
-			RootCAs:      pool,
-		})),
-		grpc.WithKeepaliveParams(defaultKeepaliveParams),
-		grpc.WithDefaultServiceConfig(defaultRetryServiceConfig),
-		defaultCompressionCallOption,
-	}
-	if opt := authDialOption(); opt != nil {
-		dialOpts = append(dialOpts, opt)
-	}
-	return grpc.NewClient(address, dialOpts...)
 }
 
 func transportCredentialsWithContext(ctx context.Context, address string) (*grpc.ClientConn, error) {

@@ -15,22 +15,26 @@ WORKDIR /app/hello-grpc/hello-grpc-kotlin
 RUN gradle clean distTar
 
 FROM eclipse-temurin:25-jre-alpine AS server
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-kotlin/server/build/distributions/server.tar /app/
-RUN tar -xf server.tar
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-kotlin/server/build/distributions/server.tar /app/
+RUN tar -xf server.tar && chown -R app:app /app
 # 创建证书目录
 RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
 # 使用简化路径，复制目录内的文件而不是整个目录
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/server/bin/server"]
 
 FROM eclipse-temurin:25-jre-alpine AS client
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-kotlin/client/build/distributions/client.tar /app/
-RUN tar -xf client.tar
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-kotlin/client/build/distributions/client.tar /app/
+RUN tar -xf client.tar && chown -R app:app /app
 # 创建证书目录
 RUN mkdir -p /var/hello_grpc/client_certs
 # 使用简化路径，复制目录内的文件而不是整个目录
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/client/bin/client"]

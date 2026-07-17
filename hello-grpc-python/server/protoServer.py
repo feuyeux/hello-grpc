@@ -35,11 +35,14 @@ import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
+# Add the parent directory to the Python path so `conn` resolves when this
+# script is run directly (e.g. `python server/protoServer.py`) from a
+# working directory other than the package root. Must run before the
+# `from conn import ...` imports below.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from conn import connection, error_mapper, landing_pb2, landing_pb2_grpc, otel, utils
 from conn.log_formatter import LoggingInterceptor
-
-# Add the parent directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 # Configuration constants
@@ -511,7 +514,12 @@ def serve():
             server_credentials = grpc.ssl_server_credentials(
                 [(private_key, certificate_chain)],
                 root_certificates,
-                require_client_auth=False,
+                # Require and verify the client certificate (mutual TLS). The
+                # Python client (conn/connection.py build_channel) always
+                # presents a client certificate when GRPC_HELLO_SECURE=Y, so
+                # this matches the README's documented mTLS support and the
+                # Go server's tls.RequireAndVerifyClientCert behavior.
+                require_client_auth=True,
             )
             server.add_secure_port(address, server_credentials)
             logger.info("Starting secure gRPC server on port %s", port)

@@ -32,14 +32,20 @@ RUN dart compile exe -o grpc_server ./server.dart
 RUN dart compile exe -o grpc_client ./client.dart
 
 FROM debian:bookworm-slim AS server
+RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-dart/grpc_server /app
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-dart/grpc_server /app
+RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
+COPY --chown=app:app docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/grpc_server"]
 
 FROM debian:bookworm-slim AS client
+RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-dart/grpc_client /app
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-dart/grpc_client /app
+RUN mkdir -p /var/hello_grpc/client_certs
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/grpc_client"]

@@ -30,14 +30,20 @@ RUN dotnet publish -c Release HelloServer -o /app/publish/server
 RUN dotnet publish -c Release HelloClient -o /app/publish/client
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS server
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=build-base /app/publish/server /app
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --from=build-base --chown=app:app /app/publish/server /app
+RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
+COPY --chown=app:app docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["dotnet", "HelloServer.dll"]
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS client
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=build-base /app/publish/client /app
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --from=build-base --chown=app:app /app/publish/client /app
+RUN mkdir -p /var/hello_grpc/client_certs
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["dotnet", "HelloClient.dll"]

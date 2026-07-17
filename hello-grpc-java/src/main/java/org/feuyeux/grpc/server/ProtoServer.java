@@ -315,6 +315,11 @@ public class ProtoServer {
     // B7 — signal NOT_SERVING before shutting down so health probes fail fast
     healthStatusManager.enterTerminalState();
 
+    // Release the etcd registration client (if any) so the lease is revoked
+    // and both the Java-native and cross-language keys are removed promptly,
+    // instead of waiting for the TTL to expire them.
+    Connection.closeRegistration();
+
     if (server != null) {
       try {
         // Attempt graceful shutdown

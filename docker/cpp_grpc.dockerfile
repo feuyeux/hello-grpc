@@ -73,22 +73,26 @@ RUN CPU_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) &&
     //:hello_server //:hello_client
 
 FROM debian:bookworm-slim AS server
+RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 # Copy the built server binary from the Bazel output directory
-COPY --from=build-base /app/hello-grpc-cpp/bazel-bin/hello_server /app/
+COPY --from=build-base --chown=app:app /app/hello-grpc-cpp/bazel-bin/hello_server /app/
 # Create certificate directories
 RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
 # Copy certificates
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/hello_server"]
 
 FROM debian:bookworm-slim AS client
+RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 # Copy the built client binary from the Bazel output directory
-COPY --from=build-base /app/hello-grpc-cpp/bazel-bin/hello_client /app/
+COPY --from=build-base --chown=app:app /app/hello-grpc-cpp/bazel-bin/hello_client /app/
 # Create certificate directory
 RUN mkdir -p /var/hello_grpc/client_certs
 # Copy certificates
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/hello_client"]

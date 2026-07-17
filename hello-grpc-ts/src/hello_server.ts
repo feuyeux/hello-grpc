@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid"
 import { ans, getVersion, hellos } from "./lib/utils"
 import { createClient, getServerPort, logger } from "./lib/conn"
 import { isEtcdDiscovery, registerToEtcd } from "./lib/etcd_discovery"
+import { toGrpcError } from "./lib/error_mapper"
 import { createServerCredentials, testTlsCertificates } from "./lib/tls"
 import { otelEnabled, initOtel, getCounter } from "./lib/otel"
 import { withLogging } from "./lib/interceptor"
@@ -264,8 +265,9 @@ class HelloServer implements ILandingServiceServer {
             this.backendClient.talk(request, backendMetadata, (err: Error, response: TalkResponse) => {
                 if (err) {
                     logger.error("Talk ERROR from backend: %s", err.message)
-                    // Fall back to local processing
-                    this.handleLocalTalk(request, callback)
+                    // Propagate the backend's real gRPC status instead of
+                    // masking the failure with a fabricated local response.
+                    callback(toGrpcError(err), null)
                 } else {
                     logger.info("Talk RESPONSE from backend received")
                     logger.info("Talk RESPONSE TIME: %s", new Date().toISOString())
@@ -340,8 +342,9 @@ class HelloServer implements ILandingServiceServer {
                 const backendStream = this.backendClient.talkMoreAnswerOne(backendMetadata, (err: grpc.ServiceError | null, response: TalkResponse) => {
                     if (err) {
                         logger.error("TalkMoreAnswerOne ERROR from backend: %s", err.message)
-                        // Fall back to local processing
-                        this.handleLocalTalkMoreAnswerOne(call, requestCount, callback)
+                        // Propagate the backend's real gRPC status instead of
+                        // masking the failure with a fabricated local response.
+                        callback(toGrpcError(err), null)
                     } else {
                         logger.info("TalkMoreAnswerOne RESPONSE from backend: status=%d, resultsCount=%d",
                             response.getStatus(),
@@ -373,8 +376,7 @@ class HelloServer implements ILandingServiceServer {
             } catch (error) {
                 logger.error("Failed to create backend stream: %s",
                     error instanceof Error ? error.message : String(error))
-                // Fall back to local processing
-                this.handleLocalTalkMoreAnswerOne(call, 0, callback)
+                callback(toGrpcError(error), null)
             }
         } else {
             // Process locally
@@ -518,14 +520,14 @@ class HelloServer implements ILandingServiceServer {
 
                 backendStream.on('error', (err: Error) => {
                     logger.error("TalkOneAnswerMore ERROR from next service: %s", err.message)
-                    // Fall back to local processing
-                    this.handleLocalTalkOneAnswerMore(request, call)
+                    // Propagate the backend's real gRPC status instead of
+                    // masking the failure with fabricated local responses.
+                    call.emit('error', toGrpcError(err))
                 })
             } catch (error) {
                 logger.error("Failed to create backend stream: %s",
                     error instanceof Error ? error.message : String(error))
-                // Fall back to local processing
-                this.handleLocalTalkOneAnswerMore(request, call)
+                call.emit('error', toGrpcError(error))
             }
         } else {
             // Process locally
@@ -618,8 +620,9 @@ class HelloServer implements ILandingServiceServer {
 
                 backendStream.on('error', (error: Error) => {
                     logger.error("TalkBidirectional ERROR from next service: %s", error.message)
-                    // Fall back to local processing if backend fails
-                    this.handleLocalTalkBidirectional(call, requestCount)
+                    // Propagate the backend's real gRPC status instead of
+                    // masking the failure with fabricated local responses.
+                    call.emit('error', toGrpcError(error))
                 })
 
                 // Forward client requests to backend
@@ -642,8 +645,7 @@ class HelloServer implements ILandingServiceServer {
             } catch (error) {
                 logger.error("Failed to create backend stream: %s",
                     error instanceof Error ? error.message : String(error))
-                // Fall back to local processing
-                this.handleLocalTalkBidirectional(call, 0)
+                call.emit('error', toGrpcError(error))
             }
         } else {
             // Process locally
@@ -795,19 +797,44 @@ function startSecureServer(server: grpc.Server, serverAddress: string): void {
             credentials,
             (error: Error | null, bindPort: number) => {
                 if (error) {
-                    logger.error("Failed to start TLS server on port %s: %s", bindPort, error.message)
-                    // If TLS binding fails, fall back to insecure mode
-                    startInsecureServer(server, serverAddress)
+                    handleSecureServerFailure(server, serverAddress, error, "Failed to start TLS server")
                 } else {
                     logger.info("TLS server started on port %s [version: %s]", bindPort, getVersion())
                 }
             }
         )
     } catch (error: unknown) {
-        logger.error("TLS setup failed: %s. Falling back to insecure.",
-            error instanceof Error ? error.message : String(error))
-        startInsecureServer(server, serverAddress)
+        handleSecureServerFailure(
+            server, serverAddress,
+            error instanceof Error ? error : new Error(String(error)),
+            "TLS setup failed"
+        )
     }
+}
+
+/**
+ * Handle a TLS setup/bind failure. Fails fast by default (exits the process)
+ * so a broken certificate configuration never results in an unnoticed
+ * plaintext listener. Only falls back to an insecure server when the
+ * operator has explicitly opted in via GRPC_HELLO_INSECURE_FALLBACK=Y,
+ * matching the Go/Python/Java implementations' behavior.
+ *
+ * @param {grpc.Server} server - The gRPC server instance
+ * @param {string} serverAddress - The address:port to bind to
+ * @param {Error} error - The error that triggered the failure
+ * @param {string} context - A short description of what failed, for logging
+ */
+function handleSecureServerFailure(server: grpc.Server, serverAddress: string, error: Error, context: string): void {
+    logger.error("%s: %s", context, error.message)
+    if (process.env.GRPC_HELLO_INSECURE_FALLBACK === "Y") {
+        logger.warn("GRPC_HELLO_INSECURE_FALLBACK=Y - falling back to insecure server")
+        startInsecureServer(server, serverAddress)
+        return
+    }
+    logger.error("TLS was requested but could not be configured. Set CERT_BASE_PATH to the " +
+        "certificate directory, or set GRPC_HELLO_INSECURE_FALLBACK=Y to explicitly allow " +
+        "an insecure server.")
+    process.exit(1)
 }
 
 /**

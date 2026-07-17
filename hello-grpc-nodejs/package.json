@@ -15,12 +15,9 @@
     "@opentelemetry/sdk-trace-base": "^2.9.0",
     "@opentelemetry/sdk-trace-node": "^2.2.0",
     "@opentelemetry/semantic-conventions": "^1.27.0",
-    "async": "^3.2.5",
     "fast-linked-list": "^3.2.3",
     "google-protobuf": "^3.21.2",
     "grpc-health-check": "^2.0.1",
-    "lodash": "^4.17.21",
-    "minimist": "^1.2.8",
     "uuid": "11.1.1",
     "winston": "^3.10.0"
   },

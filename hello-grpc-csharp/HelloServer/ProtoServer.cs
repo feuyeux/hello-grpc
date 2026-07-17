@@ -124,14 +124,6 @@ namespace HelloServer
                     builder.Services.AddSingleton(metricProvider);
                 }
 
-                // OTel metrics — kept alive for the server lifetime so the
-                // rpc_calls_total counter is periodically exported to console.
-                var metricsProvider = Common.Otel.InitMetrics("hello-grpc-csharp-server");
-                if (metricsProvider is not null)
-                {
-                    builder.Services.AddSingleton(metricsProvider);
-                }
-
                 // Register service implementation as singleton
                 builder.Services.AddSingleton(landingServiceImpl);
 

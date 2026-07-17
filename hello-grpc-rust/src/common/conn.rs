@@ -151,8 +151,9 @@ pub async fn build_client() -> LandingServiceClient<Channel> {
             .identity(identity_cert)
             .ca_certificate(ca);
 
-        let static_address: &'static str = Box::leak(address.into_boxed_str());
-        if let Ok(channel_builder) = Channel::from_static(static_address).tls_config(tls) {
+        let endpoint = Endpoint::from_shared(address)
+            .unwrap_or_else(|error| panic!("Invalid gRPC server address: {:?}", error));
+        if let Ok(channel_builder) = endpoint.tls_config(tls) {
             let channel_builder = with_keepalive(channel_builder);
             if let Ok(channel) = channel_builder.connect().await {
                 info!("Connect with TLS(:{})", grpc_backend_port());

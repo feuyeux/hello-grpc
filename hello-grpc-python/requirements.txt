@@ -4,7 +4,11 @@
 grpcio-tools==1.82.1
 grpcio-testing==1.81.1
 # https://pypi.org/project/protobuf/
-# grpcio-tools 1.71.0 depends on protobuf<6.0dev and >=5.26.1
+# Pinned to 6.33.5 to match the protobuf release grpcio-tools==1.82.1
+# resolves to, and to satisfy opentelemetry-proto's protobuf<7.0,>=5.0
+# constraint (see the OpenTelemetry block below). The previous comment
+# here referenced grpcio-tools 1.71.0's protobuf<6.0dev constraint, which
+# no longer applies now that grpcio-tools is pinned to 1.82.1 above.
 protobuf==6.33.5
 # OpenTelemetry SDK + stdout exporter. Pinned to the same minor
 # versions as opentelemetry-instrumentation-grpc to avoid the

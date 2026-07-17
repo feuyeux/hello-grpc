@@ -22,14 +22,20 @@ RUN cp /app/hello-grpc/hello-grpc-java/target/hello-grpc-java-client.jar /app/he
 
 
 FROM eclipse-temurin:25-jre-alpine AS server
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-java/hello-grpc-java-server.jar /app/
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-java/hello-grpc-java-server.jar /app/
+RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
+COPY --chown=app:app docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["java", "-jar", "hello-grpc-java-server.jar"]
 
 FROM eclipse-temurin:25-jre-alpine AS client
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-java/hello-grpc-java-client.jar /app/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-java/hello-grpc-java-client.jar /app/
+RUN mkdir -p /var/hello_grpc/client_certs
+COPY --chown=app:app docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["java", "-jar", "hello-grpc-java-client.jar"]

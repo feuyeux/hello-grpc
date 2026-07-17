@@ -47,21 +47,25 @@ RUN swift build -c release -Xswiftc -cross-module-optimization
 
 # Final server image
 FROM swift:6.3-slim AS server
+RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-swift/.build/release/HelloServer /app/
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-swift/.build/release/HelloServer /app/
 # Create certificate directories
 RUN mkdir -p /var/hello_grpc/server_certs /var/hello_grpc/client_certs
 # Copy certificate files if they exist, or create placeholder files
-COPY docker/tls/server_certs/ /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/ /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/server_certs/ /var/hello_grpc/server_certs/
+COPY --chown=app:app docker/tls/client_certs/ /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/HelloServer"]
 
 # Final client image
 FROM swift:6.3-slim AS client
+RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-swift/.build/release/HelloClient /app/
+COPY --from=build-base --chown=app:app /app/hello-grpc/hello-grpc-swift/.build/release/HelloClient /app/
 # Create certificate directory
 RUN mkdir -p /var/hello_grpc/client_certs
 # Copy certificate files if they exist, or create placeholder files
-COPY docker/tls/client_certs/ /var/hello_grpc/client_certs/
+COPY --chown=app:app docker/tls/client_certs/ /var/hello_grpc/client_certs/
+USER app
 ENTRYPOINT ["/app/HelloClient"]

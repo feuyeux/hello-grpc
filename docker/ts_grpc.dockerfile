@@ -14,18 +14,20 @@ RUN npm run build
 
 FROM node:24-alpine AS server
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-ts/dist /app/dist
-COPY --from=build-base /app/hello-grpc/hello-grpc-ts/package*.json /app/
-COPY --from=build-base /app/hello-grpc/proto /app/proto
+COPY --from=build-base --chown=node:node /app/hello-grpc/hello-grpc-ts/dist /app/dist
+COPY --from=build-base --chown=node:node /app/hello-grpc/hello-grpc-ts/package*.json /app/
+COPY --from=build-base --chown=node:node /app/hello-grpc/proto /app/proto
 RUN npm ci --omit=dev --ignore-scripts
-COPY docker/tls/server_certs/* /var/hello_grpc/server_certs/
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=node:node docker/tls/server_certs/* /var/hello_grpc/server_certs/
+COPY --chown=node:node docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER node
 ENTRYPOINT ["node", "dist/hello_server.js"]
 
 FROM node:24-alpine AS client
 WORKDIR /app
-COPY --from=build-base /app/hello-grpc/hello-grpc-ts/dist /app/dist
-COPY --from=build-base /app/hello-grpc/hello-grpc-ts/package*.json /app/
+COPY --from=build-base --chown=node:node /app/hello-grpc/hello-grpc-ts/dist /app/dist
+COPY --from=build-base --chown=node:node /app/hello-grpc/hello-grpc-ts/package*.json /app/
 RUN npm install --production
-COPY docker/tls/client_certs/* /var/hello_grpc/client_certs/
+COPY --chown=node:node docker/tls/client_certs/* /var/hello_grpc/client_certs/
+USER node
 ENTRYPOINT ["node", "dist/hello_client.js"]

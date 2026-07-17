@@ -79,6 +79,10 @@ parse_arguments() {
           log "ERROR" "Missing value for --port"
           usage
         fi
+        if [[ ! "$2" =~ ^[0-9]+$ ]] || (( 10#$2 < 1 || 10#$2 > 65535 )); then
+          log "ERROR" "Invalid --port value: $2 (must be an integer 1-65535)"
+          usage
+        fi
         PORT="$2"
         shift 2
         ;;

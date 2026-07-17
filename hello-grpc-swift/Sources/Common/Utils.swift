@@ -41,7 +41,6 @@ public enum Utils {
         let possiblePaths = [
             "../Package.swift", // Relative from executable
             "Package.swift", // Current directory
-            "/Users/han/coding/hello-grpc/hello-grpc-swift/Package.swift", // Absolute path
         ]
 
         for packagePath in possiblePaths {

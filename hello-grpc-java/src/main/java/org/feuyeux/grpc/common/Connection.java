@@ -8,7 +8,6 @@ import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
-import io.etcd.jetcd.Lease;
 import io.etcd.jetcd.lease.LeaseKeepAliveResponse;
 import io.etcd.jetcd.options.PutOption;
 import io.grpc.*;
@@ -200,38 +199,66 @@ public class Connection {
     }
   }
 
+  // Cross-language compatible etcd key used by the Go/Python/Node.js/TypeScript
+  // implementations: a single fixed key (no address suffix) whose value is the
+  // plain "host:port" string. Kept alongside the Java-native multi-instance key
+  // format below so a Java server registers visibly to every implementation's
+  // discovery client, and a Java client can resolve servers started by them.
+  private static final String CROSS_LANG_ETCD_KEY = "/etcd/" + SVC_DISC_NAME;
+
+  // Kept alive for the lifetime of the process so the etcd lease keeps renewing;
+  // previously this was opened in a try-with-resources that closed the lease
+  // client (and the whole etcd Client) immediately after starting the
+  // keepAlive stream, cancelling the heartbeat and letting the registration
+  // expire after TTL (5s). A single client/lease pair is reused for both the
+  // Java-native and cross-language compatible keys below.
+  private static volatile Client registrationClient;
+
   public static void register(io.grpc.BindableService bindableService)
       throws ExecutionException, InterruptedException {
     if (isEtcdDiscovery()) {
       final URI uri = URI.create("http://" + getGrcServerHost() + ":" + getGrcServerPort());
-      try (Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build()) {
-        long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
-        ByteSequence key =
-            ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), StandardCharsets.US_ASCII);
-        ByteSequence value = ByteSequence.from(Long.toString(leaseId), StandardCharsets.US_ASCII);
-        PutOption option = PutOption.builder().withLeaseId(leaseId).build();
-        etcd.getKVClient().put(key, value, option);
-        try (Lease leaseClient = etcd.getLeaseClient()) {
-          leaseClient.keepAlive(
-              leaseId,
-              new StreamObserver<>() {
-                @Override
-                public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
-                  log.debug("got renewal for lease: {}", leaseKeepAliveResponse.getID());
-                }
+      Client etcd = Client.builder().endpoints(URI.create(getDiscoveryEndpoint())).build();
+      registrationClient = etcd;
+      long leaseId = etcd.getLeaseClient().grant(TTL).get().getID();
 
-                @Override
-                public void onError(Throwable throwable) {
-                  log.error("", throwable);
-                }
+      // Java-native multi-instance key: hello-grpc/<scheme>://<host>:<port>.
+      // EtcdNameResolver discovers every instance registered under this prefix.
+      ByteSequence javaKey =
+          ByteSequence.from(SVC_DISC_NAME + "/" + uri.toASCIIString(), StandardCharsets.US_ASCII);
+      ByteSequence javaValue = ByteSequence.from(Long.toString(leaseId), StandardCharsets.US_ASCII);
+      PutOption option = PutOption.builder().withLeaseId(leaseId).build();
+      etcd.getKVClient().put(javaKey, javaValue, option);
 
-                @Override
-                public void onCompleted() {
-                  log.info("lease completed");
-                }
-              });
-        }
-      }
+      // Cross-language compatible key: /etcd/hello-grpc -> "host:port", matching
+      // the Go/Python/Node.js/TypeScript registration format so this server is
+      // discoverable by every implementation's etcd client.
+      ByteSequence crossLangKey = ByteSequence.from(CROSS_LANG_ETCD_KEY, StandardCharsets.US_ASCII);
+      ByteSequence crossLangValue =
+          ByteSequence.from(getGrcServerHost() + ":" + getGrcServerPort(), StandardCharsets.US_ASCII);
+      etcd.getKVClient().put(crossLangKey, crossLangValue, option);
+
+      // Single long-lived keepAlive stream renews the lease backing both keys.
+      // Do NOT wrap the Lease client (or the etcd Client) in try-with-resources
+      // here: closing either immediately cancels this stream.
+      etcd.getLeaseClient().keepAlive(
+          leaseId,
+          new StreamObserver<>() {
+            @Override
+            public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
+              log.debug("got renewal for lease: {}", leaseKeepAliveResponse.getID());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+              log.error("etcd lease keep-alive error", throwable);
+            }
+
+            @Override
+            public void onCompleted() {
+              log.info("lease completed");
+            }
+          });
     }
     if (isNacosDiscovery()) {
       ServerServiceDefinition serverServiceDefinition = bindableService.bindService();
@@ -251,6 +278,24 @@ public class Connection {
         handlerRegistry.addService(serverServiceDefinition);
       } catch (Exception e) {
         log.error("Register grpc service error ", e);
+      }
+    }
+  }
+
+  /**
+   * Release the etcd client used by {@link #register}, if any. Closing the
+   * client revokes its lease (etcd's lease TTL also expires it automatically),
+   * removing both the Java-native and cross-language registration keys.
+   * Safe to call multiple times or when no etcd registration was made.
+   */
+  public static void closeRegistration() {
+    Client etcd = registrationClient;
+    registrationClient = null;
+    if (etcd != null) {
+      try {
+        etcd.close();
+      } catch (Exception e) {
+        log.warn("Error closing etcd registration client", e);
       }
     }
   }
