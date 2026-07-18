@@ -2,7 +2,7 @@ import org.gradle.api.plugins.JavaApplication
 
 plugins {
     id("application")
-    id("org.jetbrains.kotlin.jvm") version "2.4.10"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
     // Shadow plugin compatibility with Gradle 9.x is pending
     // Will be re-enabled when shadow 9.x stable is released
     // id("com.github.johnrengelman.shadow") version "9.x"

@@ -11,6 +11,11 @@
 # Build tools stage (Alpine for musl-libc compatibility)
 FROM php:8.5-cli-alpine AS builder
 
+# Switch to a faster apk mirror (CN-friendly). The default
+# dl-cdn.alpinelinux.org is slow on networks where github.com is
+# proxied, causing apk add to exceed the build timeout.
+RUN sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' /etc/apk/repositories
+
 COPY composer.phar /tmp/composer.phar
 COPY grpc-1.82.0.tgz /tmp/grpc-1.82.0.tgz
 COPY grpc-src.tar /tmp/grpc-src.tar
@@ -18,7 +23,7 @@ COPY grpc-src.tar /tmp/grpc-src.tar
 # Install build dependencies (Alpine packages)
 RUN apk add --no-cache \
         build-base autoconf libtool pkgconfig \
-        protobuf-dev cmake \
+        abseil-cpp-dev c-ares-dev openssl-dev protobuf-dev re2-dev cmake \
         zlib-dev linux-headers && \
     rm -rf /var/cache/apk/*
 
@@ -33,7 +38,13 @@ RUN mkdir -p /tmp/grpc && tar xf /tmp/grpc-src.tar -C /tmp/grpc --strip-componen
         -DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
         -DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
         -DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
-        -DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF && \
+        -DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
+        -DgRPC_ABSL_PROVIDER=package \
+        -DgRPC_CARES_PROVIDER=package \
+        -DgRPC_PROTOBUF_PROVIDER=package \
+        -DgRPC_RE2_PROVIDER=package \
+        -DgRPC_SSL_PROVIDER=package \
+        -DgRPC_ZLIB_PROVIDER=package && \
     make grpc_php_plugin -j2 && \
     strip --strip-all ./grpc_php_plugin && \
     cp ./grpc_php_plugin /tmp/grpc_php_plugin
@@ -70,4 +81,3 @@ RUN chmod +x /usr/local/bin/composer /usr/local/bin/grpc_php_plugin && \
 RUN composer --version && \
     php -m | grep -i grpc && \
     which protoc grpc_php_plugin
-

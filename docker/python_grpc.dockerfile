@@ -1,4 +1,4 @@
-FROM python:3.14-slim AS build-base
+FROM python:3.13-slim AS build-base
 ARG PROJECT_ROOT=.
 ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 WORKDIR /app/hello-grpc
@@ -9,7 +9,7 @@ WORKDIR /app/hello-grpc/hello-grpc-python
 RUN pip install -r requirements.txt
 RUN /app/hello-grpc/proto2x.sh py
 
-FROM python:3.14-slim AS server
+FROM python:3.13-slim AS server
 ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
@@ -28,7 +28,7 @@ ENV PYTHONPATH=/app
 USER app
 ENTRYPOINT ["python", "/app/server/protoServer.py"]
 
-FROM python:3.14-slim AS client
+FROM python:3.13-slim AS client
 ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
