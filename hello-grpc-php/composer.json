@@ -4,7 +4,7 @@
     "license": "Apache-2.0",
     "require": {
         "grpc/grpc": "^1.74.0",
-        "google/protobuf": "^v4.30",
+        "google/protobuf": "^v5.35",
         "ramsey/uuid": "^4.7.5",
         "monolog/monolog": "^3.5.0",
         "open-telemetry/api": "^1.4",
