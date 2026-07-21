@@ -1,18 +1,5 @@
 FROM debian:bookworm-slim AS build-base
 
-# Configure apt mirrors (if needed)
-RUN if [ -f "/etc/apt/sources.list.d/debian.sources" ]; then \
-    cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak && \
-    sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
-    fi && \
-    # For backwards compatibility, also check for traditional sources.list
-    if [ -f "/etc/apt/sources.list" ]; then \
-    cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
-    fi
-
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \

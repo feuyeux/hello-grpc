@@ -188,17 +188,22 @@ run_client() {
     # Set environment variables for the client
     export CLIENT_NAME=$(get_container_name "$lang" "client")
     export CLIENT_IMG=$(get_image_name "$lang" "client")
+    local server_name
+    server_name=$(get_container_name "$lang" "server")
 
     # Set the server address
     local server_addr="host.docker.internal"
     if [[ "$GRPC_CONTAINER_RUNTIME" == "container" ]]; then
-        grpc_container_require_host_domain
-        server_addr="host.container.internal"
+        server_addr=$(container list --format json | jq -r --arg name "$server_name" '.[] | select(.id == $name) | .status.networks[0].ipv4Address // empty | split("/")[0]')
+        if [[ -z "$server_addr" ]]; then
+            echo "Error: Apple container server '$server_name' is not running on the default network." >&2
+            return 1
+        fi
     fi
     # Swift 客户端在 macOS 下无法识别 host.docker.internal，需用本机 IP，否则连接会报 failedToParseIPString 错误。
     # 建议 Swift 客户端在 macOS 下使用 -i 参数（即 --ip），自动获取本机 en0 的 IP 地址。
     if [[ "$use_ip" == true && "$GRPC_CONTAINER_RUNTIME" == "container" ]]; then
-        echo "Warning: --ip is ignored for Apple container; using host.container.internal."
+        echo "Warning: --ip is ignored for Apple container; using server container IP $server_addr."
     elif [[ "$use_ip" == true ]]; then
         # Use local IP address if requested
         if command -v ipconfig &>/dev/null; then

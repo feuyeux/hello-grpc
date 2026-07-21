@@ -102,7 +102,23 @@ docker() {
     case "$1" in
     build)
         shift
-        container build "$@"
+        # Apple container needs an absolute Dockerfile path when its build
+        # context is PROJECT_ROOT. Docker accepts these paths as well.
+        local args=()
+        while [[ $# -gt 0 ]]; do
+            if [[ "$1" == "-f" || "$1" == "--file" ]]; then
+                local dockerfile="$2"
+                if [[ -f "$SCRIPT_DIR/$dockerfile" ]]; then
+                    dockerfile="$SCRIPT_DIR/$dockerfile"
+                fi
+                args+=("$1" "$dockerfile")
+                shift 2
+            else
+                args+=("$1")
+                shift
+            fi
+        done
+        container build "${args[@]}"
         ;;
     run)
         shift

@@ -1,6 +1,5 @@
 FROM python:3.14-slim AS build-base
 ARG PROJECT_ROOT=.
-ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 WORKDIR /app/hello-grpc
 COPY hello-grpc-python /app/hello-grpc/hello-grpc-python
 COPY proto /app/hello-grpc/proto
@@ -10,7 +9,6 @@ RUN pip install -r requirements.txt
 RUN /app/hello-grpc/proto2x.sh py
 
 FROM python:3.14-slim AS server
-ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 # Python builds use grpcio-tools' bundled protoc (1.81.1 ships its own
@@ -29,7 +27,6 @@ USER app
 ENTRYPOINT ["python", "/app/server/protoServer.py"]
 
 FROM python:3.14-slim AS client
-ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 RUN useradd --system --create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 # See server stage comment re: dropped protobuf-compiler apt step.

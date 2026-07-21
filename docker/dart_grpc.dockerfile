@@ -1,15 +1,4 @@
 FROM dart:latest AS build-base
-RUN if [ -f "/etc/apt/sources.list.d/debian.sources" ]; then \
-    cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak && \
-    sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources; \
-    fi && \
-    # For backwards compatibility, also check for traditional sources.list
-    if [ -f "/etc/apt/sources.list" ]; then \
-    cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
-    fi
 RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     git \
@@ -24,8 +13,6 @@ COPY proto /app/hello-grpc/proto
 # Build Dart server and client
 WORKDIR /app/hello-grpc/hello-grpc-dart
 
-ENV PUB_HOSTED_URL=https://pub.flutter-io.cn
-ENV FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn=value
 RUN dart pub get
 RUN ln -s ../proto protos
 RUN dart compile exe -o grpc_server ./server.dart

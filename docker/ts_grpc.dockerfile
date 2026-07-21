@@ -1,7 +1,5 @@
 FROM node:24-alpine AS build-base
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update jq && rm -rf /var/cache/apk/*
-RUN npm config set registry https://registry.npmmirror.com
 
 WORKDIR /app/hello-grpc
 COPY hello-grpc-ts /app/hello-grpc/hello-grpc-ts

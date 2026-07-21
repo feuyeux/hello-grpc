@@ -1,8 +1,6 @@
 FROM golang:1.26-alpine AS build-base
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update git bash protobuf protobuf-dev make && rm -rf /var/cache/apk/*
 
-ENV GOPROXY=https://goproxy.cn,direct
 ENV GO111MODULE=on
 # Install the required Go protoc plugins
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -23,7 +21,6 @@ RUN go build -o proto_server server/proto_server.go
 RUN go build -o proto_client client/proto_client.go
 
 FROM alpine:3.21 AS server
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update ca-certificates && rm -rf /var/cache/apk/*
 RUN addgroup -S app && adduser -S -G app app
 
@@ -39,7 +36,6 @@ USER app
 ENTRYPOINT ["./proto_server"]
 
 FROM alpine:3.21 AS client
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --update ca-certificates && rm -rf /var/cache/apk/*
 RUN addgroup -S app && adduser -S -G app app
 
