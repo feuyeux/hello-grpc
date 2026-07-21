@@ -6,7 +6,7 @@ import org.gradle.api.tasks.testing.Test
 plugins {
     id("idea")
     id("java-library")
-    id("org.jetbrains.kotlin.jvm") version "2.4.10"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
     id("com.google.protobuf") version "0.10.0"
 }
 

@@ -16,9 +16,9 @@ RUN apt-get update && apt-get install -y \
 # Install Bazelisk (use a direct download approach)
 RUN arch=$(uname -m) && \
     if [ "$arch" = "x86_64" ]; then \
-    curl -L -o /usr/local/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-amd64; \
+    curl --fail --location --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20 -o /usr/local/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-amd64; \
     elif [ "$arch" = "aarch64" ] || [ "$arch" = "arm64" ]; then \
-    curl -L -o /usr/local/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-arm64; \
+    curl --fail --location --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20 -o /usr/local/bin/bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-arm64; \
     else \
     echo "Unsupported architecture: $arch"; \
     exit 1; \
@@ -35,7 +35,9 @@ COPY proto /app/proto
 # Build C++ server and client using Bazel
 WORKDIR /app/hello-grpc-cpp
 # Determine CPU core count (cross-platform)
-RUN CPU_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) && \
+RUN --mount=type=cache,target=/root/.cache/bazel-repository \
+    --mount=type=cache,target=/root/.cache/bazel-disk-cache \
+    CPU_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) && \
     # Cap parallel jobs to avoid OOM on memory-constrained Docker hosts
     # (gRPC C++ actions are memory-heavy; 14 cores / 8 GB RAM exhausts memory)
     BAZEL_JOBS=$((CPU_CORES > 4 ? 4 : CPU_CORES)) && \
@@ -45,6 +47,8 @@ RUN CPU_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) &&
     # Build hello_server and hello_client with optimized flags
     bazel build \
     --jobs=$BAZEL_JOBS \
+    --repository_cache=/root/.cache/bazel-repository \
+    --disk_cache=/root/.cache/bazel-disk-cache \
     --cxxopt="-std=c++17" \
     --host_cxxopt="-std=c++17" \
     --conlyopt="-std=c11" \

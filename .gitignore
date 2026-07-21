@@ -166,3 +166,9 @@ hello-grpc-app/hello-grpc-tauri/src-tauri/gen/
 build_output/
 *.pid
 .github/docs
+
+# Local docker build artifacts (logs/scripts dropped by ad-hoc local runners)
+.docker-build/
+
+# Locally-downloaded toolchain archives (e.g. protoc, gRPC tarballs not in docker/ cache)
+protoc-*-linux-x86_64.zip
