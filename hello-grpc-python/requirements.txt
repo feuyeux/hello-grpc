@@ -8,7 +8,7 @@
 # 由 grpcio-tools 版本决定； 注意与 protoc --version兼容
 # https://pypi.org/project/grpcio-tools/
 grpcio-tools==1.82.1
-grpcio-testing==1.82.1
+grpcio-testing==1.83.0
 # OpenTelemetry SDK + stdout exporter. Pinned to the same minor
 # versions as opentelemetry-instrumentation-grpc to avoid the
 # "Allerlei" / "Alligator" distro split. No-op when GRPC_HELLO_OTEL
