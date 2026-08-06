@@ -10,7 +10,7 @@ plugins {
     // its fallback-to-JVM_21 path passes 25 to an internal API that
     // does not accept it. K2 (2.x) adds JDK 25 as a first-class
     // language target.
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.4.10"
 }
 
 //https://github.com/grpc/grpc/releases
