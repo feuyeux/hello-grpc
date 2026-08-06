@@ -20,7 +20,7 @@ grpcio-testing==1.83.0
 # and conflicted with grpcio-tools' protobuf>=6.33.5 requirement).
 opentelemetry-api==1.44.0
 opentelemetry-sdk==1.43.0
-opentelemetry-exporter-otlp-proto-common==1.43.0
+opentelemetry-exporter-otlp-proto-common==1.44.0
 # https://pypi.org/project/opentelemetry-instrumentation-grpc/
 opentelemetry-instrumentation-grpc==0.65b0
 # B7 — gRPC Health Check (bundled with grpcio; pinned to same version)
