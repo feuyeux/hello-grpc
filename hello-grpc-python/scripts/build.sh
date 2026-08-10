@@ -4,7 +4,8 @@ set -e
 
 # Change to the script's directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "${SCRIPT_DIR}" || exit
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${PROJECT_ROOT}" || exit
 
 # Source common build functions
 if [ -f "../scripts/build/build-common.sh" ]; then
@@ -81,7 +82,11 @@ fi
 if [ "${RUN_TESTS}" = true ]; then
     log_build "Running tests..."
     if [ -d "tests" ]; then
-        python3 -m pytest tests/
+        # The tests in tests/ are plain stdlib unittest cases, and AGENTS.md
+        # documents `python -m unittest discover -s tests` as this
+        # implementation's test entry point. Running them through pytest would
+        # require an extra dependency that requirements.txt does not declare.
+        python3 -m unittest discover -s tests -v
     else
         log_warning "No tests directory found"
     fi

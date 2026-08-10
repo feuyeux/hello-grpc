@@ -19,8 +19,12 @@ grpcio-testing==1.83.0
 # protobuf==6.33.5 pinned above (older 1.27.0 line required protobuf<5.0
 # and conflicted with grpcio-tools' protobuf>=6.33.5 requirement).
 opentelemetry-api==1.44.0
-opentelemetry-sdk==1.43.0
-opentelemetry-exporter-otlp-proto-common==1.43.0
+# opentelemetry-sdk pins opentelemetry-api to its own exact version, so the
+# three core packages below must move together with the api pin above and with
+# opentelemetry-instrumentation-grpc (0.65b0 is the pre-release line released
+# alongside core 1.44.0). Mixing 1.44.0 with 1.43.0 makes pip fail to resolve.
+opentelemetry-sdk==1.44.0
+opentelemetry-exporter-otlp-proto-common==1.44.0
 # https://pypi.org/project/opentelemetry-instrumentation-grpc/
 opentelemetry-instrumentation-grpc==0.65b0
 # B7 — gRPC Health Check (bundled with grpcio; pinned to same version)

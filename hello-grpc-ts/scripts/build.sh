@@ -4,7 +4,8 @@ set -e
 
 # Change to the script's directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "${SCRIPT_DIR}" || exit
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${PROJECT_ROOT}" || exit
 
 # Source common build functions
 if [ -f "../scripts/build/build-common.sh" ]; then
@@ -27,8 +28,10 @@ log_build "Building TypeScript gRPC project..."
 # Start build timer
 start_build_timer
 
-# Check dependencies
-if ! check_dependencies "node:16+:brew install node" "npm:8+:installed with node" "tsc::npm install -g typescript"; then
+# Check dependencies. typescript is a devDependency installed by the npm
+# install step below and the compile step runs it through npm, so requiring a
+# global tsc here would fail on a clean checkout before dependencies exist.
+if ! check_dependencies "node:16+:brew install node" "npm:8+:installed with node"; then
     exit 1
 fi
 

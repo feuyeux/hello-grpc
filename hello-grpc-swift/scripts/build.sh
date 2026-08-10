@@ -4,7 +4,8 @@ set -e
 
 # Change to the script's directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "${SCRIPT_DIR}" || exit
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${PROJECT_ROOT}" || exit
 
 # Source common build functions
 if [ -f "../scripts/build/build-common.sh" ]; then
