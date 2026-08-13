@@ -93,8 +93,8 @@ __pycache__/
 venv/
 .venv/
 installed_packages.txt
-# Test/type-checker caches created by scripts/build.sh --test (pytest) and by
-# local linting runs. These are machine-local and must never be committed.
+# Test/type-checker caches created by local linting and test runs. These are
+# machine-local and must never be committed.
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

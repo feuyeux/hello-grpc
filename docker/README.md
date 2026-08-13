@@ -19,13 +19,15 @@ This directory contains scripts and Dockerfiles for building gRPC server and cli
 
 Set `GRPC_CONTAINER_RUNTIME=docker` or `GRPC_CONTAINER_RUNTIME=container` to override automatic selection. The `container` option is valid only on an Apple-silicon Mac.
 
-Apple `container` consumes OCI images, including the published Docker Hub images used by this repository. Its server command publishes port `9996` to the Mac loopback interface. Before running a client container, configure the one-time host DNS mapping below so the client can reach that published port:
+Apple `container` consumes OCI images, including the published Docker Hub images used by this repository. Its server command publishes port `9996` to the Mac loopback interface.
+
+The client script prefers to discover the running server container's IP directly (requires `jq` on the host), which needs no DNS setup. When `jq` is unavailable or the server container exposes no address that way, the script falls back to the `host.container.internal` DNS mapping below. Configure it once so the fallback path works:
 
 ```sh
 sudo container system dns create host.container.internal --localhost 203.0.113.113
 ```
 
-The helper script reports this command if the mapping is absent. `--cross` does not use Docker's host-network mode with Apple `container`; it uses `host.container.internal` instead. See the [Chinese Apple container guide](CONTAINER_RUNTIME.md) for setup, verification, and limitations.
+The helper script reports this command when the fallback is taken and the mapping is absent. `--cross` does not use Docker's host-network mode with Apple `container`; it uses `host.container.internal` instead. See the [Chinese Apple container guide](CONTAINER_RUNTIME.md) for setup, verification, and limitations.
 
 ## Image Naming Convention
 

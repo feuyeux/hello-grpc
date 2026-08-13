@@ -57,7 +57,7 @@ sh docker/run_container.sh -l go -c server
 sh docker/run_container.sh -l go -c client
 ```
 
-运行客户端前，脚本会检查 `host.container.internal` 是否存在。缺失时会输出创建命令并停止，避免客户端错误连接至自身的回环地址。
+运行客户端时，脚本优先通过 `container list --format json`（需要宿主安装 `jq`）直接查询运行中服务端容器的 IP，无需 DNS 设置。当 `jq` 不可用或查询不到地址时，回退到 `host.container.internal` DNS 域名：此时脚本会检查该域名是否存在，缺失时输出创建命令并停止，避免客户端错误连接至自身的回环地址。
 
 ---
 

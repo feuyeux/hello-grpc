@@ -194,16 +194,26 @@ run_client() {
     # Set the server address
     local server_addr="host.docker.internal"
     if [[ "$GRPC_CONTAINER_RUNTIME" == "container" ]]; then
-        server_addr=$(container list --format json | jq -r --arg name "$server_name" '.[] | select(.id == $name) | .status.networks[0].ipv4Address // empty | split("/")[0]')
+        # Prefer the server container's IP on the default network (no DNS setup
+        # needed). Falls back to host.container.internal + DNS check when jq is
+        # unavailable or the server container exposes no address this way.
+        server_addr=""
+        if command -v jq >/dev/null 2>&1; then
+            server_addr=$(container list --format json 2>/dev/null | jq -r --arg name "$server_name" '.[] | select(.id == $name) | .status.networks[0].ipv4Address // empty | split("/")[0]' 2>/dev/null || true)
+        fi
         if [[ -z "$server_addr" ]]; then
-            echo "Error: Apple container server '$server_name' is not running on the default network." >&2
-            return 1
+            # Fallback: rely on the documented host DNS domain. This preserves
+            # the CONTAINER_RUNTIME.md contract that the script checks
+            # host.container.internal availability and stops with guidance when
+            # it is missing. Also covers macOS hosts without jq installed.
+            grpc_container_require_host_domain || return 1
+            server_addr="host.container.internal"
         fi
     fi
     # Swift 客户端在 macOS 下无法识别 host.docker.internal，需用本机 IP，否则连接会报 failedToParseIPString 错误。
     # 建议 Swift 客户端在 macOS 下使用 -i 参数（即 --ip），自动获取本机 en0 的 IP 地址。
     if [[ "$use_ip" == true && "$GRPC_CONTAINER_RUNTIME" == "container" ]]; then
-        echo "Warning: --ip is ignored for Apple container; using server container IP $server_addr."
+        echo "Warning: --ip is ignored for Apple container; using server address $server_addr."
     elif [[ "$use_ip" == true ]]; then
         # Use local IP address if requested
         if command -v ipconfig &>/dev/null; then
