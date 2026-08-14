@@ -83,7 +83,15 @@ The matrix above describes repository implementation paths. Runtime support stil
 
 ## Project Statistics
 
-[![Star History Chart](https://api.star-history.com/svg?repos=feuyeux/hello-grpc&type=Date)](https://star-history.com/#feuyeux/hello-grpc&Date)
+[![Repo size](https://img.shields.io/github/repo-size/feuyeux/hello-grpc)](https://github.com/feuyeux/hello-grpc)
+[![Last commit](https://img.shields.io/github/last-commit/feuyeux/hello-grpc)](https://github.com/feuyeux/hello-grpc/commits)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/feuyeux/hello-grpc)](https://github.com/feuyeux/hello-grpc/graphs/commit-activity)
+[![Contributors](https://img.shields.io/github/contributors/feuyeux/hello-grpc)](https://github.com/feuyeux/hello-grpc/graphs/contributors)
+
+Star history: [star-history.com/#feuyeux/hello-grpc](https://star-history.com/#feuyeux/hello-grpc&Date).
+The live embed was removed because GitHub now restricts the stargazer timeline API
+to repository collaborators, so third-party star charts cannot render without an
+owner-supplied token ([details](https://www.star-history.com/blog/github-stargazer-api-restriction)).
 
 [1]: <https://maven.apache.org/>
 [2]: <https://junit.org/junit5/>
