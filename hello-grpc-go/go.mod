@@ -12,7 +12,7 @@ require (
 	// https://github.com/sirupsen/logrus/tags
 	github.com/sirupsen/logrus v1.10.0
 	// https://github.com/stretchr/testify/tags
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
 	go.etcd.io/etcd/client/v3 v3.7.1
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
@@ -42,13 +42,11 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.7.0 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
