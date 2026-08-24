@@ -12,7 +12,7 @@ require (
 	// https://github.com/sirupsen/logrus/tags
 	github.com/sirupsen/logrus v1.10.0
 	// https://github.com/stretchr/testify/tags
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	// https://pkg.go.dev/go.etcd.io/etcd/client/v3?tab=versions
 	go.etcd.io/etcd/client/v3 v3.7.1
 	// https://pkg.go.dev/go.uber.org/ratelimit?tab=versions
@@ -56,9 +56,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
