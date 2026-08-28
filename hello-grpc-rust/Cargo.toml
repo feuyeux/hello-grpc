@@ -68,7 +68,7 @@ opentelemetry = { version = "0.27", features = ["trace"] }
 opentelemetry_sdk = { version = "0.27", features = ["trace"] }
 opentelemetry-stdout = { version = "0.27", features = ["trace"] }
 opentelemetry-semantic-conventions = "0.27"
-tracing-opentelemetry = "0.28"
+tracing-opentelemetry = "0.33"
 # rustls with ring crypto provider for TLS
 rustls = { version = "0.23", features = ["ring"] }
 # HTTP client for etcd v3 API discovery
