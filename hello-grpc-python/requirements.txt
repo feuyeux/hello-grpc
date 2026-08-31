@@ -1,5 +1,5 @@
 # https://pypi.org/project/protobuf/
-# Resolved by pip to satisfy grpcio-tools==1.83.0 (protobuf<8.0.0,>=7.35.1).
+# Resolved by pip to satisfy grpcio-tools==1.83.1 (protobuf<8.0.0,>=7.35.1).
 # The previous explicit protobuf==6.33.5 pin conflicted with grpcio-tools
 # 1.82.1's protobuf>=7.35.1 requirement, and grpcio-testing 1.81.1 (the
 # old pin) required protobuf<7.0,>=6.33.5 — mutually exclusive. Bumped
@@ -7,7 +7,7 @@
 # python -m grpc.tools.protoc --version
 # 由 grpcio-tools 版本决定； 注意与 protoc --version兼容
 # https://pypi.org/project/grpcio-tools/
-grpcio-tools==1.83.0
+grpcio-tools==1.83.1
 grpcio-testing==1.83.0
 # OpenTelemetry SDK + stdout exporter. Pinned to the same minor
 # versions as opentelemetry-instrumentation-grpc to avoid the
