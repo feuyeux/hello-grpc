@@ -32,4 +32,4 @@ opentelemetry-instrumentation-grpc==0.65b0
 grpcio-health-checking==1.82.1
 # C4 — gRPC Server Reflection
 # https://pypi.org/project/grpcio-reflection/
-grpcio-reflection==1.82.1
+grpcio-reflection==1.83.1
