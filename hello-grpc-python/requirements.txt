@@ -29,7 +29,7 @@ opentelemetry-exporter-otlp-proto-common==1.44.0
 opentelemetry-instrumentation-grpc==0.65b0
 # B7 — gRPC Health Check (bundled with grpcio; pinned to same version)
 # https://pypi.org/project/grpcio-health-checking/
-grpcio-health-checking==1.82.1
+grpcio-health-checking==1.83.1
 # C4 — gRPC Server Reflection
 # https://pypi.org/project/grpcio-reflection/
 grpcio-reflection==1.83.1
