@@ -16,7 +16,7 @@
              Upstream has not shipped 1.83.x+ yet, so we hold this pin.
              The deps that this project pulls in (grpc-netty, grpc-services,
              javax.annotation) all support 1.82.1 without changes. -->
-        <grpc.version>1.82.1</grpc.version>
+        <grpc.version>1.82.2</grpc.version>
         <protoc.version>3.24.3</protoc.version>
         <!-- netty-resolver-dns 4.2.15.Final is current upstream, but
              grpc-netty 1.82.1 is compiled against the 4.2.9 API; bumping
