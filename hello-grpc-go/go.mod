@@ -20,7 +20,7 @@ require (
 	// https://pkg.go.dev/golang.org/x/net
 	golang.org/x/net v0.58.0 // indirect
 	// https://github.com/grpc/grpc-go/tags
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 	// https://github.com/protocolbuffers/protobuf-go/tags
 	google.golang.org/protobuf v1.36.12 // indirect
 )
@@ -59,6 +59,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260706201446-f0a921348800 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260825221802-da73d73af1c5 // indirect
 )
