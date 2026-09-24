@@ -8,7 +8,7 @@
         "ramsey/uuid": "^4.7.5",
         "monolog/monolog": "^3.5.0",
         "open-telemetry/api": "^1.4",
-        "open-telemetry/sdk": "~1.6.0",
+        "open-telemetry/sdk": "~1.15.0",
         "open-telemetry/exporter-otlp": "^1.3"
     },
     "autoload": {
