@@ -7,7 +7,7 @@ plugins {
     id("idea")
     id("java-library")
     id("org.jetbrains.kotlin.jvm") version "2.4.20"
-    id("com.google.protobuf") version "0.10.0"
+    id("com.google.protobuf") version "0.10.1"
 }
 
 dependencies {
