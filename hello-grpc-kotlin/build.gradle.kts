@@ -1,7 +1,7 @@
 plugins {
     idea
     // https://plugins.gradle.org/plugin/com.google.protobuf
-    id("com.google.protobuf") version "0.10.0"
+    id("com.google.protobuf") version "0.10.1"
     // https://kotlinlang.org/docs/jvm-get-started.html
     // kotlin("jvm") 2.2.21 is the project's pinned Kotlin compiler
     // version (see AGENTS.md table "Kotlin 2.2.21"). 1.9.24 was the
